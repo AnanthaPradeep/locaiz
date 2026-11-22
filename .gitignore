@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.npm-cache/
+.tooling/
+.playwright/
+test-results/
+playwright-report/
+.env*
+!.env.example
+__pycache__/

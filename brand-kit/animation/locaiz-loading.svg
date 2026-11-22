@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40"><style>@keyframes pulse{50%{opacity:.35}}@media(prefers-reduced-motion:no-preference){path{animation:pulse 1.4s infinite}}</style><path fill="#0A0A0A" d="M9 9h5v17h10l-5 5H9zM20 9h11v5L20 25h-7l11-11h-9zM24 26h7v5H19z" transform=""/></svg>

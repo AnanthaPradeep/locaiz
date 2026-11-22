@@ -1,0 +1,947 @@
+import { useState, type FormEvent, type ReactNode } from "react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { findListings, listings, money, products } from "./catalog";
+import { ListingCard } from "./listing-card";
+import { Missing, Page } from "./page";
+import { useDemo, type Activity } from "./store";
+
+const requirements = z.object({
+  title: z.string().trim().min(3),
+  kind: z.enum(["Retail", "Wholesale", "Manufacturing", "Repair"]),
+  budget: z.number().positive(),
+  quantity: z.number().int().positive(),
+  needed: z.string().min(1),
+  city: z.string().trim().min(2),
+});
+
+export function RequirementForm() {
+  const [params] = useSearchParams();
+  const demo = useDemo();
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const { register, handleSubmit, formState } = useForm<
+    z.infer<typeof requirements>
+  >({
+    defaultValues: {
+      kind:
+        params.get("kind") === "Repair"
+          ? "Repair"
+          : params.has("market")
+            ? "Wholesale"
+            : "Retail",
+      city: demo.city,
+      quantity: 1,
+    },
+  });
+  const market = listings.find(
+    (item) => item.section === "global" && item.id === params.get("market"),
+  );
+  return (
+    <form
+      className="record form"
+      onSubmit={handleSubmit((values) => {
+        const result = requirements.safeParse(values);
+        if (!result.success) {
+          setError(
+            "Check the requirement, budget, quantity, date and delivery city.",
+          );
+          return;
+        }
+        const { title, kind, budget, quantity, needed, city } = result.data;
+        demo.add(
+          "requirements",
+          title,
+          `${kind} · ${quantity} units · ${money(budget)} budget · ${city} · needed ${needed}${market ? ` · ${market.name}` : ""}`,
+          "Open",
+        );
+        navigate("/account/requirements");
+      })}
+    >
+      {market && <p>Request for {market.name} · sample wholesale market</p>}
+      <label>
+        Requirement
+        <input required minLength={3} maxLength={120} {...register("title")} />
+      </label>
+      <label>
+        Request type
+        <select {...register("kind")}>
+          <option>Retail</option>
+          <option>Wholesale</option>
+          <option>Manufacturing</option>
+          <option>Repair</option>
+        </select>
+      </label>
+      <label>
+        Total budget (₹)
+        <input
+          required
+          type="number"
+          min={1}
+          {...register("budget", { valueAsNumber: true })}
+        />
+      </label>
+      <label>
+        Quantity
+        <input
+          required
+          type="number"
+          min={1}
+          {...register("quantity", { valueAsNumber: true })}
+        />
+      </label>
+      <label>
+        Needed by
+        <input
+          required
+          type="date"
+          min={new Date().toLocaleDateString("en-CA")}
+          {...register("needed")}
+        />
+      </label>
+      <label>
+        Delivery city
+        <input required maxLength={80} {...register("city")} />
+      </label>
+      <p role="alert">{error}</p>
+      <button className="button" disabled={formState.isSubmitting}>
+        Post demo requirement
+      </button>
+    </form>
+  );
+}
+
+function Records({
+  entries,
+  empty,
+  action,
+}: {
+  entries: Activity[];
+  empty: string;
+  action?: (entry: Activity) => ReactNode;
+}) {
+  return (
+    <div className="records">
+      {entries.length === 0 && <p className="record">{empty}</p>}
+      {entries.map((entry) => (
+        <article className="record" key={entry.id}>
+          <h3>{entry.title}</h3>
+          <p>{entry.detail}</p>
+          <p className="muted">
+            {new Date(entry.date).toLocaleDateString("en-IN")}
+            {entry.status && ` · ${entry.status}`}
+          </p>
+          {action?.(entry)}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+const accountLinks = [
+  "Profile",
+  "Wishlist",
+  "Cart",
+  "Orders",
+  "Bookings",
+  "Requirements",
+  "Messages",
+  "Notifications",
+  "Settings",
+];
+const info: Record<string, string> = {
+  about:
+    "LOCAIZ brings local shops, retail products, wholesale markets, group purchases and repair services together. This demonstration uses sample sellers and transactions.",
+  help: "Search for a product, browse local shops, open a market or post a buyer requirement. Use Settings to switch themes and the location control to change demo cities.",
+  privacy:
+    "This demonstration stores activity and preferences in this browser. Location permission is optional and coordinates are used to match the closest demo city. Map imagery is served by OpenStreetMap.",
+  terms:
+    "Prices, availability, bookings, quotations and orders are illustrative. Demo actions do not make purchases, contact providers or send payments.",
+};
+
+export default function Workspace({
+  business = false,
+}: {
+  business?: boolean;
+}) {
+  const { panel = "" } = useParams();
+  const [params] = useSearchParams();
+  const demo = useDemo();
+  const navigate = useNavigate();
+  const [feedback, setFeedback] = useState("");
+  const [estimate, setEstimate] = useState("");
+  const [first, setFirst] = useState(params.get("first") || products[0].id);
+  const [second, setSecond] = useState(products[1].id);
+  if (business) return <Business key={panel} panel={panel} />;
+  if (Object.hasOwn(info, panel))
+    return (
+      <Page title={panel[0].toUpperCase() + panel.slice(1)} intro={info[panel]}>
+        <Link to="/">Explore LOCAIZ</Link>
+      </Page>
+    );
+  const lines = Object.entries(demo.cart).flatMap(([key, quantity]) => {
+    const product = listings.find(
+      (item) => item.id === key.split(":")[0] && item.section === "shop",
+    );
+    return product && quantity > 0
+      ? [
+          {
+            key,
+            product,
+            quantity,
+            variant: key.endsWith(":gift") ? "Gift packaging" : "Standard",
+          },
+        ]
+      : [];
+  });
+  const total = lines.reduce(
+    (sum, { product, quantity }) => sum + (product.price ?? 0) * quantity,
+    0,
+  );
+  let content: ReactNode;
+  let title = panel[0]?.toUpperCase() + panel.slice(1);
+  switch (panel) {
+    case "profile":
+    case "login":
+    case "register":
+      content = (
+        <form
+          className="record form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const name = String(
+              new FormData(event.currentTarget).get("name"),
+            ).trim();
+            if (name) {
+              demo.setPreference({ profile: name });
+              setFeedback("Demo profile saved on this device.");
+            }
+          }}
+        >
+          <p>Local demo profile</p>
+          <label>
+            Display name
+            <input
+              required
+              name="name"
+              defaultValue={demo.profile}
+              maxLength={60}
+            />
+          </label>
+          <button className="button">Save demo profile</button>
+          <div className="actions">
+            <Link to="/account/addresses">Sample addresses</Link>
+            <Link to="/account/recent">Recently viewed</Link>
+          </div>
+        </form>
+      );
+      break;
+    case "settings":
+      content = (
+        <div className="record form">
+          <label>
+            Appearance
+            <select
+              value={demo.theme}
+              onChange={(event) =>
+                demo.setPreference({
+                  theme: event.target.value === "dark" ? "dark" : "light",
+                })
+              }
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <label>
+            Demo city
+            <select
+              value={demo.city}
+              onChange={(event) =>
+                demo.setPreference({ city: event.target.value })
+              }
+            >
+              <option>Chennai</option>
+              <option>Coimbatore</option>
+            </select>
+          </label>
+        </div>
+      );
+      break;
+    case "wishlist":
+    case "recent": {
+      title = panel === "recent" ? "Recently viewed" : "Wishlist";
+      const ids = panel === "recent" ? demo.recent : demo.liked;
+      content = ids.length ? (
+        <div className="product-grid">
+          {ids
+            .map((id) => listings.find((item) => item.id === id))
+            .map((item) => item && <ListingCard item={item} key={item.id} />)}
+        </div>
+      ) : (
+        <p className="record">
+          No products yet. <Link to="/shop">Browse the shop</Link>.
+        </p>
+      );
+      break;
+    }
+    case "cart":
+    case "checkout":
+      title = panel === "checkout" ? "Demo checkout" : "Your cart";
+      content = lines.length ? (
+        <div className="records">
+          {lines.map(({ key, product, quantity, variant }) => (
+            <div key={key} className="record cart-line">
+              <div>
+                <Link to={`/listing/shop/${product.id}`}>
+                  <strong>{product.name}</strong>
+                </Link>
+                <p>
+                  {variant} · {money(product.price ?? 0)} per unit
+                </p>
+              </div>
+              {panel === "cart" ? (
+                <label>
+                  Quantity
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    aria-label={`Quantity for ${product.name}`}
+                    value={quantity}
+                    onChange={(event) => {
+                      if (event.target.valueAsNumber > 0)
+                        demo.setCart(key, event.target.valueAsNumber);
+                    }}
+                  />
+                </label>
+              ) : (
+                <span>× {quantity}</span>
+              )}
+              {panel === "cart" && (
+                <button
+                  className="outline"
+                  onClick={() => demo.setCart(key, 0)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="record">
+            <h2>Total {money(total)}</h2>
+            {panel === "cart" ? (
+              <Link className="button" to="/account/checkout">
+                Continue to demo checkout
+              </Link>
+            ) : (
+              <form
+                className="form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const method = new FormData(event.currentTarget).get(
+                    "method",
+                  );
+                  demo.checkout(
+                    `${lines.map(({ product, variant, quantity }) => `${product.name} (${variant}) × ${quantity}`).join(", ")} · ${money(total)} · ${method}`,
+                  );
+                  navigate("/account/orders");
+                }}
+              >
+                <label>
+                  Fulfilment
+                  <select name="method">
+                    <option>Sample delivery</option>
+                    <option>Sample pickup</option>
+                  </select>
+                </label>
+                <button className="button">Place demo order</button>
+              </form>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="record">
+          Your cart is empty. <Link to="/shop">Continue shopping</Link>.
+        </p>
+      );
+      break;
+    case "orders":
+      content = (
+        <Records
+          entries={demo.orders}
+          empty="Your demo orders will appear here."
+        />
+      );
+      break;
+    case "bookings":
+      content = (
+        <Records
+          entries={demo.bookings}
+          empty="You have no demo bookings."
+          action={(entry) =>
+            entry.status === "Confirmed" && (
+              <button
+                className="outline"
+                onClick={() => {
+                  if (window.confirm("Cancel this sample booking?"))
+                    demo.update("bookings", entry.id, "Cancelled");
+                }}
+              >
+                Cancel booking
+              </button>
+            )
+          }
+        />
+      );
+      break;
+    case "stock":
+      title = "Stock checks";
+      content = (
+        <Records
+          entries={demo.stock.map((entry) => ({
+            ...entry,
+            status:
+              Date.now() - Date.parse(entry.date) >= 86400000
+                ? "Expired"
+                : entry.status,
+          }))}
+          empty="No stock requests yet."
+          action={(entry) =>
+            entry.status === "Pending" && (
+              <div className="actions">
+                {["Available · demo", "Unavailable · demo"].map((status) => (
+                  <button
+                    className="outline"
+                    key={status}
+                    onClick={() => demo.update("stock", entry.id, status)}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            )
+          }
+        />
+      );
+      break;
+    case "requirements":
+      content = (
+        <>
+          <Link className="button" to="/connect">
+            Post a requirement
+          </Link>
+          <Records
+            entries={demo.requirements}
+            empty="Your requirements will appear here."
+            action={(entry) => (
+              <Link className="outline" to={`/account/quotes?id=${entry.id}`}>
+                Compare sample quotations
+              </Link>
+            )}
+          />
+        </>
+      );
+      break;
+    case "quotes": {
+      title = "Quotation comparison";
+      const request = demo.requirements.find(
+        (item) => item.id === params.get("id"),
+      );
+      if (!request) {
+        content = <Link to="/account/requirements">Choose a requirement</Link>;
+        break;
+      }
+      const budget =
+        Number(request.detail.match(/₹([\d,]+)/)?.[1].replaceAll(",", "")) ||
+        1000;
+      content = (
+        <>
+          <p>
+            {request.title} · {request.status}
+          </p>
+          <div className="split">
+            {["Regional Supply Studio", "Market Collective"].map(
+              (seller, index) => (
+                <div key={seller} className="record">
+                  <h2>{seller}</h2>
+                  <p>
+                    {money(Math.round(budget * (index ? 0.9 : 0.8)))} ·{" "}
+                    {index ? "4" : "7"} day sample lead time
+                  </p>
+                  <div className="actions">
+                    <button
+                      className="button"
+                      disabled={request.status?.startsWith("Accepted")}
+                      onClick={() =>
+                        demo.update(
+                          "requirements",
+                          request.id,
+                          `Accepted · ${seller}`,
+                        )
+                      }
+                    >
+                      Accept quote
+                    </button>
+                    <button
+                      className="outline"
+                      disabled={request.status?.startsWith("Accepted")}
+                      onClick={() =>
+                        demo.update(
+                          "requirements",
+                          request.id,
+                          `Rejected · ${seller}`,
+                        )
+                      }
+                    >
+                      Reject quote
+                    </button>
+                  </div>
+                  <Link
+                    to={`/account/messages?to=${encodeURIComponent(seller)}`}
+                  >
+                    Send demo counteroffer
+                  </Link>
+                </div>
+              ),
+            )}
+          </div>
+        </>
+      );
+      break;
+    }
+    case "messages":
+    case "addresses":
+    case "groups": {
+      const collection = panel === "groups" ? "createdGroups" : panel;
+      if (panel === "groups") title = "Group purchases";
+      const recipient = params.get("to") || "Demo support";
+      content = (
+        <>
+          {panel === "groups" && (
+            <Records
+              entries={findListings("", "together")
+                .filter((item) => demo.groups[item.id] > 0)
+                .map((item) => ({
+                  id: item.id,
+                  title: item.name,
+                  detail: `${demo.groups[item.id]} units pledged`,
+                  date: new Date(demo.groupDeadline).toISOString(),
+                  status:
+                    demo.groupDeadline < Date.now() ? "Expired" : "Joined",
+                }))}
+              empty="You have no active memberships."
+              action={(entry) => (
+                <Link to={`/listing/together/${entry.id}`}>
+                  Manage membership
+                </Link>
+              )}
+            />
+          )}
+          <form
+            className="record form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const fields = new FormData(event.currentTarget);
+              const value = String(fields.get("value")).trim();
+              if (!value) return;
+              const detail =
+                panel === "groups"
+                  ? `Target: ${fields.get("target")} units · Ends ${fields.get("deadline")}`
+                  : value;
+              demo.add(
+                collection,
+                panel === "messages"
+                  ? recipient
+                  : panel === "groups"
+                    ? value
+                    : "Demo address",
+                detail,
+                panel === "groups" ? "Draft" : undefined,
+              );
+              event.currentTarget.reset();
+              setFeedback("Saved locally.");
+            }}
+          >
+            <label>
+              {panel === "messages"
+                ? `Sample message to ${recipient}`
+                : panel === "groups"
+                  ? "Group purchase name"
+                  : "Sample address"}
+              <input required name="value" maxLength={160} />
+            </label>
+            {panel === "groups" && (
+              <>
+                <label>
+                  Quantity target
+                  <input required name="target" type="number" min={2} />
+                </label>
+                <label>
+                  Deadline
+                  <input
+                    required
+                    name="deadline"
+                    type="date"
+                    min={new Date().toLocaleDateString("en-CA")}
+                  />
+                </label>
+              </>
+            )}
+            <button className="button">
+              {panel === "groups" ? "Create group draft" : "Save demo entry"}
+            </button>
+          </form>
+          <Records
+            entries={demo[collection]}
+            empty="No saved entries."
+            action={
+              panel === "groups"
+                ? (entry) =>
+                    entry.status !== "Cancelled" && (
+                      <button
+                        className="outline"
+                        onClick={() =>
+                          demo.update("createdGroups", entry.id, "Cancelled")
+                        }
+                      >
+                        Cancel group
+                      </button>
+                    )
+                : undefined
+            }
+          />
+        </>
+      );
+      break;
+    }
+    case "notifications":
+      content = (
+        <Records
+          entries={[
+            ...demo.orders,
+            ...demo.bookings,
+            ...demo.requirements,
+          ].sort((a, b) => b.date.localeCompare(a.date))}
+          empty="No marketplace activity yet."
+        />
+      );
+      break;
+    case "compare":
+      title = "Compare products";
+      content = (
+        <div className="split">
+          {[first, second].map((id, index) => {
+            const item =
+              listings.find(
+                (entry) => entry.id === id && entry.section === "shop",
+              ) ?? products[0];
+            return (
+              <div className="record" key={index}>
+                <label>
+                  {index === 0 ? "First product" : "Second product"}
+                  <select
+                    value={item.id}
+                    onChange={(event) =>
+                      (index === 0 ? setFirst : setSecond)(event.target.value)
+                    }
+                  >
+                    {findListings("", "shop").map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <dl>
+                  <dt>Seller</dt>
+                  <dd>{item.detail}</dd>
+                  <dt>Unit price</dt>
+                  <dd>{money(item.price ?? 0)}</dd>
+                  <dt>Delivery estimate</dt>
+                  <dd>3–5 days · {money(99)} sample freight</dd>
+                  <dt>Estimated total</dt>
+                  <dd>{money((item.price ?? 0) + 99)}</dd>
+                  <dt>Verification</dt>
+                  <dd>Demo seller</dd>
+                </dl>
+                <Link to={`/listing/shop/${item.id}`}>
+                  View product passport
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      );
+      break;
+    case "repair-assistant":
+      title = "Repair or replace";
+      content = (
+        <form
+          className="record form"
+          onSubmit={(event: FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            const repair = Number(data.get("repair"));
+            const replacement = Number(data.get("replacement"));
+            const ratio = repair / replacement;
+            const older =
+              Number(data.get("age")) >= 7 || data.get("condition") === "Poor";
+            const underWarranty = data.get("warranty") === "Active";
+            setEstimate(
+              `The quote is ${Math.round(ratio * 100)}% of replacement cost. ${underWarranty ? "Ask whether the warranty covers the work." : ratio < (older ? 0.4 : 0.6) ? "The estimate favours repair on cost." : "Consider replacement and ask the provider about remaining lifespan."}`,
+            );
+          }}
+        >
+          <p>
+            Compare costs and condition. A professional can assess the fault.
+          </p>
+          <label>
+            Repair quote (₹)
+            <input name="repair" type="number" min={0} required />
+          </label>
+          <label>
+            Replacement cost (₹)
+            <input name="replacement" type="number" min={1} required />
+          </label>
+          <label>
+            Appliance age in years
+            <input name="age" type="number" min={0} required />
+          </label>
+          <label>
+            Condition
+            <select name="condition">
+              <option>Good</option>
+              <option>Fair</option>
+              <option>Poor</option>
+            </select>
+          </label>
+          <label>
+            Warranty
+            <select name="warranty">
+              <option>Unknown</option>
+              <option>Active</option>
+              <option>Expired</option>
+            </select>
+          </label>
+          <button className="button">Compare costs</button>
+          <p role="status">{estimate}</p>
+        </form>
+      );
+      break;
+    default:
+      return <Missing />;
+  }
+  return (
+    <Page title={title} label="YOUR LOCAIZ">
+      <nav className="panel-nav" aria-label="Account sections">
+        {accountLinks.map((link) => (
+          <Link key={link} to={`/account/${link.toLowerCase()}`}>
+            {link}
+          </Link>
+        ))}
+      </nav>
+      {content}
+      <p role="status">{feedback}</p>
+    </Page>
+  );
+}
+
+const businessPanels = [
+  "Dashboard",
+  "Onboarding",
+  "Products",
+  "Inventory",
+  "Quotations",
+  "Orders",
+  "Services",
+  "Bookings",
+  "Analytics",
+  "Settings",
+  "Admin",
+];
+
+export function Business({ panel }: { panel: string }) {
+  const demo = useDemo();
+  const [feedback, setFeedback] = useState("");
+  if (!businessPanels.some((value) => value.toLowerCase() === panel))
+    return <Missing />;
+  const name = businessPanels.find((value) => value.toLowerCase() === panel)!;
+  return (
+    <Page
+      title={`Business ${name.toLowerCase()}`}
+      label="LOCAIZ BUSINESS"
+      intro="Local demo workspace · Verification unsubmitted"
+    >
+      <nav className="panel-nav" aria-label="Business sections">
+        {businessPanels.map((link) => (
+          <Link key={link} to={`/business/${link.toLowerCase()}`}>
+            {link}
+          </Link>
+        ))}
+      </nav>
+      {(panel === "onboarding" || panel === "settings") && (
+        <form
+          className="record form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            demo.setPreference({
+              business: `${String(data.get("name")).trim()} · ${data.get("role")}`,
+            });
+            setFeedback("Sample business profile saved.");
+          }}
+        >
+          <label>
+            Business name
+            <input
+              required
+              name="name"
+              maxLength={90}
+              defaultValue={demo.business.split(" · ")[0]}
+            />
+          </label>
+          <label>
+            Business type
+            <select name="role" defaultValue={demo.business.split(" · ")[1]}>
+              <option>Retailer</option>
+              <option>Wholesaler</option>
+              <option>Manufacturer</option>
+              <option>Service professional</option>
+            </select>
+          </label>
+          <button className="button">Save business profile</button>
+        </form>
+      )}
+      {["products", "inventory", "services"].includes(panel) && (
+        <>
+          <form
+            className="record form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const data = new FormData(event.currentTarget);
+              demo.add(
+                "inventory",
+                String(data.get("name")).trim(),
+                `${panel === "services" ? "Service" : "Product"} · ${money(Number(data.get("price")))} · ${data.get("quantity")} units/slots`,
+                "Draft",
+              );
+              event.currentTarget.reset();
+            }}
+          >
+            <label>
+              Listing name
+              <input name="name" required maxLength={120} />
+            </label>
+            <label>
+              Price (₹)
+              <input name="price" type="number" min={1} required />
+            </label>
+            <label>
+              Stock or available slots
+              <input name="quantity" type="number" min={0} required />
+            </label>
+            <button className="button">Add demo listing</button>
+          </form>
+          <Records
+            entries={demo.inventory.filter(
+              (item) =>
+                panel === "inventory" ||
+                item.detail.startsWith(
+                  panel === "services" ? "Service" : "Product",
+                ),
+            )}
+            empty="No listings yet."
+            action={(entry) => (
+              <button
+                className="outline"
+                onClick={() =>
+                  demo.update(
+                    "inventory",
+                    entry.id,
+                    entry.status === "Published" ? "Draft" : "Published",
+                  )
+                }
+              >
+                {entry.status === "Published" ? "Unpublish" : "Publish locally"}
+              </button>
+            )}
+          />
+        </>
+      )}
+      {panel === "orders" && (
+        <Records
+          entries={demo.orders}
+          empty="No sample orders on this device."
+          action={(entry) =>
+            entry.status === "Confirmed" && (
+              <button
+                className="outline"
+                onClick={() => demo.update("orders", entry.id, "Fulfilled")}
+              >
+                Mark fulfilled
+              </button>
+            )
+          }
+        />
+      )}
+      {panel === "bookings" && (
+        <Records
+          entries={demo.bookings}
+          empty="No sample bookings on this device."
+          action={(entry) =>
+            entry.status === "Confirmed" && (
+              <button
+                className="outline"
+                onClick={() => demo.update("bookings", entry.id, "Completed")}
+              >
+                Mark completed
+              </button>
+            )
+          }
+        />
+      )}
+      {panel === "quotations" && (
+        <Records
+          entries={demo.requirements}
+          empty="No buyer requirements on this device."
+          action={(entry) => (
+            <Link to={`/account/quotes?id=${entry.id}`}>
+              View sample quotations
+            </Link>
+          )}
+        />
+      )}
+      {["dashboard", "analytics", "admin"].includes(panel) && (
+        <>
+          <h2>{demo.business || "Your sample business"}</h2>
+          <div className="category-grid">
+            {[
+              [demo.inventory.length, "Listings", "inventory"],
+              [demo.orders.length, "Orders", "orders"],
+              [demo.bookings.length, "Bookings", "bookings"],
+              [demo.requirements.length, "Requirements", "quotations"],
+            ].map(([value, label, route]) => (
+              <Link key={route} to={`/business/${route}`}>
+                <strong>{value}</strong>
+                {label}
+              </Link>
+            ))}
+          </div>
+          {!demo.business && (
+            <Link className="button" to="/business/onboarding">
+              Set up a business
+            </Link>
+          )}
+        </>
+      )}
+      <p role="status">{feedback}</p>
+    </Page>
+  );
+}
