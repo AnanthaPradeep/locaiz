@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { Link, useMatch, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   demoCatalog,
   findListings,
@@ -20,6 +21,7 @@ import { useDemo } from "./store";
 import { Business, RequirementForm } from "./workspace";
 import { Missing, Page } from "./page";
 import { stockEnabled, stockPath } from "./stock/config";
+import { offers, products as sourcingProducts, suppliers, placeName, formatMinor } from "./sourcing/catalog";
 
 const MarketMap = lazy(() => import("./market-map"));
 
@@ -52,6 +54,7 @@ export default function Marketplace() {
       const next = new URLSearchParams(previous);
       if (value) next.set(name, value);
       else next.delete(name);
+      if (name !== "page" && name !== "view") next.delete("page");
       return next;
     });
   if (id) {
@@ -105,6 +108,15 @@ export default function Marketplace() {
       return sort === "price" ? a.price - b.price : b.price - a.price;
     });
   const canMap = section === "nearby" || section === "global";
+  const pageSize = 8;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const requestedPage = Number(params.get("page"));
+  const page = Number.isInteger(requestedPage)
+    ? Math.min(pageCount, Math.max(1, requestedPage))
+    : 1;
+  const visibleItems = productListing
+    ? filtered.slice((page - 1) * pageSize, page * pageSize)
+    : filtered;
   return (
     <Page
       title={
@@ -236,6 +248,7 @@ export default function Marketplace() {
                   const next = new URLSearchParams(params);
                   next.delete("category");
                   next.delete("maxPrice");
+                  next.delete("page");
                   setParams(next);
                 }}
               >
@@ -288,10 +301,21 @@ export default function Marketplace() {
         <p className="record">No listings match these filters.</p>
       )}
       <div className={listView ? "product-grid product-list" : "product-grid"}>
-        {filtered.map((item) => (
+        {visibleItems.map((item) => (
           <ListingCard item={item} key={item.id} />
         ))}
       </div>
+      {productListing && pageCount > 1 && (
+        <nav aria-label="Product pages" className="actions commerce-pagination">
+          <button className="outline" disabled={page === 1} onClick={() => setOption("page", page === 2 ? "" : String(page - 1))}>
+            Previous
+          </button>
+          <span aria-live="polite">Page {page} of {pageCount}</span>
+          <button className="outline" disabled={page === pageCount} onClick={() => setOption("page", String(page + 1))}>
+            Next
+          </button>
+        </nav>
+      )}
     </Page>
   );
 }
@@ -303,6 +327,11 @@ function ListingDetail({ item }: { item: Listing }) {
   const [photo, setPhoto] = useState(item.image);
   const [message, setMessage] = useState("");
   const price = item.price ?? 0;
+  const cartKey = option === "Standard" ? item.id : `${item.id}:gift`;
+  const remainingCartQuantity = 99 - (demo.cart[cartKey] ?? 0);
+  const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= remainingCartQuantity;
+  const sourcingProduct = sourcingProducts.find((product) => product.legacyId === item.id);
+  const supplierOffers = offers.filter((offer) => offer.productId === sourcingProduct?.id);
   const isGroup = item.section === "together";
   const membership = demo.groups[item.id] ?? 0;
   const groupUnits = groupSeed + membership;
@@ -341,20 +370,34 @@ function ListingDetail({ item }: { item: Listing }) {
       <div className="detail-grid">
         {photo ? (
           <div>
-            <img
+            <Dialog.Root>
+              <Dialog.Trigger className="commerce-gallery-trigger" aria-label="Enlarge product image">
+              <img
               className="detail-image"
               src={asset(`images/${photo}.webp`)}
               alt={item.name}
-            />
+              />
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay className="overlay" />
+                <Dialog.Content className="dialog commerce-gallery">
+                  <Dialog.Title>{item.name}</Dialog.Title>
+                  <Dialog.Description>Enlarged product image</Dialog.Description>
+                  <img src={asset(`images/${photo}.webp`)} alt={item.name} />
+                  <Dialog.Close className="outline">Close image</Dialog.Close>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
             {item.id === "studio-headphones" && (
               <div className="actions">
                 <button
                   className="outline"
                   onClick={() => setPhoto("headphones")}
+                  aria-pressed={photo === "headphones"}
                 >
                   Studio photo
                 </button>
-                <button className="outline" onClick={() => setPhoto("hero")}>
+                <button className="outline" onClick={() => setPhoto("hero")} aria-pressed={photo === "hero"}>
                   Editorial photo
                 </button>
               </div>
@@ -389,22 +432,25 @@ function ListingDetail({ item }: { item: Listing }) {
                 Quantity
                 <input
                   min={1}
-                  max={99}
+                  max={Math.max(1, remainingCartQuantity)}
                   type="number"
-                  value={quantity}
+                  value={Number.isNaN(quantity) ? "" : quantity}
                   onChange={(event) => setQuantity(event.target.valueAsNumber)}
                 />
               </label>
+              <p aria-live="polite">
+                {validQuantity
+                  ? `Items subtotal: ${money(price * quantity)}`
+                  : remainingCartQuantity === 0
+                    ? "Your cart has reached the limit for this variant."
+                    : `Enter a quantity from 1 to ${remainingCartQuantity}.`}
+              </p>
               <div className="actions">
                 <button
                   className="button"
-                  disabled={
-                    !Number.isInteger(quantity) || quantity < 1 || quantity > 99
-                  }
+                  disabled={!validQuantity}
                   onClick={() => {
-                    const key =
-                      option === "Standard" ? item.id : `${item.id}:gift`;
-                    demo.setCart(key, (demo.cart[key] ?? 0) + quantity);
+                    demo.setCart(cartKey, (demo.cart[cartKey] ?? 0) + quantity);
                     setMessage("Added to your sample cart.");
                   }}
                 >
@@ -426,11 +472,6 @@ function ListingDetail({ item }: { item: Listing }) {
                 </Link>
               )}
               <Link to="/account/cart">View cart</Link>
-              {item.id === "studio-headphones" && (
-                <Link to="/sourcing/product/headphones">
-                  Compare sourcing offers
-                </Link>
-              )}
               <p>
                 Demo delivery in 3–5 days. Sample pickup may be available
                 locally.
@@ -628,6 +669,38 @@ function ListingDetail({ item }: { item: Listing }) {
           <p role="status">{message}</p>
         </div>
       </div>
+      {sourcingProduct && supplierOffers.length > 0 && (
+        <section className="commerce-buying">
+          <h2>Where &amp; how to buy</h2>
+          <p className="muted">Sample suppliers and prices. Pickup and stock availability require confirmation.</p>
+          <div className="product-grid">
+            {supplierOffers.map((offer) => {
+              const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
+              if (!supplier) return null;
+              return (
+                <article key={offer.id} className="record">
+                  <h3>{offer.method}</h3>
+                  <Link to={`/sourcing/supplier/${supplier.id}`}>{supplier.name}</Link>
+                  <p>{placeName(supplier.base)} · Minimum order {offer.moq}</p>
+                  {offer.pickup && <p>Pickup location: {placeName(offer.pickup)}</p>}
+                  {offer.tiers.length > 0 && (
+                    <ul>
+                      {offer.tiers.map((tier) => (
+                        <li key={tier.quantity}>
+                          {tier.quantity}+ units · {formatMinor(tier.minor, offer.currency)} per unit
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+          <Link className="outline" to={`/sourcing/product/${sourcingProduct.id}`}>
+            Compare sourcing offers
+          </Link>
+        </section>
+      )}
       {item.section === "shop" && (
         <>
           <section className="record">

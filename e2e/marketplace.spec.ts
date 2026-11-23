@@ -155,3 +155,16 @@ test("restores Shop price filters and list view from the URL", async ({ page }) 
   await page.goBack();
   await expect(page.getByText("No listings match these filters.")).toBeVisible();
 });
+test("shows product image zoom, quantity validation and linked offers", async ({ page }) => {
+  await page.goto("./#/listing/shop/studio-headphones");
+  await page.getByRole("button", { name: "Enlarge product image" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByLabel("Quantity", { exact: true }).fill("100");
+  await expect(page.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+  await page.getByLabel("Quantity", { exact: true }).fill("2");
+  await expect(page.getByText(/Items subtotal/)).toBeVisible();
+  await page.getByRole("link", { name: "Compare sourcing offers" }).click();
+  await expect(page).toHaveURL(/sourcing\/product\/headphones/);
+});
