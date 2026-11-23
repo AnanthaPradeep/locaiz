@@ -353,8 +353,6 @@ const accountLinks = [
   "Settings",
 ];
 const info: Record<string, string> = {
-  about:
-    "LOCAIZ brings local shops, retail products, wholesale markets, group purchases and repair services together. This demonstration uses sample sellers and transactions.",
   help: "Search for a product, browse local shops, open a market or post a buyer requirement. Use Settings to switch themes and the location control to change demo cities.",
   privacy:
     "This demonstration stores activity and preferences in this browser. Location permission is optional and coordinates are used to match the closest demo city. Map imagery is served by OpenStreetMap.",
@@ -380,6 +378,7 @@ export default function Workspace({
     return (
       <Page title={panel[0].toUpperCase() + panel.slice(1)} intro={info[panel]}>
         <Link to="/">Explore LOCAIZ</Link>
+        {panel === "help" && <Link className="outline" to="/contact">Contact Us</Link>}
       </Page>
     );
   const lines = Object.entries(demo.cart).flatMap(([key, quantity]) => {

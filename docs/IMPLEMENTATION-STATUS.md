@@ -39,3 +39,5 @@ The Phase 2 source includes an opt-in Supabase stock pilot. When the frontend ha
 - The production build reports chunk-size warnings. MapLibre loads on demand.
 
 GitHub Actions and the public Pages URL remain unverified.
+
+About and Contact have public hash routes. Contact offers category routing and a validation-only demo preview. Live support submission and verified organisation details are pending.

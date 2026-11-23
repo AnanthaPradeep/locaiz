@@ -43,3 +43,5 @@ npm run build
 npx playwright install chromium
 npm run test:e2e
 ```
+
+Public information routes are /#/about and /#/contact. See [About](docs/ABOUT-PAGE.md) and [Contact support](docs/CONTACT-SUPPORT.md).

@@ -1,0 +1,5 @@
+﻿# Legal readiness
+
+Before commercial launch, have qualified counsel review the applicable Consumer Protection (E-Commerce) Rules, verified entity and contact disclosures, complaint acknowledgement and redress workflow, marketplace and importer disclosures, and cross-border obligations. The 2026 amendment notification specifies commencement on 1 January 2027. [Department of Consumer Affairs rules index](https://consumeraffairs.gov.in/index.php/pages/consumer-protection-acts) · [2026 Gazette notification](https://consumeraffairs.gov.in/public/upload/files/E%20Commerce%20Amendment%20Rules%202026_1789128659.pdf)
+
+Review the Digital Personal Data Protection Act and phased commencement of the 2025 rules before collecting real contact data. Establish notice, access controls, retention, deletion and incident handling. Legal entity, public address, official contact and grievance details remain unconfigured. [MeitY rules notification](https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf) · [Act commencement notification](https://www.meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf)

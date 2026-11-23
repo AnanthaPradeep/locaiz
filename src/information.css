@@ -1,0 +1,73 @@
+﻿.info-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 56px);
+  padding: clamp(20px, 5vw, 64px);
+  align-items: center;
+  background: #0a0a0a;
+  color: #fff6ec;
+  --ink: #fff6ec;
+  --paper: #0a0a0a;
+}
+.info-hero h1 {
+  font-size: clamp(2.4rem, 6vw, 5.6rem);
+}
+.info-hero img {
+  width: 100%;
+  aspect-ratio: 5 / 4;
+  object-fit: cover;
+}
+.info-section {
+  margin-block: clamp(24px, 5vw, 56px);
+}
+.info-section > p {
+  max-width: 74ch;
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr));
+  gap: 12px;
+}
+.info-link {
+  display: grid;
+  text-align: left;
+  gap: 4px;
+  color: var(--ink);
+}
+.info-link[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.info-section details {
+  border-bottom: 1px solid var(--line);
+  padding-block: 12px;
+}
+.info-section summary {
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .info-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+.info-hero .button {
+  color: #0a0a0a;
+}
+.info-hero .eyebrow {
+  color: #d9cbbc;
+}
+.info-hero .actions,
+.info-section > .actions,
+.info-section > p + .info-grid {
+  margin-block-start: 16px;
+}
+.info-section > p + h2,
+.info-section > .actions + h3 {
+  margin-block-start: 24px;
+}
+.info-section textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  resize: vertical;
+}
