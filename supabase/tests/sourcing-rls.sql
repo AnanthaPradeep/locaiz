@@ -25,6 +25,10 @@ begin
     update public.sourcing_offers set published=true where product_id='qa-product';
     raise exception 'Unreviewed publication allowed';
   exception when insufficient_privilege then null; end;
+  begin
+    update public.sourcing_businesses set verification='factory_reviewed' where name='QA maker A';
+    raise exception 'Seller could change supplier verification';
+  exception when insufficient_privilege then null; end;
 end;
 $$;
 reset role;
@@ -44,6 +48,21 @@ do $$
 begin
   if exists(select 1 from public.sourcing_offers where product_id='qa-product') then
     raise exception 'Anonymous user can read an unpublished offer';
+  end if;
+end;
+$$;
+reset role;
+update public.sourcing_businesses set published=true, verification='documents_reviewed' where name='QA maker A';
+update public.sourcing_offers set published=true where product_id='qa-product';
+set local role anon;
+do $$
+begin
+  if not exists(
+    select 1 from public.sourcing_offers o
+    join public.sourcing_businesses b on b.id=o.business_id
+    where o.product_id='qa-product' and b.verification='documents_reviewed'
+  ) then
+    raise exception 'Anonymous catalogue cannot read a published reviewed offer';
   end if;
 end;
 $$;

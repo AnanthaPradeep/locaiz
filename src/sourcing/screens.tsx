@@ -10,6 +10,7 @@ import { asset } from "../catalog";
 import { MapPin, Package, Search, SlidersHorizontal } from "lucide-react";
 import { stockEnabled, stockPath } from "../stock/config";
 import { useDemo } from "../store";
+import { PublishedSourcing } from "./published";
 import {
   ancestry,
   categories,
@@ -40,6 +41,7 @@ const productImage = (id: string) => asset(`images/sourcing/${id}.webp`);
 
 export default function Sourcing() {
   const { kind, id } = useParams();
+  if (kind === "published") return <PublishedSourcing />;
   if (kind === "supplier" && id) {
     const supplier = suppliers.find((item) => item.id === id);
     if (!supplier) return <Missing />;
@@ -198,6 +200,7 @@ function Explore() {
       label="VILLAGE TO GLOBAL"
       intro="Find village crafts, workshop parts and factory-made goods. Compare sample offers and ask suppliers about pickup."
     >
+      {stockEnabled && <Link className="outline" to="/sourcing/published">Published supplier offers</Link>}
       <nav
         className="actions sourcing-shortcuts"
         aria-label="Sourcing shortcuts"

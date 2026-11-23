@@ -143,3 +143,64 @@ for (const width of [360, 390, 768, 1024, 1440, 1920]) {
       });
   });
 }
+test("restores Shop price filters and list view from the URL", async ({ page }) => {
+  await page.goto("./#/shop?maxPrice=1&sort=price-desc&view=list");
+  await expect(page.getByRole("button", { name: "List view" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.locator(".product-list .listing-card").first()).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+});
+test("shows product image zoom, quantity validation and linked offers", async ({ page }) => {
+  await page.goto("./#/listing/shop/studio-headphones");
+  await page.getByRole("button", { name: "Enlarge product image" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByLabel("Quantity", { exact: true }).fill("100");
+  await expect(page.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+  await page.getByLabel("Quantity", { exact: true }).fill("2");
+  await expect(page.getByText(/Items subtotal/)).toBeVisible();
+  await page.getByRole("link", { name: "Compare sourcing offers" }).click();
+  await expect(page).toHaveURL(/sourcing\/product\/headphones/);
+});
+
+test("combines product facets and opens keyboard-accessible quick view", async ({ page }) => {
+  await page.goto("./#/shop?brand=Clay+%26+Kiln&community=Deal+available&minPrice=bad&page=99");
+  await expect(page.getByText("1 result", { exact: true })).toBeVisible();
+  const trigger = page.getByRole("button", { name: "Quick view Handmade Stoneware Cups" });
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Variant").selectOption("gift");
+  await expect(dialog.getByText(/8 in demo stock/)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+  await page.getByRole("button", { name: "Remove Brand filter" }).click();
+  await expect(page.getByText("2 results", { exact: true })).toBeVisible();
+});
+
+test("limits variant quantities and links eligible Together deals", async ({ page }) => {
+  await page.goto("./#/listing/shop/stoneware-cups");
+  await expect(page.getByRole("link", { name: "Join Group" })).toHaveAttribute("href", "#/listing/together/cup-club");
+  await page.getByLabel("Variant").selectOption("Gift packaging");
+  await expect(page.getByText(/stoneware-cups-gift/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Join Group" })).toHaveCount(0);
+  await page.getByLabel("Quantity", { exact: true }).fill("9");
+  await expect(page.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+});
+
+test("supplier facets require a single matching offer and reset URL pagination", async ({ page }) => {
+  await page.goto("./#/shop?supplierCity=Shenzhen&pickup=Chennai&page=9");
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+  await page.getByRole("button", { name: "Remove Pickup location filter" }).click();
+  await expect(page.getByText("1 result", { exact: true })).toBeVisible();
+  await expect(page).not.toHaveURL(/page=/);
+  await page.goBack();
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+});

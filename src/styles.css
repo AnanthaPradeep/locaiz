@@ -474,6 +474,20 @@ h3 {
 .card-media:hover img {
   transform: scale(1.035);
 }
+.product-grid.product-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+.product-list .listing-card {
+  display: grid;
+  grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  align-items: center;
+}
+.product-list .card-media {
+  align-self: stretch;
+}
+.product-list .card-copy {
+  padding-right: 48px;
+}
 .save {
   background: var(--paper);
   border-radius: 50%;
@@ -657,6 +671,38 @@ label > select {
 .detail-grid {
   margin: 12px 0 24px;
   align-items: start;
+}
+.commerce-pagination {
+  align-items: center;
+  margin-block-start: 20px;
+}
+.commerce-gallery-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  cursor: zoom-in;
+}
+.commerce-gallery img {
+  width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+.commerce-thumbnail {
+  display: block;
+  width: 64px;
+  height: 44px;
+  object-fit: cover;
+}
+.commerce-filter-dialog {
+  max-height: 85vh;
+  overflow: auto;
+}
+.commerce-buying {
+  margin-block: 32px;
+}
+.commerce-buying > .outline {
+  margin-block-start: 16px;
 }
 .detail-image {
   display: block;

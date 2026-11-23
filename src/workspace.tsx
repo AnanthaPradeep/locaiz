@@ -386,19 +386,22 @@ export default function Workspace({
     const product = listings.find(
       (item) => item.id === key.split(":")[0] && item.section === "shop",
     );
-    return product && quantity > 0
+    const variant = product && retailVariants(product).find((entry) => entry.cartKey === key);
+    return product && variant && quantity > 0
       ? [
           {
             key,
             product,
             quantity,
-            variant: key.endsWith(":gift") ? "Gift packaging" : "Standard",
+            variant: variant.label,
+            price: variant.price,
+            stock: variant.stock,
           },
         ]
       : [];
   });
   const total = lines.reduce(
-    (sum, { product, quantity }) => sum + (product.price ?? 0) * quantity,
+    (sum, { price, quantity }) => sum + price * quantity,
     0,
   );
   let content: ReactNode;
@@ -493,14 +496,14 @@ export default function Workspace({
       title = panel === "checkout" ? "Demo checkout" : "Your cart";
       content = lines.length ? (
         <div className="records">
-          {lines.map(({ key, product, quantity, variant }) => (
+          {lines.map(({ key, product, quantity, variant, price, stock }) => (
             <div key={key} className="record cart-line">
               <div>
                 <Link to={`/listing/shop/${product.id}`}>
                   <strong>{product.name}</strong>
                 </Link>
                 <p>
-                  {variant} · {money(product.price ?? 0)} per unit
+                  {variant} · {money(price)} per unit
                 </p>
               </div>
               {panel === "cart" ? (
@@ -509,12 +512,13 @@ export default function Workspace({
                   <input
                     type="number"
                     min={1}
-                    max={99}
+                    max={stock}
                     aria-label={`Quantity for ${product.name}`}
                     value={quantity}
                     onChange={(event) => {
-                      if (event.target.valueAsNumber > 0)
-                        demo.setCart(key, event.target.valueAsNumber);
+                      const value = event.target.valueAsNumber;
+                      if (Number.isInteger(value) && value > 0 && value <= stock)
+                        demo.setCart(key, value);
                     }}
                   />
                 </label>
@@ -1220,3 +1224,4 @@ export function Business({ panel }: { panel: string }) {
     </Page>
   );
 }
+import { retailVariants } from "./product-commerce";
