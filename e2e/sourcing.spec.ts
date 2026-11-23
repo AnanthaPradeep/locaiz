@@ -1,5 +1,27 @@
 import { expect, test } from "@playwright/test";
 
+test("shows a product photo and saves a pickup enquiry from its card", async ({
+  page,
+}) => {
+  await page.goto("/#/sourcing?place=pattamadai&pickup=1");
+  const card = page
+    .locator(".sourcing-preview")
+    .filter({ hasText: "Reed Loom Studio" });
+  await expect(card.getByText("Pickup in Pattamadai")).toBeVisible();
+  const photo = card.getByRole("img");
+  await photo.scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+  await card.getByRole("link", { name: "Ask about pickup" }).click();
+  await expect(page.getByText("Sample pickup locality")).toBeVisible();
+  await page.getByRole("button", { name: "Save pickup enquiry" }).click();
+  await expect(page.getByText(/Demo pickup enquiry saved/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Compare sample quotations" }),
+  ).toHaveCount(0);
+});
+
 test("browses a village and saves a maker-direct sourcing enquiry", async ({
   page,
 }) => {

@@ -1,5 +1,7 @@
 # Village-to-Global Marketplace
 
+The product photos are AI-generated illustrations. Pickup cards show sample collection localities and open a short browser-local enquiry for quantity, preferred date and notes. Confirm stock, the collection address and timing directly before travel.
+
 Open **Village-to-Global directory** from Global Atlas, Shop, Nearby, or search. The directory supports parent–child browsing, debounced search, purchase methods, category, supplier type, destination, pickup, MOQ and custom-order filters. Share the URL to retain filters. Map markers represent localities. The list remains usable when map tiles are unavailable.
 
 Illustrative profiles cover artisans, workshops, wholesalers and manufacturers in India, China, Thailand, Türkiye and Vietnam. The examples range from handwoven mats to circuit boards and CNC machinery. Counts, origin, prices, lead times and delivery coverage refer to the sample directory. No sample profile has been verified.

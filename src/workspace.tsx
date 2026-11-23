@@ -16,6 +16,7 @@ import {
   formatMinor,
   matchingOffers,
   offers,
+  placeName,
   places,
   products as sourcingProducts,
   suppliers,
@@ -30,6 +31,7 @@ const requirements = z.object({
   needed: z.string().min(1),
   city: z.string().trim().min(2),
 });
+const pickupEnquiryStatus = "Demo pickup enquiry saved";
 
 export function RequirementForm() {
   const [params] = useSearchParams();
@@ -70,6 +72,89 @@ export function RequirementForm() {
   const market = listings.find(
     (item) => item.section === "global" && item.id === params.get("market"),
   );
+  if (
+    params.get("pickup") === "1" &&
+    sourcingOffer?.pickup &&
+    sourcingProduct &&
+    intendedSupplier
+  ) {
+    const pickup = placeName(sourcingOffer.pickup);
+    const minimum = sourcingOffer.moq;
+    return (
+      <form
+        className="record form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const form = new FormData(event.currentTarget);
+          const quantity = Number(form.get("quantity"));
+          if (
+            !Number.isSafeInteger(quantity) ||
+            quantity < minimum ||
+            quantity > 1000000
+          ) {
+            setError("Enter a valid pickup quantity.");
+            return;
+          }
+          const notes = String(form.get("notes") || "").trim();
+          const date = String(form.get("pickupDate") || "");
+          demo.add(
+            "requirements",
+            sourcingProduct.name,
+            `Pickup enquiry · ${intendedSupplier.name} · ${pickup} · ${quantity} units${date ? ` · Preferred date ${date}` : ""}${notes ? ` · ${notes}` : ""}`,
+            pickupEnquiryStatus,
+          );
+          navigate("/account/requirements");
+        }}
+      >
+        <h2>Ask about pickup</h2>
+        <p>
+          {sourcingProduct.name} · {intendedSupplier.name}
+        </p>
+        <p>
+          <strong>Sample pickup locality</strong> {pickup}
+        </p>
+        <p>
+          Confirm the collection address, stock and time with the supplier
+          before travelling. This demo saves the enquiry on this device.
+        </p>
+        <label>
+          Pickup quantity
+          <input
+            name="quantity"
+            type="number"
+            min={minimum}
+            max={1000000}
+            required
+            defaultValue={Math.min(
+              1000000,
+              Math.max(
+                minimum,
+                Math.trunc(Number(params.get("quantity"))) || minimum,
+              ),
+            )}
+          />
+        </label>
+        <label>
+          Preferred pickup date{" "}
+          <input
+            name="pickupDate"
+            type="date"
+            min={new Date().toLocaleDateString("en-CA")}
+          />
+        </label>
+        <label>
+          Notes{" "}
+          <input
+            name="notes"
+            maxLength={500}
+            placeholder="Ask about opening hours or pickup instructions"
+          />
+        </label>
+        {error && <p role="alert">{error}</p>}
+        <button className="button">Save pickup enquiry</button>
+      </form>
+    );
+  }
   return (
     <form
       className="record form"
@@ -552,11 +637,13 @@ export default function Workspace({
           <Records
             entries={demo.requirements}
             empty="Your requirements will appear here."
-            action={(entry) => (
-              <Link className="outline" to={`/account/quotes?id=${entry.id}`}>
-                Compare sample quotations
-              </Link>
-            )}
+            action={(entry) =>
+              entry.status === pickupEnquiryStatus ? null : (
+                <Link className="outline" to={`/account/quotes?id=${entry.id}`}>
+                  Compare sample quotations
+                </Link>
+              )
+            }
           />
         </>
       );
@@ -568,6 +655,16 @@ export default function Workspace({
       );
       if (!request) {
         content = <Link to="/account/requirements">Choose a requirement</Link>;
+        break;
+      }
+      if (request.status === pickupEnquiryStatus) {
+        title = "Pickup enquiry";
+        content = (
+          <>
+            <p>{request.detail}</p>
+            <Link to="/account/requirements">Back to requirements</Link>
+          </>
+        );
         break;
       }
       if (request.sourcing) {

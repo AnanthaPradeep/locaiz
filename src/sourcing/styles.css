@@ -1,24 +1,299 @@
-.sourcing-filters,
-.sourcing-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr));
-  gap: 16px;
-  margin-block: 20px;
+﻿.sourcing-shortcuts {
+  gap: 8px;
+  margin-bottom: 20px;
 }
-.sourcing-filters .sourcing-check {
+.sourcing-shortcuts .outline {
+  border-color: var(--line);
+}
+.sourcing-controls {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: clamp(14px, 2vw, 24px);
+}
+.sourcing-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.45fr) repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.sourcing-search-box {
+  display: grid;
+  position: relative;
+  min-width: 0;
+}
+.sourcing-search-box svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+}
+.sourcing-search-box input {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 10px 8px 35px;
+  background: var(--paper);
+}
+.sourcing-options {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 14px;
+}
+.sourcing-check {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  min-height: 40px;
+  font-size: 14px;
 }
 .sourcing-check input {
+  width: 16px;
+  height: 16px;
   accent-color: var(--ink);
+}
+.sourcing-more {
+  min-width: 0;
+}
+.sourcing-more[open] {
+  flex-basis: 100%;
+}
+.sourcing-more summary {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+.sourcing-more summary::after {
+  content: "+";
+  padding-inline: 3px;
+}
+.sourcing-more[open] summary::after {
+  content: "−";
+}
+.sourcing-extra {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  padding-block: 8px;
+}
+.sourcing-reset {
+  align-self: start;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 14px;
+  text-decoration: underline;
+}
+.sourcing-geography {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-block: 14px 24px;
+}
+.sourcing-crumbs,
+.sourcing-children {
+  gap: 6px;
+}
+.sourcing-crumbs button {
+  background: transparent;
+  padding: 4px 0;
+  border: 0;
+  font-size: 13px;
+  min-height: 36px;
+}
+.sourcing-crumbs button + button::before {
+  content: "/";
+  margin-right: 6px;
+  color: var(--muted);
+}
+.sourcing-children .outline {
+  min-height: 36px;
+  padding: 5px 10px;
+  border-color: var(--line);
+  font-size: 13px;
+}
+.sourcing-results {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.sourcing-results h2 {
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  margin: 0;
+}
+.sourcing-results p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 3px;
+}
+.sourcing-results label {
+  width: 108px;
+}
+.sourcing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+.sourcing-grid.sourcing-list {
+  grid-template-columns: 1fr;
+}
+.sourcing-list .sourcing-preview {
+  display: grid;
+  grid-template-columns: minmax(160px, 26%) minmax(0, 1fr);
+}
+.sourcing-list .sourcing-image {
+  height: 100%;
+  aspect-ratio: auto;
+}
+.sourcing-preview {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow-wrap: anywhere;
+}
+.sourcing-image {
+  position: relative;
+  aspect-ratio: 9 / 8;
+  background: var(--panel);
+  border-radius: 7px 7px 0 0;
+  overflow: hidden;
+}
+.sourcing-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sourcing-image > span {
+  position: absolute;
+  inset: auto auto 10px 10px;
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 8px;
+}
+.sourcing-preview-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(13px, 1.4vw, 20px);
+}
+.sourcing-identity {
+  margin-bottom: auto;
+}
+.sourcing-identity h3 {
+  font-size: 1.2rem;
+  margin: 0 0 5px;
+}
+.sourcing-identity p {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+}
+.sourcing-identity p + p {
+  margin-top: 4px;
+}
+.sourcing-identity p a,
+.sourcing-identity h3 a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sourcing-price {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.sourcing-price span,
+.sourcing-pickup span {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.sourcing-price strong,
+.sourcing-pickup strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.sourcing-pickup {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 5px;
+  background: var(--panel);
+}
+.sourcing-pickup svg {
+  flex: none;
+  margin-top: 2px;
+}
+.sourcing-card-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 7px;
+  margin-top: auto;
+}
+.sourcing-card-actions a {
+  padding-inline: 6px;
+  text-align: center;
+  font-size: 13px;
+}
+.sourcing-passport {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) 1fr;
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+.sourcing-passport img {
+  display: block;
+  height: auto;
+  width: 100%;
+  border-radius: 8px;
+}
+.sourcing-passport dl {
+  margin: 0;
 }
 .sourcing-offer {
   min-width: 0;
   overflow-wrap: anywhere;
+  border-radius: 8px;
 }
 .sourcing-offer h3 {
   margin-block: 8px;
+}
+.sourcing-offer dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 6px 18px;
 }
 .sourcing-offer dt {
   font-weight: 700;
@@ -29,6 +304,63 @@
 .sourcing-offer label {
   max-width: 200px;
 }
+.sourcing-offer .sourcing-pickup {
+  margin-block: 14px;
+}
 .sourcing-pages {
   margin-block: 22px;
+}
+@media (max-width: 1140px) {
+  .sourcing-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sourcing-filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .sourcing-search {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 850px) {
+  .sourcing-grid,
+  .sourcing-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sourcing-passport {
+    grid-template-columns: minmax(0, 38%) 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .sourcing-shortcuts .outline {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  .sourcing-grid,
+  .sourcing-grid.sourcing-list,
+  .sourcing-list .sourcing-preview,
+  .sourcing-passport {
+    grid-template-columns: 1fr;
+  }
+  .sourcing-list .sourcing-image {
+    aspect-ratio: 9 / 8;
+  }
+  .sourcing-extra,
+  .sourcing-offer dl {
+    grid-template-columns: 1fr;
+  }
+  .sourcing-results label {
+    align-self: end;
+  }
+}
+.page:has(> .sourcing-controls) {
+  padding-top: clamp(26px, 3vw, 38px);
+}
+.page:has(> .sourcing-controls) .page-heading {
+  margin-bottom: 16px;
+}
+.page:has(> .sourcing-controls) .page-heading h1 {
+  font-size: clamp(2.35rem, 4.8vw, 4.1rem);
+}
+.sourcing-list .sourcing-image img {
+  object-fit: contain;
 }

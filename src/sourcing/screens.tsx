@@ -6,6 +6,8 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { Page, Missing } from "../page";
+import { asset } from "../catalog";
+import { MapPin, Package, Search, SlidersHorizontal } from "lucide-react";
 import { stockEnabled, stockPath } from "../stock/config";
 import { useDemo } from "../store";
 import {
@@ -32,6 +34,9 @@ const countryName = (code: string) =>
 const linkFor = (key: string, value: string) =>
   `/sourcing?${new URLSearchParams({ [key]: value })}`;
 const pageSize = 8;
+const offerLink = (offer: Offer, quantity = offer.moq, pickup = false) =>
+  `/connect?${new URLSearchParams({ offer: offer.id, quantity: String(quantity), ...(pickup ? { pickup: "1" } : {}) })}`;
+const productImage = (id: string) => asset(`images/sourcing/${id}.webp`);
 
 export default function Sourcing() {
   const { kind, id } = useParams();
@@ -82,29 +87,37 @@ export default function Sourcing() {
         label="PRODUCT PASSPORT · DEMO DATA"
         intro={`${product.category} · ${product.variant}`}
       >
-        <dl className="record">
-          <dt>Claimed product origin</dt>
-          <dd>
-            <Link to={linkFor("place", product.origin)}>
-              {ancestry(product.origin)
-                .map((place) => place.name)
-                .join(" / ")}
-            </Link>
-          </dd>
-          <dt>Manufacturing method</dt>
-          <dd>{product.method}</dd>
-          {Object.entries(product.specs).map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
-          <dt>Provenance and certification</dt>
-          <dd>
-            Illustrative claims. Independent verification and certificates
-            unavailable.
-          </dd>
-        </dl>
+        <div className="sourcing-passport">
+          <img
+            src={productImage(product.id)}
+            alt={product.name + " · illustrative product image"}
+            width={384}
+            height={341}
+          />
+          <dl className="record">
+            <dt>Claimed product origin</dt>
+            <dd>
+              <Link to={linkFor("place", product.origin)}>
+                {ancestry(product.origin)
+                  .map((place) => place.name)
+                  .join(" / ")}
+              </Link>
+            </dd>
+            <dt>Manufacturing method</dt>
+            <dd>{product.method}</dd>
+            {Object.entries(product.specs).map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+            <dt>Provenance and certification</dt>
+            <dd>
+              Illustrative claims. Independent verification and certificates
+              unavailable.
+            </dd>
+          </dl>
+        </div>
         <h2>Compare supplier offers</h2>
         <div className="records">
           {offers
@@ -183,9 +196,12 @@ function Explore() {
     <Page
       title="Discover where the world makes."
       label="VILLAGE TO GLOBAL"
-      intro="Explore village artisans, local workshops and global manufacturing hubs. Supplier profiles, stock and offers in this directory are illustrative."
+      intro="Find village crafts, workshop parts and factory-made goods. Compare sample offers and ask suppliers about pickup."
     >
-      <nav className="actions" aria-label="Sourcing shortcuts">
+      <nav
+        className="actions sourcing-shortcuts"
+        aria-label="Sourcing shortcuts"
+      >
         <Link className="outline" to={linkFor("role", "Artisan")}>
           Village artisans
         </Link>
@@ -202,139 +218,202 @@ function Explore() {
           Industrial sourcing
         </Link>
       </nav>
-      <div className="record sourcing-filters">
-        <label>
-          Find products, places or makers
-          <input
-            type="search"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-        </label>
-        <label>
-          Location
-          <select
-            value={location}
-            onChange={(event) => filter("place", event.target.value)}
-          >
-            <option value="">All locations</option>
-            {places.map((place) => (
-              <option key={place.id} value={place.id}>
-                {place.name} · {place.kind}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Category
-          <select
-            value={params.get("category") ?? ""}
-            onChange={(event) => filter("category", event.target.value)}
-          >
-            <option value="">All categories</option>
-            {Object.entries(categories).map(([group, leaves]) => (
-              <optgroup key={group} label={group}>
-                <option>{group}</option>
-                {leaves.map((leaf) => (
-                  <option key={leaf}>{leaf}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-        {(
-          [
-            ["role", "Supplier type", roles],
-            ["method", "Purchase method", methods],
-            ["view", "View", ["grid", "list", "map"]],
-          ] as const
-        ).map(([key, label, options]) => (
-          <label key={key}>
-            {label}
+      <div className="sourcing-controls">
+        <div className="sourcing-filters">
+          <label className="sourcing-search">
+            <span>Find products, places or makers</span>
+            <span className="sourcing-search-box">
+              <Search size={17} aria-hidden="true" />
+              <input
+                type="search"
+                placeholder="Try handwoven mats or Shenzhen"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+            </span>
+          </label>
+          <label>
+            Location
             <select
-              value={params.get(key) ?? (key === "view" ? "grid" : "")}
-              onChange={(event) => filter(key, event.target.value)}
+              value={location}
+              onChange={(event) => filter("place", event.target.value)}
             >
-              {key !== "view" && <option value="">All</option>}
-              {options.map((option) => (
-                <option key={option}>{option}</option>
+              <option value="">All locations</option>
+              {places.map((place) => (
+                <option key={place.id} value={place.id}>
+                  {place.name} · {place.kind}
+                </option>
               ))}
             </select>
           </label>
-        ))}
-        <label>
-          Delivery country
-          <select
-            value={params.get("destination") ?? ""}
-            onChange={(event) => filter("destination", event.target.value)}
+          <label>
+            Category
+            <select
+              value={params.get("category") ?? ""}
+              onChange={(event) => filter("category", event.target.value)}
+            >
+              <option value="">All categories</option>
+              {Object.entries(categories).map(([group, leaves]) => (
+                <optgroup key={group} label={group}>
+                  <option>{group}</option>
+                  {leaves.map((leaf) => (
+                    <option key={leaf}>{leaf}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          {(
+            [
+              ["role", "Supplier type", roles],
+              ["method", "Purchase method", methods],
+            ] as const
+          ).map(([key, label, options]) => (
+            <label key={key}>
+              {label}
+              <select
+                value={params.get(key) ?? ""}
+                onChange={(event) => filter(key, event.target.value)}
+              >
+                <option value="">All</option>
+                {options.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+        <div className="sourcing-options">
+          <label className="sourcing-check">
+            <input
+              type="checkbox"
+              checked={params.has("pickup")}
+              onChange={(event) =>
+                filter("pickup", event.target.checked ? "1" : "")
+              }
+            />
+            <MapPin size={16} aria-hidden="true" /> Pickup offered
+          </label>
+          <details className="sourcing-more">
+            <summary>
+              <SlidersHorizontal size={16} aria-hidden="true" /> More filters
+              {["destination", "maxMoq", "custom"].some((key) =>
+                params.has(key),
+              )
+                ? " · Active"
+                : ""}
+            </summary>
+            <div className="sourcing-extra">
+              <label>
+                Delivery country
+                <select
+                  value={params.get("destination") ?? ""}
+                  onChange={(event) =>
+                    filter("destination", event.target.value)
+                  }
+                >
+                  <option value="">Any destination</option>
+                  {countries.map((place) => (
+                    <option key={place.id} value={place.country}>
+                      {place.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Maximum MOQ
+                <input
+                  type="number"
+                  min="1"
+                  value={params.get("maxMoq") ?? ""}
+                  onChange={(event) => filter("maxMoq", event.target.value)}
+                />
+              </label>
+              <label className="sourcing-check">
+                <input
+                  type="checkbox"
+                  checked={params.has("custom")}
+                  onChange={(event) =>
+                    filter("custom", event.target.checked ? "1" : "")
+                  }
+                />{" "}
+                Custom orders
+              </label>
+            </div>
+          </details>
+          {[
+            "q",
+            "place",
+            "category",
+            "role",
+            "method",
+            "destination",
+            "maxMoq",
+            "pickup",
+            "custom",
+          ].some((key) => params.has(key)) && (
+            <Link className="sourcing-reset" to="/sourcing">
+              Clear filters
+            </Link>
+          )}
+        </div>
+      </div>
+      <div className="sourcing-geography">
+        <nav
+          className="actions sourcing-crumbs"
+          aria-label="Location hierarchy"
+        >
+          <button className="outline" onClick={() => filter("place", "")}>
+            World
+          </button>
+          {ancestry(location).map((place) => (
+            <button
+              className="outline"
+              key={place.id}
+              onClick={() => filter("place", place.id)}
+            >
+              {place.name}
+            </button>
+          ))}
+        </nav>
+        {children.length > 0 && (
+          <nav
+            className="actions sourcing-children"
+            aria-label="Child locations"
           >
-            <option value="">Any destination</option>
-            {countries.map((place) => (
-              <option key={place.id} value={place.country}>
+            {children.map((place) => (
+              <button
+                className="outline"
+                key={place.id}
+                onClick={() => filter("place", place.id)}
+              >
                 {place.name}
-              </option>
+              </button>
             ))}
+          </nav>
+        )}
+      </div>
+      <div className="sourcing-results">
+        <div>
+          <h2>Supplier offers</h2>
+          <p role="status">
+            {results.length} sample offers from{" "}
+            {new Set(results.map((result) => result.supplier.id)).size}{" "}
+            suppliers
+          </p>
+        </div>
+        <label>
+          View
+          <select
+            value={view}
+            onChange={(event) => filter("view", event.target.value)}
+          >
+            <option value="grid">Grid</option>
+            <option value="list">List</option>
+            <option value="map">Map</option>
           </select>
         </label>
-        <label>
-          Maximum MOQ
-          <input
-            type="number"
-            min="1"
-            value={params.get("maxMoq") ?? ""}
-            onChange={(event) => filter("maxMoq", event.target.value)}
-          />
-        </label>
-        <label className="sourcing-check">
-          <input
-            type="checkbox"
-            checked={params.has("pickup")}
-            onChange={(event) =>
-              filter("pickup", event.target.checked ? "1" : "")
-            }
-          />{" "}
-          Pickup offered
-        </label>
-        <label className="sourcing-check">
-          <input
-            type="checkbox"
-            checked={params.has("custom")}
-            onChange={(event) =>
-              filter("custom", event.target.checked ? "1" : "")
-            }
-          />{" "}
-          Custom orders
-        </label>
       </div>
-      <nav className="actions" aria-label="Location hierarchy">
-        <button className="outline" onClick={() => filter("place", "")}>
-          World
-        </button>
-        {ancestry(location).map((place) => (
-          <button
-            className="outline"
-            key={place.id}
-            onClick={() => filter("place", place.id)}
-          >
-            {place.name}
-          </button>
-        ))}
-      </nav>
-      <nav className="actions" aria-label="Child locations">
-        {children.map((place) => (
-          <button
-            className="outline"
-            key={place.id}
-            onClick={() => filter("place", place.id)}
-          >
-            {place.name}
-          </button>
-        ))}
-      </nav>
-      <p role="status">
-        {results.length} sample offers from{" "}
-        {new Set(results.map((result) => result.supplier.id)).size} suppliers
-      </p>
       {view === "map" && mapItems.length > 0 && (
         <Suspense fallback={<p>Loading sourcing map…</p>}>
           <Map items={mapItems} hrefFor={(item) => linkFor("place", item.id)} />
@@ -346,11 +425,15 @@ function Explore() {
           <Link to="/sourcing">Reset filters</Link>.
         </p>
       )}
-      <div className={view === "grid" ? "sourcing-grid" : "records"}>
+      <div
+        className={
+          view === "grid" ? "sourcing-grid" : "sourcing-grid sourcing-list"
+        }
+      >
         {results
           .slice((page - 1) * pageSize, page * pageSize)
           .map(({ offer }) => (
-            <OfferCard key={offer.id} offer={offer} />
+            <OfferPreview key={offer.id} offer={offer} />
           ))}
       </div>
       {results.length > pageSize && (
@@ -378,6 +461,91 @@ function Explore() {
   );
 }
 
+function OfferPreview({ offer }: { offer: Offer }) {
+  const product = products.find((item) => item.id === offer.productId)!;
+  const supplier = suppliers.find((item) => item.id === offer.supplierId)!;
+  const unit = unitPrice(offer, offer.moq);
+  const productPath = `/sourcing/product/${product.id}`;
+  return (
+    <article className="sourcing-preview">
+      <div className="sourcing-image">
+        <img
+          src={productImage(product.id)}
+          alt={product.name + " · illustrative product image"}
+          width={384}
+          height={341}
+          loading="lazy"
+          decoding="async"
+        />
+        <span>{offer.method}</span>
+      </div>
+      <div className="sourcing-preview-body">
+        <div className="sourcing-identity">
+          <h3>
+            <Link to={productPath}>{product.name}</Link>
+          </h3>
+          <p>
+            <Link to={`/sourcing/supplier/${supplier.id}`}>
+              {supplier.name}
+            </Link>
+          </p>
+          <p className="muted">Origin · {placeName(product.origin)}</p>
+        </div>
+        <div className="sourcing-price">
+          <div>
+            <span>Sample unit price</span>
+            <strong>
+              {unit === undefined
+                ? "On request"
+                : formatMinor(unit, offer.currency)}
+            </strong>
+          </div>
+          <div>
+            <span>Minimum order</span>
+            <strong>
+              {offer.moq} {offer.moq === 1 ? "unit" : "units"}
+            </strong>
+          </div>
+        </div>
+        <div className="sourcing-pickup">
+          {offer.pickup ? (
+            <MapPin size={18} aria-hidden="true" />
+          ) : (
+            <Package size={18} aria-hidden="true" />
+          )}
+          <div>
+            <strong>
+              {offer.pickup
+                ? `Pickup in ${placeName(offer.pickup)}`
+                : "Pickup by enquiry"}
+            </strong>
+            <span>
+              {offer.pickup
+                ? "Ask about stock and collection time"
+                : "Ask the supplier about collection"}
+            </span>
+          </div>
+        </div>
+        <div className="sourcing-card-actions">
+          <Link
+            className="button"
+            to={
+              offer.pickup
+                ? offerLink(offer, offer.moq, true)
+                : offerLink(offer)
+            }
+          >
+            {offer.pickup ? "Ask about pickup" : "Request quote"}
+          </Link>
+          <Link className="outline" to={productPath}>
+            View details
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function OfferCard({ offer }: { offer: Offer }) {
   const product = products.find((item) => item.id === offer.productId)!;
   const supplier = suppliers.find((item) => item.id === offer.supplierId)!;
@@ -394,27 +562,50 @@ function OfferCard({ offer }: { offer: Offer }) {
         {supplier.roles.join(", ")}
       </p>
       <dl>
-        <dt>Product origin · illustrative</dt>
-        <dd>{placeName(product.origin)}</dd>
-        <dt>Supplier base</dt>
-        <dd>{placeName(supplier.base)}</dd>
-        <dt>Stock location</dt>
-        <dd>
-          {offer.stock
-            ? `${placeName(offer.stock)} · availability unconfirmed`
-            : "Made to order or stock unreported"}
-        </dd>
-        <dt>Pickup location</dt>
-        <dd>{offer.pickup ? placeName(offer.pickup) : "Ask supplier"}</dd>
-        <dt>Ships from</dt>
-        <dd>{offer.shipFrom ? placeName(offer.shipFrom) : "Ask supplier"}</dd>
-        <dt>Sample delivery coverage</dt>
-        <dd>{offer.shipping.map(countryName).join(", ") || "Ask supplier"}</dd>
-        <dt>Order terms</dt>
-        <dd>
-          MOQ {offer.moq} · {offer.leadDays} day illustrative lead time
-        </dd>
+        <div>
+          <dt>Product origin · illustrative</dt>
+          <dd>{placeName(product.origin)}</dd>
+        </div>
+        <div>
+          <dt>Supplier base</dt>
+          <dd>{placeName(supplier.base)}</dd>
+        </div>
+        <div>
+          <dt>Stock location</dt>
+          <dd>
+            {offer.stock
+              ? `${placeName(offer.stock)} · availability unconfirmed`
+              : "Made to order or stock unreported"}
+          </dd>
+        </div>
+        <div>
+          <dt>Ships from</dt>
+          <dd>{offer.shipFrom ? placeName(offer.shipFrom) : "Ask supplier"}</dd>
+        </div>
+        <div>
+          <dt>Sample delivery coverage</dt>
+          <dd>
+            {offer.shipping.map(countryName).join(", ") || "Ask supplier"}
+          </dd>
+        </div>
+        <div>
+          <dt>Order terms</dt>
+          <dd>
+            MOQ {offer.moq} · {offer.leadDays} day illustrative lead time
+          </dd>
+        </div>
       </dl>
+      {offer.pickup && (
+        <div className="sourcing-pickup">
+          <MapPin size={18} aria-hidden="true" />
+          <div>
+            <strong>Pickup in {placeName(offer.pickup)}</strong>
+            <span>
+              Confirm stock, collection time and the address with the supplier.
+            </span>
+          </div>
+        </div>
+      )}
       {offer.tiers.length > 0 && (
         <>
           <label>
@@ -438,10 +629,29 @@ function OfferCard({ offer }: { offer: Offer }) {
       <div className="actions">
         <Link
           className="button"
-          to={`/connect?offer=${offer.id}&quantity=${Number.isSafeInteger(quantity) && quantity <= 1000000 ? Math.max(quantity, offer.moq) : offer.moq}`}
+          to={offerLink(
+            offer,
+            Number.isSafeInteger(quantity) && quantity <= 1000000
+              ? Math.max(quantity, offer.moq)
+              : offer.moq,
+          )}
         >
           {offer.custom ? "Request custom order" : "Request a quote"}
         </Link>
+        {offer.pickup && (
+          <Link
+            className="outline"
+            to={offerLink(
+              offer,
+              Number.isSafeInteger(quantity) && quantity <= 1000000
+                ? Math.max(quantity, offer.moq)
+                : offer.moq,
+              true,
+            )}
+          >
+            Ask about pickup
+          </Link>
+        )}
         {product.legacyId && (
           <Link
             className="outline"
