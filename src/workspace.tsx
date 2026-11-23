@@ -374,34 +374,11 @@ export default function Workspace({
   const [first, setFirst] = useState(params.get("first") || products[0].id);
   const [second, setSecond] = useState(products[1].id);
   if (business) return <Business key={panel} panel={panel} />;
-  if (panel === "about")
-    return (
-      <Page
-        label="LOCAL ROOTS. GLOBAL REACH."
-        title="From village craft to global manufacturing"
-        intro="LOCAIZ helps you find everyday essentials, handmade goods, electronics and industrial machinery, from village makers to suppliers in major cities."
-      >
-        <section className="record">
-          <h2>How LOCAIZ works</h2>
-          <p>
-            Browse retail products in Shop, check nearby stock and ask about
-            pickup, or use Global Atlas to discover makers and request wholesale
-            quotes. Together lets buyers pool orders to reach a shared quantity target.
-          </p>
-          <p className="muted">
-            This demo uses sample listings, stock and transactions.
-          </p>
-          <div className="actions">
-            <Link className="button" to="/shop">Explore Shop</Link>
-            <Link className="outline" to="/sourcing">Explore Global Atlas</Link>
-          </div>
-        </section>
-      </Page>
-    );
   if (Object.hasOwn(info, panel))
     return (
       <Page title={panel[0].toUpperCase() + panel.slice(1)} intro={info[panel]}>
         <Link to="/">Explore LOCAIZ</Link>
+        {panel === "help" && <Link className="outline" to="/contact">Contact Us</Link>}
       </Page>
     );
   const lines = Object.entries(demo.cart).flatMap(([key, quantity]) => {

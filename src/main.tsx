@@ -1,6 +1,6 @@
 import { Component, lazy, Suspense, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { HashRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Shell } from "./shell";
 import { Home } from "./home";
@@ -10,6 +10,8 @@ import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-700.css";
 import "./styles.css";
 
+const About = lazy(() => import("./information").then((module) => ({ default: module.About })));
+const Contact = lazy(() => import("./information").then((module) => ({ default: module.Contact })));
 const Marketplace = lazy(() => import("./marketplace"));
 const Sourcing = lazy(() => import("./sourcing/screens"));
 const Workspace = lazy(() => import("./workspace"));
@@ -104,6 +106,9 @@ createRoot(document.getElementById("root")!).render(
               }
             />
             <Route path="/" element={<Home />} />
+            <Route path="/about" element={<Loading><About /></Loading>} />
+            <Route path="/contact" element={<Loading><Contact /></Loading>} />
+            <Route path="/account/about" element={<Navigate replace to="/about" />} />
             <Route
               path="/search"
               element={

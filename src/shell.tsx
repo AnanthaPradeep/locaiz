@@ -167,7 +167,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </a>
       <div className="announcement">
         <span>LOCAL ROOTS. GLOBAL REACH.</span>
-        <Link to="/account/about">
+        <Link to="/about">
           Meet LOCAIZ <ArrowUpRight size={13} />
         </Link>
       </div>
@@ -311,7 +311,9 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
           <div>
             <strong>Information</strong>
-            {["About", "Help", "Privacy", "Terms", "Settings"].map((item) => (
+            <Link to="/about">About</Link>
+            <Link to="/contact">Contact Us</Link>
+            {["Help", "Privacy", "Terms", "Settings"].map((item) => (
               <Link key={item} to={`/account/${item.toLowerCase()}`}>
                 {item}
               </Link>
