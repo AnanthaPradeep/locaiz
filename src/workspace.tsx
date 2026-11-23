@@ -11,6 +11,16 @@ import { findListings, listings, money, products } from "./catalog";
 import { ListingCard } from "./listing-card";
 import { Missing, Page } from "./page";
 import { useDemo, type Activity } from "./store";
+import {
+  ancestry,
+  formatMinor,
+  matchingOffers,
+  offers,
+  places,
+  products as sourcingProducts,
+  suppliers,
+  unitPrice,
+} from "./sourcing/catalog";
 
 const requirements = z.object({
   title: z.string().trim().min(3),
@@ -26,6 +36,15 @@ export function RequirementForm() {
   const demo = useDemo();
   const navigate = useNavigate();
   const [error, setError] = useState("");
+  const sourcingOffer = offers.find(
+    (offer) => offer.id === params.get("offer"),
+  );
+  const sourcingProduct = sourcingProducts.find(
+    (product) => product.id === sourcingOffer?.productId,
+  );
+  const intendedSupplier = suppliers.find(
+    (supplier) => supplier.id === sourcingOffer?.supplierId,
+  );
   const { register, handleSubmit, formState } = useForm<
     z.infer<typeof requirements>
   >({
@@ -33,11 +52,19 @@ export function RequirementForm() {
       kind:
         params.get("kind") === "Repair"
           ? "Repair"
-          : params.has("market")
-            ? "Wholesale"
-            : "Retail",
+          : sourcingOffer?.custom
+            ? "Manufacturing"
+            : params.has("market") || sourcingOffer?.method === "Wholesale"
+              ? "Wholesale"
+              : "Retail",
       city: demo.city,
-      quantity: 1,
+      title: sourcingProduct?.name,
+      quantity: sourcingOffer
+        ? Math.min(
+            1000000,
+            Math.max(Number(params.get("quantity")) || 1, sourcingOffer.moq),
+          )
+        : 1,
     },
   });
   const market = listings.find(
@@ -46,7 +73,7 @@ export function RequirementForm() {
   return (
     <form
       className="record form"
-      onSubmit={handleSubmit((values) => {
+      onSubmit={handleSubmit((values, event) => {
         const result = requirements.safeParse(values);
         if (!result.success) {
           setError(
@@ -55,16 +82,91 @@ export function RequirementForm() {
           return;
         }
         const { title, kind, budget, quantity, needed, city } = result.data;
+        const form =
+          event?.target instanceof HTMLFormElement
+            ? new FormData(event.target)
+            : null;
+        const destination = String(form?.get("destination") ?? "");
+        const budgetCurrency = String(form?.get("budgetCurrency") ?? "INR");
+        const budgetLabel = sourcingOffer
+          ? new Intl.NumberFormat("en-IN", {
+              style: "currency",
+              currency: budgetCurrency,
+            }).format(budget)
+          : money(budget);
+        const sourcing = sourcingOffer
+          ? {
+              offerId: sourcingOffer.id,
+              quantity,
+              destination,
+              custom: form?.get("custom") === "on",
+            }
+          : undefined;
+        if (
+          sourcing &&
+          (!Number.isSafeInteger(quantity) ||
+            quantity < sourcingOffer!.moq ||
+            quantity > 1000000 ||
+            !places.some((place) => place.country === destination))
+        ) {
+          setError(
+            "Choose a delivery country and enter a valid quantity for this offer.",
+          );
+          return;
+        }
+        const specifics = sourcing
+          ? ` · Preferred supplier ${intendedSupplier?.name} · Delivery ${destination} · Specifications ${form?.get("specifications") || "Not supplied"}${sourcing.custom ? " · Custom order" : ""}${form?.get("sample") ? " · Sample requested" : ""}`
+          : "";
         demo.add(
           "requirements",
           title,
-          `${kind} · ${quantity} units · ${money(budget)} budget · ${city} · needed ${needed}${market ? ` · ${market.name}` : ""}`,
-          "Open",
+          `${kind} · ${quantity} units · ${budgetLabel} budget · ${city} · needed ${needed}${market ? ` · ${market.name}` : ""}${specifics}`,
+          sourcing ? "Demo sourcing enquiry" : "Open",
+          sourcing,
         );
         navigate("/account/requirements");
       })}
     >
       {market && <p>Request for {market.name} · sample wholesale market</p>}
+      {sourcingOffer && (
+        <>
+          <p>
+            Sample sourcing enquiry for {intendedSupplier?.name}. Saved on this
+            device.
+          </p>
+          <label>
+            Delivery country
+            <select
+              name="destination"
+              required
+              defaultValue={sourcingOffer.shipping[0]}
+            >
+              {places
+                .filter((place) => place.country)
+                .map((place) => (
+                  <option key={place.id} value={place.country}>
+                    {place.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            Specifications and notes
+            <input name="specifications" maxLength={500} />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="custom"
+              defaultChecked={Boolean(sourcingOffer.custom)}
+            />{" "}
+            Customisation needed
+          </label>
+          <label>
+            <input type="checkbox" name="sample" /> Request a sample
+          </label>
+        </>
+      )}
       <label>
         Requirement
         <input required minLength={3} maxLength={120} {...register("title")} />
@@ -78,8 +180,18 @@ export function RequirementForm() {
           <option>Repair</option>
         </select>
       </label>
+      {sourcingOffer && (
+        <label>
+          Budget currency
+          <select name="budgetCurrency" defaultValue={sourcingOffer.currency}>
+            {["INR", "CNY", "THB", "TRY", "VND", "USD"].map((currency) => (
+              <option key={currency}>{currency}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <label>
-        Total budget (₹)
+        {sourcingOffer ? "Total budget" : "Total budget (₹)"}
         <input
           required
           type="number"
@@ -92,7 +204,7 @@ export function RequirementForm() {
         <input
           required
           type="number"
-          min={1}
+          min={sourcingOffer?.moq ?? 1}
           {...register("quantity", { valueAsNumber: true })}
         />
       </label>
@@ -458,6 +570,59 @@ export default function Workspace({
         content = <Link to="/account/requirements">Choose a requirement</Link>;
         break;
       }
+      if (request.sourcing) {
+        const enquiry = request.sourcing;
+        const matches = matchingOffers(enquiry);
+        content = (
+          <>
+            <p>
+              {request.title} · {enquiry.quantity} units
+            </p>
+            <p>
+              Illustrative supplier matches and item estimates. Supplier
+              confirmation is required.
+            </p>
+            {matches.length === 0 && (
+              <p>
+                No sample offer supports this quantity, destination and
+                customisation choice.
+              </p>
+            )}
+            {matches.map((offer) => {
+              const supplier = suppliers.find(
+                (item) => item.id === offer.supplierId,
+              )!;
+              const unit = unitPrice(offer, enquiry.quantity);
+              return (
+                <article className="record" key={offer.id}>
+                  <h2>
+                    <Link to={`/sourcing/supplier/${supplier.id}`}>
+                      {supplier.name}
+                    </Link>
+                  </h2>
+                  <p>
+                    {ancestry(supplier.base)
+                      .map((place) => place.name)
+                      .join(" / ")}{" "}
+                    · MOQ {offer.moq} · {offer.leadDays} day indicative
+                    production lead time
+                  </p>
+                  <p>
+                    {unit === undefined
+                      ? "Item price to be quoted"
+                      : `${formatMinor(unit, offer.currency)} per unit · ${formatMinor(unit * enquiry.quantity, offer.currency)} items subtotal`}
+                  </p>
+                  <p>
+                    Sample cost, shipping, tax, duties, delivery date and
+                    validity to be confirmed.
+                  </p>
+                </article>
+              );
+            })}
+          </>
+        );
+        break;
+      }
       const budget =
         Number(request.detail.match(/₹([\d,]+)/)?.[1].replaceAll(",", "")) ||
         1000;
@@ -785,6 +950,7 @@ export function Business({ panel }: { panel: string }) {
       intro="Local demo workspace · Verification unsubmitted"
     >
       <nav className="panel-nav" aria-label="Business sections">
+        <Link to="/sourcing/onboarding">Create supplier storefront</Link>
         <Link to="/business/stock">Stock Requests</Link>
         {businessPanels.map((link) => (
           <Link key={link} to={`/business/${link.toLowerCase()}`}>
@@ -864,20 +1030,26 @@ export function Business({ panel }: { panel: string }) {
                 ),
             )}
             empty="No listings yet."
-            action={(entry) => (
-              <button
-                className="outline"
-                onClick={() =>
-                  demo.update(
-                    "inventory",
-                    entry.id,
-                    entry.status === "Published" ? "Draft" : "Published",
-                  )
-                }
-              >
-                {entry.status === "Published" ? "Unpublish" : "Publish locally"}
-              </button>
-            )}
+            action={(entry) =>
+              entry.status?.startsWith("Storefront draft") ? (
+                <p>Awaiting connected supplier review</p>
+              ) : (
+                <button
+                  className="outline"
+                  onClick={() =>
+                    demo.update(
+                      "inventory",
+                      entry.id,
+                      entry.status === "Published" ? "Draft" : "Published",
+                    )
+                  }
+                >
+                  {entry.status === "Published"
+                    ? "Unpublish"
+                    : "Publish locally"}
+                </button>
+              )
+            }
           />
         </>
       )}

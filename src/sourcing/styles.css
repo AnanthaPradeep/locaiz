@@ -1,0 +1,34 @@
+.sourcing-filters,
+.sourcing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr));
+  gap: 16px;
+  margin-block: 20px;
+}
+.sourcing-filters .sourcing-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sourcing-check input {
+  accent-color: var(--ink);
+}
+.sourcing-offer {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sourcing-offer h3 {
+  margin-block: 8px;
+}
+.sourcing-offer dt {
+  font-weight: 700;
+}
+.sourcing-offer dd {
+  margin: 0 0 6px;
+}
+.sourcing-offer label {
+  max-width: 200px;
+}
+.sourcing-pages {
+  margin-block: 22px;
+}

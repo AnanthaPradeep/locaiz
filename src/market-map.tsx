@@ -4,7 +4,13 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Listing } from "./catalog";
 
-export default function MarketMap({ items }: { items: Listing[] }) {
+export default function MarketMap({
+  items,
+  hrefFor = (item) => `/listing/${item.section}/${item.id}`,
+}: {
+  items: Listing[];
+  hrefFor?: (item: Listing) => string;
+}) {
   const container = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const places = items.filter((item) => item.coords);
@@ -68,11 +74,7 @@ export default function MarketMap({ items }: { items: Listing[] }) {
       )}
       <div className="actions">
         {places.map((item) => (
-          <Link
-            key={item.id}
-            className="outline"
-            to={`/listing/${item.section}/${item.id}`}
-          >
+          <Link key={item.id} className="outline" to={hrefFor(item)}>
             {item.name}
           </Link>
         ))}

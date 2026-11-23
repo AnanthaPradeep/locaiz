@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { SourcingRequest } from "./sourcing/catalog";
 
 export type Activity = {
   id: string;
@@ -7,6 +8,7 @@ export type Activity = {
   detail: string;
   date: string;
   status?: string;
+  sourcing?: SourcingRequest;
 };
 type Collection =
   | "orders"
@@ -41,6 +43,7 @@ type DemoState = Record<Collection, Activity[]> & {
     title: string,
     detail: string,
     status?: string,
+    sourcing?: SourcingRequest,
   ) => void;
   update: (collection: Collection, id: string, status: string) => void;
 };
@@ -104,7 +107,7 @@ export const useDemo = create<DemoState>()(
       join: (id, quantity) =>
         set((state) => ({ groups: { ...state.groups, [id]: quantity } })),
       setPreference: (patch) => set(patch),
-      add: (collection, title, detail, status) =>
+      add: (collection, title, detail, status, sourcing) =>
         set((state) => ({
           [collection]: [
             {
@@ -113,6 +116,7 @@ export const useDemo = create<DemoState>()(
               detail,
               date: new Date().toISOString(),
               status,
+              sourcing,
             },
             ...state[collection],
           ],

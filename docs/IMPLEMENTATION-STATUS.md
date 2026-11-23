@@ -1,5 +1,7 @@
 # Implementation status
 
+Village-to-Global extends the demo catalogue and existing entry points. Browser-local enquiries and storefront drafts use the existing store. The additive Supabase schema has no hosted connection. Authenticated Nearby Stock Confirmation continues to use its Phase 2 configuration.
+
 The local code implements the initial browser demo across all seven marketplace destinations. See the [feature matrix](FEATURE-MATRIX.md) for gaps against the full brief. The frontend uses fixture prices, shops, stock, provider and supplier records; transactions stay in the browser.
 
 Backend work is documented at the design level. Full marketplace data, production auth, sharing between participants, private attachments, seller verification, and real fulfilment remain pending. Public demo publication requires GitHub access and repository approval.

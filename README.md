@@ -19,6 +19,8 @@ React and TypeScript power the frontend. Vite builds the static application. Rea
 
 ## Review the demo
 
+- [Village-to-Global Marketplace](docs/VILLAGE-TO-GLOBAL.md)
+
 - [Live GitHub Pages demo](https://ananthapradeep.github.io/locaiz/)
 - [Nearby Stock Confirmation pilot setup](docs/NEARBY-STOCK-CONFIRMATION.md)
 
