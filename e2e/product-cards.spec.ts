@@ -142,3 +142,29 @@ test("Quick View keeps the card heart and cart in sync", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Cart, 1 items" })).toBeVisible();
   await expect(page).toHaveURL(/category=Electronics$/);
 });
+
+test("shows selected variant images and compact details in Quick View and cart", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/shop");
+  await page.getByRole("button", { name: `Quick view ${product}` }).click();
+  const dialog = page.getByRole("dialog");
+  const image = dialog.getByRole("img", { name: product });
+  await expect(image).toHaveAttribute("src", /headphones\.webp$/);
+  await dialog.getByLabel("Variant").selectOption("gift");
+  await expect(image).toHaveAttribute("src", /hero\.webp$/);
+  await expect(dialog.getByText("SKU studio-headphones-gift")).toBeVisible();
+  await dialog.getByRole("button", { name: "Add to Cart" }).click();
+  await page.goto("/#/account/cart");
+  const line = page.locator(".cart-line");
+  await expect(line.getByRole("img", { name: product })).toHaveAttribute(
+    "src",
+    /hero\.webp$/,
+  );
+  await expect(line.getByText("SKU studio-headphones-gift")).toBeVisible();
+  await expect(line.locator(".shopping-product-copy")).toHaveCSS("gap", "4px");
+  expect(
+    await page.locator("body").evaluate((body) => body.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});
