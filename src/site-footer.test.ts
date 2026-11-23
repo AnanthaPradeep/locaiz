@@ -46,6 +46,8 @@ it("renders only enabled account URLs on the expected platform", () => {
     },
   ];
   const markup = renderToStaticMarkup(createElement(SocialLinks, { profiles }));
+  expect(markup).toContain("Follow LOCAIZ");
+  expect(markup.match(/<svg /g)).toHaveLength(4);
   for (const name of ["Instagram", "Facebook", "LinkedIn", "YouTube"]) {
     expect(markup).toContain(`LOCAIZ on ${name} (opens in a new tab)`);
   }
