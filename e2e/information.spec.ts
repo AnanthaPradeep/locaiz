@@ -1,4 +1,4 @@
-﻿import { expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test("legacy About opens the editorial page and its marketplace links", async ({
   page,
@@ -14,7 +14,7 @@ test("legacy About opens the editorial page and its marketplace links", async ({
       "A marketplace for discovering products, makers, suppliers and services.",
     ),
   ).toBeVisible();
-  const links = page.locator(".info-grid a");
+  const links = page.locator(".info-grid > a");
   await expect(links).toHaveCount(7);
   for (const route of [
     "/shop",
@@ -25,7 +25,7 @@ test("legacy About opens the editorial page and its marketplace links", async ({
     "/connect",
     "/business",
   ]) {
-    await expect(page.locator(`.info-grid a[href="#${route}"]`)).toBeVisible();
+    await expect(page.locator(`.info-grid > a[href="#${route}"]`)).toBeVisible();
   }
 });
 
@@ -46,7 +46,7 @@ test("Contact routes categories and validates without sending a preview", async 
   await page.getByLabel("Email address").fill("sample@example.test");
   await page.getByLabel("Subject").fill("Sample enquiry");
   await page
-    .getByLabel("Message", { exact: true })
+    .getByRole("textbox", { name: /^Message/ })
     .fill("This is sample information.");
   await page.getByRole("button", { name: "Check form" }).click();
   await expect(page.getByRole("status")).toContainText("no submission channel");
