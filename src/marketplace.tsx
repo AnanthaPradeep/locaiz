@@ -114,6 +114,29 @@ export default function Marketplace() {
       }
     >
       <div className="filterbar">
+        {(section === "global" ||
+          section === "shop" ||
+          section === "nearby" ||
+          section === "care" ||
+          section === "together" ||
+          search) && (
+          <Link
+            className="outline"
+            to={
+              section === "care"
+                ? "/sourcing?category=Mechanical+parts"
+                : section === "nearby"
+                  ? "/sourcing?pickup=1"
+                  : search
+                    ? `/sourcing?${new URLSearchParams({ q: term })}`
+                    : "/sourcing"
+            }
+          >
+            {section === "care"
+              ? "Source replacement parts"
+              : "Village-to-Global directory"}
+          </Link>
+        )}
         <label>
           Category
           <select
@@ -360,6 +383,11 @@ function ListingDetail({ item }: { item: Listing }) {
                 </Link>
               )}
               <Link to="/account/cart">View cart</Link>
+              {item.id === "studio-headphones" && (
+                <Link to="/sourcing/product/headphones">
+                  Compare sourcing offers
+                </Link>
+              )}
               <p>
                 Demo delivery in 3–5 days. Sample pickup may be available
                 locally.

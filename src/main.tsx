@@ -11,6 +11,7 @@ import "@fontsource/manrope/latin-700.css";
 import "./styles.css";
 
 const Marketplace = lazy(() => import("./marketplace"));
+const Sourcing = lazy(() => import("./sourcing/screens"));
 const Workspace = lazy(() => import("./workspace"));
 const Stock = lazy(() =>
   import("./stock/screens").then((module) => ({ default: module.StockScreen })),
@@ -60,6 +61,14 @@ createRoot(document.getElementById("root")!).render(
       <AppErrorBoundary>
         <Shell>
           <Routes>
+            <Route
+              path="/sourcing/:kind?/:id?"
+              element={
+                <Loading>
+                  <Sourcing />
+                </Loading>
+              }
+            />
             <Route
               path="/account/stock-new"
               element={

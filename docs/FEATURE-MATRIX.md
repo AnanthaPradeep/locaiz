@@ -1,5 +1,7 @@
 # Feature matrix
 
+**Village-to-Global** adds sample hierarchical discovery, supplier and product passports, offer comparisons, Connect estimates and storefront drafting. A connected supplier directory, live quotation delivery, geospatial radius search and private verification are pending.
+
 | Module | Working demo path | Coverage still needed |
 |---|---|---|
 | Shop | Search, category and sort, product passport, gallery, variant cart, wishlist, comparison, simulated order | Multiple verified offers per product, dynamic prices, richer reviews and shipments |
