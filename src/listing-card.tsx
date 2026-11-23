@@ -1,4 +1,4 @@
-﻿import {
+import {
   Heart,
   ArrowUpRight,
   Globe2,
@@ -63,7 +63,13 @@ export function ListingCard({
           {item.distance && ` · ${item.distance} km`}
         </p>
         {item.price !== undefined && <b>{money(item.price)}</b>}
-        {retail && (
+        {item.quoteOnly && <p>Quotation only</p>}
+        {item.specifications && (
+          <small className="catalogue-card-spec">
+            {Object.values(item.specifications).join(" · ")}
+          </small>
+        )}
+        {retail && !item.quoteOnly && (
           <CardShoppingActions item={item} url={url} quickView={quickView} />
         )}
       </div>

@@ -56,11 +56,13 @@ export function RequirementForm() {
           ? "Repair"
           : sourcingOffer?.custom
             ? "Manufacturing"
+            : params.get("kind") === "Manufacturing"
+              ? "Manufacturing"
             : params.has("market") || sourcingOffer?.method === "Wholesale"
               ? "Wholesale"
               : "Retail",
       city: demo.city,
-      title: sourcingProduct?.name,
+      title: sourcingProduct?.name ?? params.get("product")?.slice(0, 120),
       quantity: sourcingOffer
         ? Math.min(
             1000000,

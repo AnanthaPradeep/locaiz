@@ -16,8 +16,13 @@ test("product card uses one native anchor over its image and whitespace", async 
     "href",
     "#/listing/shop/studio-headphones",
   );
-  const bounds = (await card.boundingBox())!;
-  const point = { x: bounds.x + 4, y: bounds.y + 4 };
+  const imagePoint = async () => {
+    const media = card.locator(".card-media");
+    await media.scrollIntoViewIfNeeded();
+    const bounds = (await media.boundingBox())!;
+    return { x: bounds.x + 4, y: bounds.y + 4 };
+  };
+  const point = await imagePoint();
   expect(
     await page.evaluate(
       ({ x, y }) =>
@@ -34,9 +39,10 @@ test("product card uses one native anchor over its image and whitespace", async 
   ]);
   await expect(newTab).toHaveURL(detail);
   await newTab.close();
+  const middlePoint = await imagePoint();
   const [middleTab] = await Promise.all([
     context.waitForEvent("page"),
-    page.mouse.click(point.x, point.y, { button: "middle" }),
+    page.mouse.click(middlePoint.x, middlePoint.y, { button: "middle" }),
   ]);
   await expect(middleTab).toHaveURL(detail);
   await middleTab.close();
@@ -51,7 +57,8 @@ test("product card uses one native anchor over its image and whitespace", async 
       whitespace,
     ),
   ).toBe("#/listing/shop/studio-headphones");
-  await page.mouse.click(point.x, point.y);
+  const clickPoint = await imagePoint();
+  await page.mouse.click(clickPoint.x, clickPoint.y);
   await expect(page).toHaveURL(detail);
   await page.goBack();
   await link.click();
@@ -103,6 +110,7 @@ test("single purchasable variant adds directly and respects its remaining stock"
   page,
 }) => {
   await page.goto("/#/shop");
+  await page.getByRole("button", { name: "Page 2", exact: true }).click();
   const lamp = page
     .locator(".listing-card")
     .filter({ hasText: "Walnut Globe Table Lamp" });
@@ -115,7 +123,8 @@ test("single purchasable variant adds directly and respects its remaining stock"
   }
   await expect(add).toBeDisabled();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page).toHaveURL(/#\/shop$/);
+  await expect(page).toHaveURL(/#\/shop\?page=2$/);
+  await page.getByRole("button", { name: "Page 1", exact: true }).click();
   const pads = page
     .locator(".listing-card")
     .filter({ hasText: "Studio Headphone Replacement Pads" });

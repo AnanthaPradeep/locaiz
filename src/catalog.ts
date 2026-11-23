@@ -1,3 +1,4 @@
+import { demoRetailProducts, legacyShopCategories } from "./demo-retail";
 export type Section =
   "shop" | "nearby" | "global" | "together" | "care" | "connect" | "business";
 
@@ -14,46 +15,17 @@ export interface Listing {
   distance?: number;
   manufacturer?: boolean;
   market?: string;
+  specifications?: Record<string, string>;
+  demoStock?: number;
+  shopSlug?: string;
+  addedOn?: number;
+  quoteOnly?: boolean;
+  condition?: "New";
+  subcategory?: string;
+  demoVariants?: { id: string; label: string; surcharge: number; stock: number }[];
 }
 
-export const products: Listing[] = [
-  {
-    id: "studio-headphones",
-    name: "Studio Wireless Headphones",
-    section: "shop",
-    detail: "Form & Frequency",
-    category: "Electronics",
-    price: 4999,
-    image: "headphones",
-  },
-  {
-    id: "stoneware-cups",
-    name: "Handmade Stoneware Cups",
-    section: "shop",
-    detail: "Clay & Kiln",
-    category: "Home & Living",
-    price: 1299,
-    image: "cups",
-  },
-  {
-    id: "globe-lamp",
-    name: "Walnut Globe Table Lamp",
-    section: "shop",
-    detail: "Common Form",
-    category: "Home & Living",
-    price: 3499,
-    image: "lamp",
-  },
-  {
-    id: "everyday-tote",
-    name: "Everyday Canvas Tote",
-    section: "shop",
-    detail: "Thread & Loom",
-    category: "Fashion",
-    price: 899,
-    image: "tote",
-  },
-];
+export const products = demoRetailProducts;
 
 const markets: [string, string, string, string, [number, number]][] = [
   ["tiruppur", "Tiruppur", "India", "Textiles and garments", [77.34, 11.11]],
@@ -206,14 +178,6 @@ const fixtures: Listing[] = [
     category: "Vehicles",
     price: 799,
   },
-  {
-    id: "audio-pads",
-    name: "Studio Headphone Replacement Pads",
-    section: "shop",
-    detail: "Form & Frequency · Compatible with Studio Wireless",
-    category: "Spare Parts",
-    price: 699,
-  },
 ];
 
 export const listings: Listing[] = [
@@ -239,10 +203,10 @@ export function findListings(
   return listings.filter(
     (item) =>
       (!section || item.section === section) &&
-      (!category || item.category === category) &&
+      (!category || item.category === category || (item.section === "shop" && legacyShopCategories[category]?.includes(item.category))) &&
       (!city || item.city === city) &&
       terms.every((term) =>
-        [item.name, item.detail, item.category, item.city]
+        [item.name, item.detail, item.category, item.city, ...Object.values(item.specifications ?? {})]
           .join(" ")
           .toLowerCase()
           .includes(term),

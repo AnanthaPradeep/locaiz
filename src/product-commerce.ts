@@ -1,12 +1,12 @@
 import type { Listing } from "./catalog";
 import { offers, products, type Offer, type Product } from "./sourcing/catalog";
 
-type VariantId = "standard" | "gift";
+type LegacyVariantId = "standard" | "gift";
 type VariantFixture = { stock: number; surcharge: number; photos?: string[] };
 type RetailFixture = {
   subcategory: string;
-  together?: { variantId: VariantId; listingId: string };
-  variants: Record<VariantId, VariantFixture>;
+  together?: { variantId: string; listingId: string };
+  variants: Record<LegacyVariantId, VariantFixture>;
 };
 
 const retail: Record<string, RetailFixture> = {
@@ -34,14 +34,14 @@ export function retailSubcategory(productId: string) {
   return retail[productId]?.subcategory;
 }
 
-export function togetherListing(productId: string, variantId: VariantId) {
+export function togetherListing(productId: string, variantId: string) {
   const deal = retail[productId]?.together;
   return deal?.variantId === variantId ? deal.listingId : undefined;
 }
 
 export type ProductSourcing = { product: Product | undefined; offers: Offer[] };
 
-export function productSourcing(productId: string, variantId: VariantId = "standard"): ProductSourcing {
+export function productSourcing(productId: string, variantId: string = "standard"): ProductSourcing {
   const product = products.find((entry) => entry.legacyId === productId);
   return {
     product,
@@ -50,8 +50,8 @@ export function productSourcing(productId: string, variantId: VariantId = "stand
 }
 
 export type RetailVariant = {
-  id: VariantId;
-  label: (typeof variantLabels)[VariantId];
+  id: string;
+  label: string;
   sku: string;
   photos: string[];
   price: number;
@@ -64,16 +64,27 @@ export function availableCartUnits(variant: RetailVariant, cart: Record<string, 
 }
 
 export function retailVariants(item: Listing): RetailVariant[] {
-  const ids: VariantId[] = ["standard", "gift"];
+  if (item.demoVariants) {
+    return item.demoVariants.map((variant) => ({
+      id: variant.id,
+      label: variant.label,
+      sku: `${item.id}-${variant.id}`,
+      photos: item.image ? [item.image] : [],
+      price: (item.price ?? 0) + variant.surcharge,
+      stock: variant.stock,
+      cartKey: `${item.id}:${variant.id}`,
+    }));
+  }
+  const ids: LegacyVariantId[] = retail[item.id] ? ["standard", "gift"] : ["standard"];
   return ids.map((id) => {
     const variant = retail[item.id]?.variants[id];
     return {
       id,
       label: variantLabels[id],
       sku: `${item.id}-${id}`,
-      photos: variant?.photos ?? (item.image ? [item.image] : []),
+      photos: variant?.photos?.map((photo) => photo === "headphones" ? item.image ?? photo : photo) ?? (item.image ? [item.image] : []),
       price: (item.price ?? 0) + (variant?.surcharge ?? 0),
-      stock: variant?.stock ?? 0,
+      stock: variant?.stock ?? item.demoStock ?? 0,
       // Keep the original Standard key so persisted demo carts remain readable.
       cartKey: id === "standard" ? item.id : `${item.id}:${id}`,
     };
