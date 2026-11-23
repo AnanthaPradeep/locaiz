@@ -1,5 +1,9 @@
 # Implementation status
 
+The PLP/PDP draft adds combinable product facets, a keyboard-accessible quick-view dialog, variant-specific demo retail pricing and stock limits, gallery thumbnails and navigation, and a Together link for eligible standard variants. Sourcing offers keep original currencies and link to the existing quote form. Supplier verification and other live catalogue attributes require published records.
+
+The authenticated stock Playwright cases skip in the ordinary demo suite because they require a seeded loopback Supabase instance and pilot credentials. The GitHub Actions stock-pilot job provisions and seeds that instance, runs sourcing RLS checks, and runs both authenticated browser cases.
+
 Shop and universal search support URL-backed price filtering, price sorting in both directions, pagination and grid/list views. The product detail page supports keyboard-accessible image enlargement and retail quantity validation with a subtotal. Products with an explicit sourcing catalogue link display sample supplier offers and tier prices and link to the existing Product Passport for enquiries.
 
 Village-to-Global extends the demo catalogue and existing entry points. Browser-local enquiries and storefront drafts use the existing store. The additive Supabase schema has no hosted connection. Authenticated Nearby Stock Confirmation continues to use its Phase 2 configuration.

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useMatch, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -21,9 +21,57 @@ import { useDemo } from "./store";
 import { Business, RequirementForm } from "./workspace";
 import { Missing, Page } from "./page";
 import { stockEnabled, stockPath } from "./stock/config";
-import { offers, products as sourcingProducts, suppliers, placeName, formatMinor } from "./sourcing/catalog";
+import { retailSubcategory, retailVariants, togetherProduct } from "./product-commerce";
+import { ancestry, offers, products as sourcingProducts, suppliers, placeName, formatMinor } from "./sourcing/catalog";
 
 const MarketMap = lazy(() => import("./market-map"));
+
+const filterFields = {
+  brand: "Brand",
+  subcategory: "Subcategory",
+  countryOfSupplier: "Supplier country",
+  supplierCity: "Supplier city",
+  minPrice: "Minimum price (₹)",
+  origin: "Production origin",
+  supplierType: "Supplier type",
+  method: "Purchase method",
+  maxMoq: "Maximum MOQ",
+  pickup: "Pickup location",
+  available: "Availability",
+  community: "Community buying",
+} as const;
+
+function productFacets(item: Listing, activeDeal: boolean) {
+  if (item.section !== "shop") return {};
+  const source = sourcingProducts.find((entry) => entry.legacyId === item.id);
+  const matching = offers.filter((offer) => offer.productId === source?.id);
+  return {
+    brand: [item.detail],
+    subcategory: retailSubcategory[item.id] ? [retailSubcategory[item.id]] : [],
+    countryOfSupplier: matching.flatMap((offer) => {
+      const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
+      return supplier ? ancestry(supplier.base).filter((place) => place.country).map((place) => place.name) : [];
+    }),
+    supplierCity: matching.flatMap((offer) => {
+      const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
+      return supplier ? [placeName(supplier.base)] : [];
+    }),
+    origin: source ? ancestry(source.origin).map((place) => place.name) : [],
+    supplierType: matching.flatMap((offer) =>
+      suppliers.find((supplier) => supplier.id === offer.supplierId)?.roles ?? [],
+    ),
+    method: ["Retail", ...matching.map((offer) => offer.method)],
+    pickup: matching.flatMap((offer) => offer.pickup ? [placeName(offer.pickup)] : []),
+    available: retailVariants(item).some((variant) => variant.stock > 0) ? ["In demo stock"] : [],
+    community: activeDeal && togetherProduct[item.id] ? ["Deal available"] : [],
+  };
+}
+
+function nonnegative(value: string | null) {
+  if (value === null || !/^\d+(\.\d+)?$/.test(value)) return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
 
 const descriptions: Record<Section, string> = {
   shop: "Explore independent brands, everyday essentials and considered design.",
@@ -41,6 +89,7 @@ export default function Marketplace() {
   const [params, setParams] = useSearchParams();
   const [map, setMap] = useState(false);
   const city = useDemo((state) => state.city);
+  const dealOpen = useDemo((state) => state.groupDeadline) > Date.now();
   const active = modules.find((module) => module.id === section);
   const search = Boolean(useMatch("/search"));
   const term = params.get("q") ?? "";
@@ -89,16 +138,50 @@ export default function Marketplace() {
   const distance = params.get("distance") ?? "";
   const productListing = search || section === "shop";
   const listView = productListing && params.get("view") === "list";
-  const maximumPrice = params.get("maxPrice") ?? "";
-  const filtered = items.filter(
-    (item) =>
+  const maximumPrice = nonnegative(params.get("maxPrice"));
+  const minimumPrice = nonnegative(params.get("minPrice"));
+  const maxMoq = nonnegative(params.get("maxMoq"));
+  const clearable = ["category", "maxPrice", ...Object.keys(filterFields)];
+  const facetKeys = ["subcategory", "brand", "origin", "countryOfSupplier", "supplierCity", "supplierType", "method", "pickup", "available", "community"] as const;
+  const rows = items.map((item) => ({ item, facets: productFacets(item, dealOpen) }));
+  const optionValues = (key: typeof facetKeys[number]) =>
+    [...new Set(rows.flatMap(({ facets }) => facets[key] ?? []))].sort();
+  const activeFacets = facetKeys.flatMap((key) => {
+    const value = params.get(key);
+    return value && optionValues(key).includes(value) ? [{ key, value }] : [];
+  });
+  const offerFacetKeys = ["countryOfSupplier", "supplierCity", "supplierType", "method", "pickup"];
+  const activeOfferFacets = activeFacets.filter(({ key }) => offerFacetKeys.includes(key));
+  const matchesOffer = (item: Listing) => {
+    if (!activeOfferFacets.length && maxMoq === undefined) return true;
+    if (item.section !== "shop") return false;
+    if ((maxMoq === undefined || maxMoq >= 1) &&
+        activeOfferFacets.every(({ key, value }) => key === "method" && value === "Retail")) return true;
+    const product = sourcingProducts.find((entry) => entry.legacyId === item.id);
+    return offers.some((offer) => {
+      if (offer.productId !== product?.id || (maxMoq !== undefined && offer.moq > maxMoq)) return false;
+      const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
+      const attributes: Record<string, readonly string[]> = {
+        countryOfSupplier: supplier ? ancestry(supplier.base).filter((place) => place.country).map((place) => place.name) : [],
+        supplierCity: supplier ? [placeName(supplier.base)] : [],
+        supplierType: supplier?.roles ?? [],
+        method: [offer.method],
+        pickup: offer.pickup ? [placeName(offer.pickup)] : [],
+      };
+      return activeOfferFacets.every(({ key, value }) => attributes[key].includes(value));
+    });
+  };
+  const filtered = rows.filter(
+    ({ item, facets }) =>
       (!category || item.category === category) &&
       (!country || country === item.detail) &&
       (!distance || (item.distance ?? Infinity) <= Number(distance)) &&
       (!productListing ||
-        !maximumPrice ||
-        (item.price !== undefined && item.price <= Number(maximumPrice))),
-  );
+        ((maximumPrice === undefined || (item.price !== undefined && item.price <= maximumPrice)) &&
+          (minimumPrice === undefined || (item.price !== undefined && item.price >= minimumPrice)) &&
+          activeFacets.every(({ key, value }) => facets[key]?.some((option) => option === value)) &&
+          matchesOffer(item))),
+  ).map(({ item }) => item);
   if (sort)
     filtered.sort((a, b) => {
       if (sort !== "price" && sort !== "price-desc")
@@ -229,7 +312,7 @@ export default function Marketplace() {
               <input
                 type="number"
                 min="0"
-                value={maximumPrice}
+                value={maximumPrice ?? ""}
                 onChange={(event) => setOption("maxPrice", event.target.value)}
               />
             </label>
@@ -241,13 +324,39 @@ export default function Marketplace() {
             >
               {listView ? "Switch to grid" : "Switch to list"}
             </button>
-            {(category || maximumPrice) && (
+            <Dialog.Root>
+              <Dialog.Trigger className="outline">More product filters</Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay className="overlay" />
+                <Dialog.Content className="dialog detail-actions commerce-filter-dialog">
+                  <Dialog.Title>Product filters</Dialog.Title>
+                  <Dialog.Description>Combine filters to narrow your results.</Dialog.Description>
+                  {(["minPrice", "maxMoq"] as const).map((key) => (
+                    <label key={key}>{filterFields[key]}
+                      <input type="number" min="0" value={nonnegative(params.get(key)) ?? ""} onChange={(event) => setOption(key, event.target.value)} />
+                    </label>
+                  ))}
+                  {facetKeys.map((key) => {
+                    const values = optionValues(key);
+                    return values.length > 0 && (
+                      <label key={key}>{filterFields[key]}
+                        <select value={activeFacets.find((facet) => facet.key === key)?.value ?? ""} onChange={(event) => setOption(key, event.target.value)}>
+                          <option value="">Any</option>
+                          {values.map((value) => <option key={value}>{value}</option>)}
+                        </select>
+                      </label>
+                    );
+                  })}
+                  <Dialog.Close className="button">Show results</Dialog.Close>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
+            {clearable.some((key) => params.has(key)) && (
               <button
                 className="outline"
                 onClick={() => {
                   const next = new URLSearchParams(params);
-                  next.delete("category");
-                  next.delete("maxPrice");
+                  clearable.forEach((key) => next.delete(key));
                   next.delete("page");
                   setParams(next);
                 }}
@@ -282,6 +391,13 @@ export default function Marketplace() {
           </Link>
         )}
       </div>
+      {productListing && (
+        <div className="actions" aria-label="Active product filters">
+          {activeFacets.map(({ key, value }) => (
+            <button key={key} className="outline" onClick={() => setOption(key, "")} aria-label={`Remove ${filterFields[key]} filter`}>{value} ×</button>
+          ))}
+        </div>
+      )}
       {query.isLoading && <p role="status">Searching…</p>}
       {query.isError && (
         <button className="outline" onClick={() => void query.refetch()}>
@@ -302,7 +418,7 @@ export default function Marketplace() {
       )}
       <div className={listView ? "product-grid product-list" : "product-grid"}>
         {visibleItems.map((item) => (
-          <ListingCard item={item} key={item.id} />
+          <ListingCard item={item} key={item.id} quickView={productListing} />
         ))}
       </div>
       {productListing && pageCount > 1 && (
@@ -323,15 +439,26 @@ export default function Marketplace() {
 function ListingDetail({ item }: { item: Listing }) {
   const demo = useDemo();
   const [quantity, setQuantity] = useState(1);
-  const [option, setOption] = useState("Standard");
-  const [photo, setPhoto] = useState(item.image);
+  const [option, setOption] = useState("standard");
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const touchStart = useRef<number | null>(null);
   const [message, setMessage] = useState("");
-  const price = item.price ?? 0;
-  const cartKey = option === "Standard" ? item.id : `${item.id}:gift`;
-  const remainingCartQuantity = 99 - (demo.cart[cartKey] ?? 0);
+  const variants = retailVariants(item);
+  const variant = variants.find((entry) => entry.id === option) ?? variants[0];
+  const photo = variant.photos[photoIndex];
+  const [failedPhoto, setFailedPhoto] = useState<string>();
+  const visiblePhoto = photo !== failedPhoto ? photo : undefined;
+  function movePhoto(direction: number) {
+    const length = variant.photos.length;
+    if (length > 1) setPhotoIndex((index) => (index + direction + length) % length);
+  }
+  const price = item.section === "shop" ? variant.price : (item.price ?? 0);
+  const cartKey = variant.cartKey;
+  const remainingCartQuantity = Math.max(0, variant.stock - (demo.cart[cartKey] ?? 0));
   const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= remainingCartQuantity;
   const sourcingProduct = sourcingProducts.find((product) => product.legacyId === item.id);
-  const supplierOffers = offers.filter((offer) => offer.productId === sourcingProduct?.id);
+  const supplierOffers = offers.filter((offer) => offer.productId === sourcingProduct?.id && variant.id === "standard");
+  const togetherId = variant.id === "standard" ? togetherProduct[item.id] : undefined;
   const isGroup = item.section === "together";
   const membership = demo.groups[item.id] ?? 0;
   const groupUnits = groupSeed + membership;
@@ -368,14 +495,29 @@ function ListingDetail({ item }: { item: Listing }) {
         Back to {modules.find((module) => module.id === item.section)?.title}
       </Link>
       <div className="detail-grid">
-        {photo ? (
+        {visiblePhoto ? (
           <div>
             <Dialog.Root>
-              <Dialog.Trigger className="commerce-gallery-trigger" aria-label="Enlarge product image">
+              <Dialog.Trigger className="commerce-gallery-trigger" aria-label="Enlarge product image"
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                    event.preventDefault();
+                    movePhoto(event.key === "ArrowLeft" ? -1 : 1);
+                  }
+                }}
+                onTouchStart={(event) => { touchStart.current = event.touches[0]?.clientX ?? null; }}
+                onTouchEnd={(event) => {
+                  const start = touchStart.current;
+                  touchStart.current = null;
+                  const end = event.changedTouches[0]?.clientX;
+                  if (start !== null && end !== undefined && Math.abs(end - start) > 45)
+                    movePhoto(end < start ? 1 : -1);
+                }}>
               <img
               className="detail-image"
-              src={asset(`images/${photo}.webp`)}
+              src={asset(`images/${visiblePhoto}.webp`)}
               alt={item.name}
+              onError={() => setFailedPhoto(visiblePhoto)}
               />
               </Dialog.Trigger>
               <Dialog.Portal>
@@ -383,23 +525,25 @@ function ListingDetail({ item }: { item: Listing }) {
                 <Dialog.Content className="dialog commerce-gallery">
                   <Dialog.Title>{item.name}</Dialog.Title>
                   <Dialog.Description>Enlarged product image</Dialog.Description>
-                  <img src={asset(`images/${photo}.webp`)} alt={item.name} />
+                  <img src={asset(`images/${visiblePhoto}.webp`)} alt={item.name} />
+                  {variant.photos.length > 1 && (
+                    <div className="actions">
+                      <button className="outline" onClick={() => movePhoto(-1)}>Previous photo</button>
+                      <button className="outline" onClick={() => movePhoto(1)}>Next photo</button>
+                    </div>
+                  )}
                   <Dialog.Close className="outline">Close image</Dialog.Close>
                 </Dialog.Content>
               </Dialog.Portal>
             </Dialog.Root>
-            {item.id === "studio-headphones" && (
+            {variant.photos.length > 1 && (
               <div className="actions">
-                <button
-                  className="outline"
-                  onClick={() => setPhoto("headphones")}
-                  aria-pressed={photo === "headphones"}
-                >
-                  Studio photo
-                </button>
-                <button className="outline" onClick={() => setPhoto("hero")} aria-pressed={photo === "hero"}>
-                  Editorial photo
-                </button>
+                {variant.photos.map((image, index) => (
+                  <button key={image} className="outline" onClick={() => setPhotoIndex(index)} aria-pressed={photoIndex === index}>
+                    <img className="commerce-thumbnail" src={asset(`images/${image}.webp`)} alt="" loading="lazy" />
+                    <span>Photo {index + 1}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -421,11 +565,15 @@ function ListingDetail({ item }: { item: Listing }) {
               <label>
                 Variant
                 <select
-                  value={option}
-                  onChange={(event) => setOption(event.target.value)}
+                  value={variant.label}
+                  onChange={(event) => {
+                    setOption(variants.find((entry) => entry.label === event.target.value)!.id);
+                    setPhotoIndex(0);
+                    setQuantity(1);
+                    setMessage("");
+                  }}
                 >
-                  <option>Standard</option>
-                  <option>Gift packaging</option>
+                  {variants.map((entry) => <option key={entry.id}>{entry.label}</option>)}
                 </select>
               </label>
               <label>
@@ -438,11 +586,12 @@ function ListingDetail({ item }: { item: Listing }) {
                   onChange={(event) => setQuantity(event.target.valueAsNumber)}
                 />
               </label>
+              <p>SKU {variant.sku} · {variant.stock ? `${variant.stock} in demo stock` : "Out of demo stock"}</p>
               <p aria-live="polite">
                 {validQuantity
                   ? `Items subtotal: ${money(price * quantity)}`
                   : remainingCartQuantity === 0
-                    ? "Your cart has reached the limit for this variant."
+                    ? "No more units of this variant can be added."
                     : `Enter a quantity from 1 to ${remainingCartQuantity}.`}
               </p>
               <div className="actions">
@@ -467,7 +616,7 @@ function ListingDetail({ item }: { item: Listing }) {
               </div>
               {(item.category === "Electronics" ||
                 item.category === "Spare Parts") && (
-                <Link className="outline" to={stockPath(item.id, option)}>
+                <Link className="outline" to={stockPath(item.id, variant.label)}>
                   Check Nearby Stock{!stockEnabled ? " · Demo Mode" : ""}
                 </Link>
               )}
@@ -669,6 +818,14 @@ function ListingDetail({ item }: { item: Listing }) {
           <p role="status">{message}</p>
         </div>
       </div>
+      {togetherId && !expired && (
+        <section className="record commerce-buying">
+          <h2>Buy Together</h2>
+          <p>{money(groupPrice(price, groupTarget))} per unit at {groupTarget} units.</p>
+          <p>{groupSeed + (demo.groups[togetherId] ?? 0)} units committed · Closes {new Date(demo.groupDeadline).toLocaleString("en-IN")}</p>
+          <Link className="outline" to={`/listing/together/${togetherId}`}>Join Group</Link>
+        </section>
+      )}
       {sourcingProduct && supplierOffers.length > 0 && (
         <section className="commerce-buying">
           <h2>Where &amp; how to buy</h2>
@@ -683,6 +840,8 @@ function ListingDetail({ item }: { item: Listing }) {
                   <Link to={`/sourcing/supplier/${supplier.id}`}>{supplier.name}</Link>
                   <p>{placeName(supplier.base)} · Minimum order {offer.moq}</p>
                   {offer.pickup && <p>Pickup location: {placeName(offer.pickup)}</p>}
+                  <p>Sample lead time: {offer.leadDays} days</p>
+                  <p>Delivery: {offer.shipping.length ? offer.shipping.join(", ") : "Ask supplier"}</p>
                   {offer.tiers.length > 0 && (
                     <ul>
                       {offer.tiers.map((tier) => (
@@ -692,6 +851,9 @@ function ListingDetail({ item }: { item: Listing }) {
                       ))}
                     </ul>
                   )}
+                  <Link className="outline" to={`/connect?${new URLSearchParams({ offer: offer.id, quantity: String(offer.moq) })}`}>
+                    {offer.custom ? "Request custom order" : "Request a quote"}
+                  </Link>
                 </article>
               );
             })}
