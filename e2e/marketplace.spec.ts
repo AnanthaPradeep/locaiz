@@ -194,3 +194,13 @@ test("limits variant quantities and links eligible Together deals", async ({ pag
   await page.getByLabel("Quantity", { exact: true }).fill("9");
   await expect(page.getByRole("button", { name: "Add to cart" })).toBeDisabled();
 });
+
+test("supplier facets require a single matching offer and reset URL pagination", async ({ page }) => {
+  await page.goto("./#/shop?supplierCity=Shenzhen&pickup=Chennai&page=9");
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+  await page.getByRole("button", { name: "Remove Pickup location filter" }).click();
+  await expect(page.getByText("1 result", { exact: true })).toBeVisible();
+  await expect(page).not.toHaveURL(/page=/);
+  await page.goBack();
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+});

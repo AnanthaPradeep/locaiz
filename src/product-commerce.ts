@@ -1,35 +1,77 @@
 import type { Listing } from "./catalog";
+import { offers, products, type Offer, type Product } from "./sourcing/catalog";
 
-const details: Record<string, { stock: number; giftStock: number; photos?: string[] }> = {
-  "studio-headphones": { stock: 16, giftStock: 5, photos: ["headphones", "hero"] },
-  "stoneware-cups": { stock: 24, giftStock: 8 },
-  "globe-lamp": { stock: 10, giftStock: 0 },
-  "everyday-tote": { stock: 32, giftStock: 12 },
+type VariantId = "standard" | "gift";
+type VariantFixture = { stock: number; surcharge: number; photos?: string[] };
+type RetailFixture = {
+  subcategory: string;
+  together?: { variantId: VariantId; listingId: string };
+  variants: Record<VariantId, VariantFixture>;
 };
 
-export const retailSubcategory: Record<string, string> = {
-  "studio-headphones": "Headphones",
-  "stoneware-cups": "Drinkware",
-  "globe-lamp": "Lighting",
-  "everyday-tote": "Bags",
+const retail: Record<string, RetailFixture> = {
+  "studio-headphones": { subcategory: "Headphones", variants: {
+    standard: { stock: 16, surcharge: 0, photos: ["headphones", "hero"] },
+    gift: { stock: 5, surcharge: 150, photos: ["hero", "headphones"] },
+  } },
+  "stoneware-cups": { subcategory: "Drinkware", together: { variantId: "standard", listingId: "cup-club" }, variants: {
+    standard: { stock: 24, surcharge: 0 },
+    gift: { stock: 8, surcharge: 150 },
+  } },
+  "globe-lamp": { subcategory: "Lighting", variants: {
+    standard: { stock: 10, surcharge: 0 },
+    gift: { stock: 0, surcharge: 150 },
+  } },
+  "everyday-tote": { subcategory: "Bags", together: { variantId: "standard", listingId: "tote-club" }, variants: {
+    standard: { stock: 32, surcharge: 0 },
+    gift: { stock: 12, surcharge: 150 },
+  } },
 };
 
-export const togetherProduct: Record<string, string> = {
-  "stoneware-cups": "cup-club",
-  "everyday-tote": "tote-club",
+const variantLabels = { standard: "Standard", gift: "Gift packaging" } as const;
+
+export function retailSubcategory(productId: string) {
+  return retail[productId]?.subcategory;
+}
+
+export function togetherListing(productId: string, variantId: VariantId) {
+  const deal = retail[productId]?.together;
+  return deal?.variantId === variantId ? deal.listingId : undefined;
+}
+
+export type ProductSourcing = { product: Product | undefined; offers: Offer[] };
+
+export function productSourcing(productId: string, variantId: VariantId = "standard"): ProductSourcing {
+  const product = products.find((entry) => entry.legacyId === productId);
+  return {
+    product,
+    offers: product && variantId === "standard" ? offers.filter((offer) => offer.productId === product.id) : [],
+  };
+}
+
+export type RetailVariant = {
+  id: VariantId;
+  label: (typeof variantLabels)[VariantId];
+  sku: string;
+  photos: string[];
+  price: number;
+  stock: number;
+  cartKey: string;
 };
 
-export function retailVariants(item: Listing) {
-  const fixture = details[item.id];
-  const photos = fixture?.photos ?? (item.image ? [item.image] : []);
-  return [
-    { id: "standard", label: "Standard", stock: fixture?.stock ?? 0, extra: 0, photos },
-    { id: "gift", label: "Gift packaging", stock: fixture?.giftStock ?? 0, extra: 150, photos: [...photos].reverse() },
-  ].map(({ extra, ...variant }) => ({
-    ...variant,
-    sku: `${item.id}-${variant.id}`,
-    price: (item.price ?? 0) + extra,
-    // Keep the original Standard key so existing demo carts remain readable.
-    cartKey: variant.id === "standard" ? item.id : `${item.id}:${variant.id}`,
-  }));
+export function retailVariants(item: Listing): RetailVariant[] {
+  const ids: VariantId[] = ["standard", "gift"];
+  return ids.map((id) => {
+    const variant = retail[item.id]?.variants[id];
+    return {
+      id,
+      label: variantLabels[id],
+      sku: `${item.id}-${id}`,
+      photos: variant?.photos ?? (item.image ? [item.image] : []),
+      price: (item.price ?? 0) + (variant?.surcharge ?? 0),
+      stock: variant?.stock ?? 0,
+      // Keep the original Standard key so persisted demo carts remain readable.
+      cartKey: id === "standard" ? item.id : `${item.id}:${id}`,
+    };
+  });
 }

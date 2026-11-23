@@ -21,8 +21,8 @@ import { useDemo } from "./store";
 import { Business, RequirementForm } from "./workspace";
 import { Missing, Page } from "./page";
 import { stockEnabled, stockPath } from "./stock/config";
-import { retailSubcategory, retailVariants, togetherProduct } from "./product-commerce";
-import { ancestry, offers, products as sourcingProducts, suppliers, placeName, formatMinor } from "./sourcing/catalog";
+import { productSourcing, retailSubcategory, retailVariants, togetherListing } from "./product-commerce";
+import { ancestry, suppliers, placeName, formatMinor } from "./sourcing/catalog";
 
 const MarketMap = lazy(() => import("./market-map"));
 
@@ -43,11 +43,11 @@ const filterFields = {
 
 function productFacets(item: Listing, activeDeal: boolean) {
   if (item.section !== "shop") return {};
-  const source = sourcingProducts.find((entry) => entry.legacyId === item.id);
-  const matching = offers.filter((offer) => offer.productId === source?.id);
+  const { product: source, offers: matching } = productSourcing(item.id);
+  const subcategory = retailSubcategory(item.id);
   return {
     brand: [item.detail],
-    subcategory: retailSubcategory[item.id] ? [retailSubcategory[item.id]] : [],
+    subcategory: subcategory ? [subcategory] : [],
     countryOfSupplier: matching.flatMap((offer) => {
       const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
       return supplier ? ancestry(supplier.base).filter((place) => place.country).map((place) => place.name) : [];
@@ -63,7 +63,7 @@ function productFacets(item: Listing, activeDeal: boolean) {
     method: ["Retail", ...matching.map((offer) => offer.method)],
     pickup: matching.flatMap((offer) => offer.pickup ? [placeName(offer.pickup)] : []),
     available: retailVariants(item).some((variant) => variant.stock > 0) ? ["In demo stock"] : [],
-    community: activeDeal && togetherProduct[item.id] ? ["Deal available"] : [],
+    community: activeDeal && togetherListing(item.id, "standard") ? ["Deal available"] : [],
   };
 }
 
@@ -157,9 +157,8 @@ export default function Marketplace() {
     if (item.section !== "shop") return false;
     if ((maxMoq === undefined || maxMoq >= 1) &&
         activeOfferFacets.every(({ key, value }) => key === "method" && value === "Retail")) return true;
-    const product = sourcingProducts.find((entry) => entry.legacyId === item.id);
-    return offers.some((offer) => {
-      if (offer.productId !== product?.id || (maxMoq !== undefined && offer.moq > maxMoq)) return false;
+    return productSourcing(item.id).offers.some((offer) => {
+      if (maxMoq !== undefined && offer.moq > maxMoq) return false;
       const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
       const attributes: Record<string, readonly string[]> = {
         countryOfSupplier: supplier ? ancestry(supplier.base).filter((place) => place.country).map((place) => place.name) : [],
@@ -456,9 +455,8 @@ function ListingDetail({ item }: { item: Listing }) {
   const cartKey = variant.cartKey;
   const remainingCartQuantity = Math.max(0, variant.stock - (demo.cart[cartKey] ?? 0));
   const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= remainingCartQuantity;
-  const sourcingProduct = sourcingProducts.find((product) => product.legacyId === item.id);
-  const supplierOffers = offers.filter((offer) => offer.productId === sourcingProduct?.id && variant.id === "standard");
-  const togetherId = variant.id === "standard" ? togetherProduct[item.id] : undefined;
+  const { product: sourcingProduct, offers: supplierOffers } = productSourcing(item.id, variant.id);
+  const togetherId = togetherListing(item.id, variant.id);
   const isGroup = item.section === "together";
   const membership = demo.groups[item.id] ?? 0;
   const groupUnits = groupSeed + membership;

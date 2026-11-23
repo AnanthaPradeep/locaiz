@@ -1,5 +1,7 @@
 # Implementation status
 
+Retail checkout remains a demo. The retail model links variants to cart keys, stock request names, sourcing product offers and Together listing IDs. Configured environments can browse published offers separately at `/sourcing/published`. That repository applies category, supplier review, offer filtering, ordering and pagination on the server. It reads the existing restricted supplier review status and never grants buyer or seller write access to that field. The Pages build remains in Demo Mode.
+
 The PLP/PDP draft adds combinable product facets, a keyboard-accessible quick-view dialog, variant-specific demo retail pricing and stock limits, gallery thumbnails and navigation, and a Together link for eligible standard variants. Sourcing offers keep original currencies and link to the existing quote form. Supplier verification and other live catalogue attributes require published records.
 
 The authenticated stock Playwright cases skip in the ordinary demo suite because they require a seeded loopback Supabase instance and pilot credentials. The GitHub Actions stock-pilot job provisions and seeds that instance, runs sourcing RLS checks, and runs both authenticated browser cases.
