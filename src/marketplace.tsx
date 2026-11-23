@@ -170,6 +170,7 @@ export default function Marketplace() {
     next.delete("page");
     setParams(next);
   }
+  const appliedCount = chosenCategories.length + activeFacets.reduce((sum, facet) => sum + facet.values.length, 0) + [minimumPrice, maximumPrice, maxMoq].filter((value) => value !== undefined).length;
   const offerFacetKeys = ["countryOfSupplier", "supplierCity", "supplierType", "method", "pickup"];
   const activeOfferFacets = activeFacets.filter(({ key }) => offerFacetKeys.includes(key));
   const matchesOffer = (item: Listing) => {
@@ -258,7 +259,7 @@ export default function Marketplace() {
     >
       {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
       {section === "shop" && <label className="catalogue-search">Search products<input type="search" value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
-      <div className="filterbar">
+      <div className={section === "shop" ? "filterbar catalogue-toolbar" : "filterbar"}>
         {(section === "global" ||
           section === "shop" ||
           section === "nearby" ||
@@ -368,7 +369,7 @@ export default function Marketplace() {
               {listView ? "Switch to grid" : "Switch to list"}
             </button>
             <Dialog.Root>
-              <Dialog.Trigger className="outline">More product filters</Dialog.Trigger>
+              <Dialog.Trigger className="outline" aria-label="More product filters">Filters{appliedCount > 0 && <span className="catalogue-filter-count">{appliedCount}</span>}</Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay className="overlay" />
                 <Dialog.Content className="dialog detail-actions commerce-filter-dialog">

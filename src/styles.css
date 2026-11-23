@@ -1039,3 +1039,46 @@ progress {
   .catalogue-layout { grid-template-columns: minmax(0, 1fr); }
   .catalogue-sidebar { display: none; }
 }
+
+.catalogue-filter-count {
+  display: inline-grid;
+  min-width: 24px;
+  min-height: 24px;
+  padding-inline: 4px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--panel);
+}
+@media (max-width: 650px) {
+  .page:has(.catalogue-layout) > .page-heading {
+    margin-bottom: 16px;
+  }
+  .page:has(.catalogue-layout) .page-heading h1 {
+    font-size: clamp(2rem, 10vw, 2.6rem);
+  }
+  .catalogue-categories {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 4px 4px 8px;
+    margin-block: 12px;
+  }
+  .catalogue-categories button {
+    flex: none;
+  }
+  .catalogue-search {
+    margin-block: 10px;
+  }
+  .catalogue-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-block: 5px 8px;
+    background: var(--paper);
+  }
+  .catalogue-toolbar > * {
+    flex: none;
+    white-space: nowrap;
+  }
+}
