@@ -102,28 +102,17 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 14px;
+  gap: 8px;
   margin-block: 14px 24px;
 }
 .sourcing-crumbs,
 .sourcing-children {
-  gap: 6px;
+  gap: 8px;
 }
-.sourcing-crumbs button {
-  background: transparent;
-  padding: 4px 0;
-  border: 0;
-  font-size: 13px;
-  min-height: 36px;
-}
-.sourcing-crumbs button + button::before {
-  content: "/";
-  margin-right: 6px;
-  color: var(--muted);
-}
+.sourcing-crumbs .outline,
 .sourcing-children .outline {
-  min-height: 36px;
-  padding: 5px 10px;
+  min-height: 44px;
+  padding: 8px 14px;
   border-color: var(--line);
   font-size: 13px;
 }
