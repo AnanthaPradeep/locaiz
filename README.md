@@ -48,4 +48,4 @@ Public information routes are /#/about and /#/contact. See [About](docs/ABOUT-PA
 
 ### Footer social profiles
 
-Configure confirmed official accounts in `src/organisation.ts` under `organisation.socialProfiles`. Each entry has a platform, its HTTPS account URL and an enabled flag. Enable an account only after confirming LOCAIZ ownership. Supported platforms are Instagram, Facebook, LinkedIn and YouTube. Homepage, unexpected host, credential-bearing and disabled URLs are hidden. Published social anchors open in a new tab without sharing referrer information.
+Set up the Follow LOCAIZ section in src/organisation.ts under organisation.socialProfiles. Add one enabled entry per confirmed official account. Choose the platform identifier and paste its HTTPS profile URL. Instagram and Facebook expect an account or page path, LinkedIn a company or showcase page, and YouTube a channel URL or handle. Follow LOCAIZ is hidden until an enabled URL passes validation. The four embedded brand marks come from Bootstrap Icons v1.13.1. See public/licenses/bootstrap-icons.txt.

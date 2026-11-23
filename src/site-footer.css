@@ -1,4 +1,4 @@
-﻿.site-footer {
+.site-footer {
   border-top: 1px solid var(--line);
   background: var(--panel);
   padding-block: clamp(32px, 5vw, 64px) 24px;
@@ -48,6 +48,9 @@
 .site-footer-grid li a:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+.footer-follow {
+  margin-block-start: 10px;
 }
 .footer-social {
   display: flex;
