@@ -45,3 +45,7 @@ npm run test:e2e
 ```
 
 Public information routes are /#/about and /#/contact. See [About](docs/ABOUT-PAGE.md) and [Contact support](docs/CONTACT-SUPPORT.md).
+
+### Footer social profiles
+
+Configure confirmed official accounts in `src/organisation.ts` under `organisation.socialProfiles`. Each entry has a platform, its HTTPS account URL and an enabled flag. Enable an account only after confirming LOCAIZ ownership. Supported platforms are Instagram, Facebook, LinkedIn and YouTube. Homepage, unexpected host, credential-bearing and disabled URLs are hidden. Published social anchors open in a new tab without sharing referrer information.
