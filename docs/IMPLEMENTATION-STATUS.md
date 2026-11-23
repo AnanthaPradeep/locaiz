@@ -42,4 +42,4 @@ GitHub Actions and the public Pages URL remain unverified.
 
 About and Contact have public hash routes. Contact offers category routing and a validation-only demo preview. Live support submission and verified organisation details are pending.
 
-The shared footer includes marketplace, account, support and company navigation with a dynamic copyright year. Social icons render only for enabled, validated official profiles. Unit tests exercise social markup and Playwright covers routes and responsive layout.
+The shared footer includes marketplace, account, support and company navigation with a dynamic copyright year. Social icons are visible as standalone marks. Links activate only for enabled, validated official profiles. Unit tests exercise social markup and Playwright covers routes and responsive layout.

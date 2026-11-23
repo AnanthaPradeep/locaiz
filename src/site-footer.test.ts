@@ -54,5 +54,7 @@ it("renders only enabled account URLs on the expected platform", () => {
   expect(
     markup.match(/target="_blank" rel="noopener noreferrer"/g),
   ).toHaveLength(4);
-  expect(renderToStaticMarkup(createElement(SocialLinks, {}))).toBe("");
+  const preview = renderToStaticMarkup(createElement(SocialLinks, {}));
+  expect(preview.match(/<svg /g)).toHaveLength(4);
+  expect(preview).not.toContain("href=");
 });
