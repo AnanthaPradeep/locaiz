@@ -90,7 +90,7 @@ export function Home() {
           </Link>
         </div>
         <div className="product-grid">
-          {products.map((item) => (
+          {products.filter((item) => ["studio-headphones", "stoneware-cups", "globe-lamp", "everyday-tote"].includes(item.id)).map((item) => (
             <ListingCard key={item.id} item={item} />
           ))}
         </div>
