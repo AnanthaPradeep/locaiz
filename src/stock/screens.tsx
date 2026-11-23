@@ -331,7 +331,8 @@ function RequestList({
     queryKey: ["stockRequests", user, seller],
     queryFn: () => readRequests(user, seller),
     staleTime: 0,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });
   const { refetch } = query;
   useEffect(() => {
@@ -433,7 +434,8 @@ function SellerNotifications({ user, now }: { user: string; now: number }) {
   const query = useQuery({
     queryKey: ["stockRequests", user, true],
     queryFn: () => readRequests(user, true),
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });
   return (
     <>

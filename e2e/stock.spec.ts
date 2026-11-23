@@ -53,6 +53,19 @@ test.describe("authenticated stock pilot @stock", () => {
       const buyer = await buyerContext.newPage();
       const shopA = await shopAContext.newPage();
       const shopB = await shopBContext.newPage();
+      let buyerRevision = 0;
+      buyer.on("websocket", (socket) => {
+        socket.on("framereceived", ({ payload }) => {
+          const frame = payload.toString();
+          if (
+            frame.includes('"postgres_changes"') &&
+            frame.includes('"stock_feed"') &&
+            frame.includes('"record"')
+          ) {
+            buyerRevision++;
+          }
+        });
+      });
       await login(shopA, "seller-a", "/business/stock");
       await expect(
         shopA.getByText("Live stock updates connected"),
@@ -80,7 +93,12 @@ test.describe("authenticated stock pilot @stock", () => {
           .filter({ hasText: "Browser pilot acceptance" })
           .first();
       const card = assigned(shopA);
-      await expect(card).toBeVisible({ timeout: 12000 });
+      await expect(card)
+        .toBeVisible({ timeout: 12000 })
+        .catch(async (error) => {
+          const inbox = await shopA.locator("main").innerText();
+          throw new Error(`${error.message}\nSeller inbox state:\n${inbox}`);
+        });
       await card
         .getByRole("button", { name: "Available", exact: true })
         .click();
@@ -92,6 +110,7 @@ test.describe("authenticated stock pilot @stock", () => {
         .toISOString()
         .slice(0, 16);
       await shopA.getByLabel("Pickup ready time").fill(localTime);
+      const beforeReply = buyerRevision;
       await shopA.getByRole("button", { name: "Send reply" }).click();
       await expect(buyer.getByText(/₹1,250\.00 quoted/)).toBeVisible({
         timeout: 12000,
@@ -99,6 +118,13 @@ test.describe("authenticated stock pilot @stock", () => {
       await expect(
         buyer.getByText("Partially responded · 2 assigned · 1 pending"),
       ).toBeVisible();
+      await expect
+        .poll(() => buyerRevision, {
+          timeout: 12000,
+          message:
+            "Expected a Supabase Realtime revision after the seller replied",
+        })
+        .toBeGreaterThan(beforeReply);
       await buyerContext.setOffline(true);
       await login(shopB, "seller-b", "/business/stock");
       await assigned(shopB)
@@ -187,6 +213,18 @@ test.describe("authenticated stock pilot @stock", () => {
           .eq("request_id", id)
       ).data,
     ).toEqual([{ id: first }]);
+    const memberships = await seller.rpc("my_stock_businesses");
+    expect(memberships.error).toBeNull();
+    expect(memberships.data).toEqual([shops[0]]);
+    const inbox = await seller
+      .from("stock_requests")
+      .select("id,stock_request_shops!inner(id,business_id)")
+      .in("stock_request_shops.business_id", memberships.data)
+      .eq("id", id);
+    expect(inbox.error).toBeNull();
+    expect(inbox.data).toEqual([
+      { id, stock_request_shops: [{ id: first, business_id: shops[0] }] },
+    ]);
     expect(
       (
         await seller.rpc("reply_stock_request", {
