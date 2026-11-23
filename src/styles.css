@@ -609,29 +609,6 @@ h3 {
 .trust svg {
   flex: none;
 }
-footer {
-  border-top: 1px solid var(--line);
-  background: var(--panel);
-  padding-block: 38px 55px;
-}
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1.5fr repeat(3, 1fr);
-  gap: 20px;
-}
-.footer-grid > div {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-.footer-grid a {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 24px;
-}
-.footer-grid a:hover,
 .record a:not(.button, .outline):hover {
   text-decoration: underline;
 }
@@ -1008,8 +985,7 @@ progress {
     margin-top: 30px;
   }
   .product-grid,
-  .category-grid,
-  .footer-grid {
+  .category-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .split,
@@ -1030,9 +1006,6 @@ progress {
   }
   .card-copy a svg {
     display: none;
-  }
-  footer {
-    padding-bottom: 85px;
   }
   .page {
     padding-top: 28px;

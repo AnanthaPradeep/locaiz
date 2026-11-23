@@ -4,7 +4,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowDownRight,
   ArrowUpRight,
-  Bell,
   Compass,
   Globe2,
   Handshake,
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { asset, findListings } from "./catalog";
 import { useDemo } from "./store";
+import { SiteFooter } from "./site-footer";
 
 export const modules = [
   { id: "shop", title: "Shop", desc: "Everyday finds", icon: ShoppingBag },
@@ -285,42 +285,13 @@ export function Shell({ children }: { children: ReactNode }) {
       <div id="content" tabIndex={-1}>
         {children}
       </div>
-      <footer>
-        <div className="wrap footer-grid">
-          <div>
-            <Brand />
-            <p>Local Roots. Global Reach.</p>
-            <small>LOCAIZ marketplace demonstration</small>
-          </div>
-          <div>
-            <strong>Marketplace</strong>
-            {modules.slice(0, 5).map((item) => (
-              <Link key={item.id} to={`/${item.id}`}>
-                {item.title}
-              </Link>
-            ))}
-          </div>
-          <div>
-            <strong>Your LOCAIZ</strong>
-            <Link to="/account/orders">Orders</Link>
-            <Link to="/account/bookings">Bookings</Link>
-            <Link to="/account/requirements">Requirements</Link>
-            <Link to="/account/notifications">
-              <Bell size={14} /> Notifications
-            </Link>
-          </div>
-          <div>
-            <strong>Information</strong>
-            <Link to="/about">About</Link>
-            <Link to="/contact">Contact Us</Link>
-            {["Help", "Privacy", "Terms", "Settings"].map((item) => (
-              <Link key={item} to={`/account/${item.toLowerCase()}`}>
-                {item}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <SiteFooter
+        brand={<Brand />}
+        marketplace={modules.filter(({ id }) => id !== "business").map(({ title, id }) => ({
+          label: title,
+          to: id === "global" ? "/sourcing" : `/${id}`,
+        }))}
+      />
       <nav className="mobile-nav" aria-label="Quick navigation">
         <NavLink end to="/">
           <Compass size={19} />

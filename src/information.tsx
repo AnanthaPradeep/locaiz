@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { asset } from "./catalog";
 import { Page } from "./page";
+import { organisation } from "./organisation";
 import "./information.css";
 
 const destinations = [
@@ -50,22 +51,6 @@ const topics = [
     "Listing reports, account safety and privacy requests",
   ],
 ] as const;
-
-export type PublicOrganisation = {
-  supportEmail?: string;
-  sellerEmail?: string;
-  partnershipEmail?: string;
-  privacyEmail?: string;
-  phone?: string;
-  legalName?: string;
-  registeredAddress?: string;
-  operationalLocation?: string;
-  supportHours?: string;
-  socialProfiles?: { label: string; url: string }[];
-  grievanceOfficer?: { name: string; channel: string };
-};
-
-const organisation: PublicOrganisation = {};
 
 const faqs = [
   [

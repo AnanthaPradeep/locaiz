@@ -41,3 +41,5 @@ The Phase 2 source includes an opt-in Supabase stock pilot. When the frontend ha
 GitHub Actions and the public Pages URL remain unverified.
 
 About and Contact have public hash routes. Contact offers category routing and a validation-only demo preview. Live support submission and verified organisation details are pending.
+
+The shared footer includes marketplace, account, support and company navigation with a dynamic copyright year. Social icons render only for enabled, validated official profiles. Unit tests exercise social markup and Playwright covers routes and responsive layout.
