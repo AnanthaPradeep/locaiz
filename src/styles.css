@@ -786,6 +786,45 @@ progress {
 .cart-line input {
   width: 90px;
 }
+.shopping-product {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+.cart-line .shopping-product {
+  flex: 1 1 17rem;
+}
+.shopping-product-image {
+  display: block;
+  flex: none;
+  width: clamp(64px, 12vw, 112px);
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--panel);
+  border-radius: 6px;
+}
+.shopping-product-copy {
+  display: grid;
+  gap: var(--space-2xs, 4px);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cart-line .shopping-product-copy > *,
+.shopping-dialog .shopping-product-copy > *,
+.shopping-dialog.dialog > p {
+  margin: 0;
+}
+.shopping-dialog {
+  max-height: 85vh;
+  overflow: auto;
+}
+.shopping-dialog > :is(label, .shopping-product) {
+  width: 100%;
+}
+.cart-line-subtotal {
+  white-space: nowrap;
+}
 .map {
   height: 360px;
   background: var(--panel);

@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { findListings, listings, money, products } from "./catalog";
+import { asset, findListings, listings, money, products } from "./catalog";
 import { ListingCard } from "./listing-card";
 import { Missing, Page } from "./page";
 import { useDemo, type Activity } from "./store";
@@ -396,6 +396,8 @@ export default function Workspace({
             variant: variant.label,
             price: variant.price,
             stock: variant.stock,
+            photo: variant.photos[0],
+            sku: variant.sku,
           },
         ]
       : [];
@@ -496,15 +498,20 @@ export default function Workspace({
       title = panel === "checkout" ? "Demo checkout" : "Your cart";
       content = lines.length ? (
         <div className="records">
-          {lines.map(({ key, product, quantity, variant, price, stock }) => (
+          {lines.map(({ key, product, quantity, variant, price, stock, photo, sku }) => (
             <div key={key} className="record cart-line">
-              <div>
-                <Link to={`/listing/shop/${product.id}`}>
-                  <strong>{product.name}</strong>
-                </Link>
-                <p>
-                  {variant} · {money(price)} per unit
-                </p>
+              <div className="shopping-product">
+                {photo && <img className="shopping-product-image" src={asset(`images/${photo}.webp`)} alt={product.name} loading="lazy" />}
+                <div className="shopping-product-copy">
+                  <Link to={`/listing/shop/${product.id}`}>
+                    <strong>{product.name}</strong>
+                  </Link>
+                  <p className="muted">{product.detail} · {product.category}</p>
+                  <p>
+                    {variant} · {money(price)} per unit
+                  </p>
+                  <p className="muted">SKU {sku}</p>
+                </div>
               </div>
               {panel === "cart" ? (
                 <label>
@@ -525,6 +532,7 @@ export default function Workspace({
               ) : (
                 <span>× {quantity}</span>
               )}
+              <strong className="cart-line-subtotal">{money(price * quantity)}</strong>
               {panel === "cart" && (
                 <button
                   className="outline"

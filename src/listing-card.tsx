@@ -201,13 +201,31 @@ function ShoppingDialog({
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
-        <Dialog.Content className="dialog detail-actions">
-          <Dialog.Title>
-            {preview ? item.name : `Choose a variant for ${item.name}`}
-          </Dialog.Title>
-          <Dialog.Description>
-            {item.detail} · {item.category}
-          </Dialog.Description>
+        <Dialog.Content className="dialog detail-actions shopping-dialog">
+          <div className="shopping-product">
+            {variant.photos[0] && (
+              <img
+                className="shopping-product-image"
+                src={asset(`images/${variant.photos[0]}.webp`)}
+                alt={item.name}
+              />
+            )}
+            <div className="shopping-product-copy">
+              <Dialog.Title>
+                {preview ? item.name : `Choose a variant for ${item.name}`}
+              </Dialog.Title>
+              <Dialog.Description>
+                {item.detail} · {item.category}
+              </Dialog.Description>
+              <p>
+                {money(variant.price)} ·{" "}
+                {variant.stock
+                  ? `${variant.stock} in demo stock`
+                  : "Out of demo stock"}
+              </p>
+              <p className="muted">SKU {variant.sku}</p>
+            </div>
+          </div>
           <label>
             Variant
             <select
@@ -228,17 +246,7 @@ function ShoppingDialog({
               ))}
             </select>
           </label>
-          <p>
-            {money(variant.price)} ·{" "}
-            {variant.stock
-              ? `${variant.stock} in demo stock`
-              : "Out of demo stock"}
-          </p>
-          {variant.stock > 0 && (
-            <p>
-              {units} more can be added · SKU {variant.sku}
-            </p>
-          )}
+          {variant.stock > 0 && <p>{units} more can be added</p>}
           <div className="actions">
             <button
               className="button"
