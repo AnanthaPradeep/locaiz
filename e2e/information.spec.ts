@@ -14,6 +14,7 @@ test("legacy About opens the editorial page and its marketplace links", async ({
       "A marketplace for discovering products, makers, suppliers and services.",
     ),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Explore Marketplace" })).toHaveCSS("color", "rgb(10, 10, 10)");
   const links = page.locator(".info-grid > a");
   await expect(links).toHaveCount(7);
   for (const route of [

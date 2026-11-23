@@ -49,3 +49,25 @@
     grid-template-columns: 1fr;
   }
 }
+
+.info-hero .button {
+  color: #0a0a0a;
+}
+.info-hero .eyebrow {
+  color: #d9cbbc;
+}
+.info-hero .actions,
+.info-section > .actions,
+.info-section > p + .info-grid {
+  margin-block-start: 16px;
+}
+.info-section > p + h2,
+.info-section > .actions + h3 {
+  margin-block-start: 24px;
+}
+.info-section textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  resize: vertical;
+}
