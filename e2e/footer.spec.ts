@@ -1,12 +1,15 @@
 import { build } from "esbuild";
 import { expect, test } from "@playwright/test";
 
-test("footer links use the application routes and hide unconfigured social accounts", async ({
+test("footer links use the application routes and show unlinked icons by default", async ({
   page,
 }) => {
   await page.goto("/");
   const footer = page.getByRole("contentinfo");
   expect(await footer.getByRole("navigation").count()).toBe(4);
+  const follow = footer.getByRole("region", { name: "Follow LOCAIZ" });
+  await expect(follow.locator("svg")).toHaveCount(4);
+  await expect(follow.getByRole("link")).toHaveCount(0);
   for (const [label, route] of [
     ["LOCAIZ home", "/"],
     ["Shop", "/shop"],
@@ -123,6 +126,7 @@ test("configured Follow LOCAIZ icons support keyboard, themes and new tabs", asy
         import { createElement } from "react";
         import { createRoot } from "react-dom/client";
         import { SocialLinks } from "./src/site-footer";
+        document.querySelector(".footer-follow").remove();
         const mount = document.createElement("div");
         document.querySelector(".footer-brand").append(mount);
         createRoot(mount).render(createElement(SocialLinks, { profiles: ${JSON.stringify(fixtures)} }));
@@ -139,7 +143,7 @@ test("configured Follow LOCAIZ icons support keyboard, themes and new tabs", asy
   await page.goto("/");
   await page.locator(".footer-brand").waitFor();
   await page.addScriptTag({ content: bundle.outputFiles[0].text });
-  const follow = page.getByRole("navigation", { name: "Follow LOCAIZ" });
+  const follow = page.getByRole("region", { name: "Follow LOCAIZ" });
   await expect(
     follow.getByRole("heading", { name: "Follow LOCAIZ" }),
   ).toBeVisible();

@@ -60,33 +60,53 @@ export function SocialLinks({
   profiles?: readonly SocialProfile[];
 }) {
   const official = officialSocialProfiles(profiles);
-  if (!official.length) return null;
   return (
-    <nav className="footer-follow" aria-label="Follow LOCAIZ">
+    <section className="footer-follow" aria-label="Follow LOCAIZ">
       <h2>Follow LOCAIZ</h2>
       <div className="footer-social">
-        {official.map(({ platform, url }) => (
-          <a
-            key={url}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`LOCAIZ on ${platformNames[platform]} (opens in a new tab)`}
-          >
-            <svg
-              viewBox="0 0 16 16"
-              width="22"
-              height="22"
-              fill="currentColor"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d={marks[platform]} />
-            </svg>
-          </a>
-        ))}
+        {(Object.keys(platformNames) as SocialProfile["platform"][]).map(
+          (platform) => {
+            const profile = official.find(
+              (entry) => entry.platform === platform,
+            );
+            const label = platformNames[platform];
+            const icon = (
+              <svg
+                viewBox="0 0 16 16"
+                width="22"
+                height="22"
+                fill="currentColor"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d={marks[platform]} />
+              </svg>
+            );
+            return profile ? (
+              <a
+                key={platform}
+                className="footer-social-icon"
+                href={profile.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`LOCAIZ on ${label} (opens in a new tab)`}
+              >
+                {icon}
+              </a>
+            ) : (
+              <span
+                key={platform}
+                className="footer-social-icon"
+                role="img"
+                aria-label={label}
+              >
+                {icon}
+              </span>
+            );
+          },
+        )}
       </div>
-    </nav>
+    </section>
   );
 }
 

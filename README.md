@@ -48,4 +48,4 @@ Public information routes are /#/about and /#/contact. See [About](docs/ABOUT-PA
 
 ### Footer social profiles
 
-Set up the Follow LOCAIZ section in src/organisation.ts under organisation.socialProfiles. Add one enabled entry per confirmed official account. Choose the platform identifier and paste its HTTPS profile URL. Instagram and Facebook expect an account or page path, LinkedIn a company or showcase page, and YouTube a channel URL or handle. Follow LOCAIZ is hidden until an enabled URL passes validation. The four embedded brand marks come from Bootstrap Icons v1.13.1. See public/licenses/bootstrap-icons.txt.
+Set up the Follow LOCAIZ section in src/organisation.ts under organisation.socialProfiles. Add one enabled entry per confirmed official account. Choose the platform identifier and paste its HTTPS profile URL. Instagram and Facebook expect an account or page path, LinkedIn a company or showcase page, and YouTube a channel URL or handle. The four icons are visible by default. Each icon is non-interactive until its enabled URL passes validation. The four embedded brand marks come from Bootstrap Icons v1.13.1. See public/licenses/bootstrap-icons.txt.
