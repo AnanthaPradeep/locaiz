@@ -110,6 +110,7 @@ test("single purchasable variant adds directly and respects its remaining stock"
   page,
 }) => {
   await page.goto("/#/shop");
+  await page.getByRole("button", { name: "Page 2", exact: true }).click();
   const lamp = page
     .locator(".listing-card")
     .filter({ hasText: "Walnut Globe Table Lamp" });
@@ -122,7 +123,8 @@ test("single purchasable variant adds directly and respects its remaining stock"
   }
   await expect(add).toBeDisabled();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page).toHaveURL(/#\/shop$/);
+  await expect(page).toHaveURL(/#\/shop\?page=2$/);
+  await page.getByRole("button", { name: "Page 1", exact: true }).click();
   const pads = page
     .locator(".listing-card")
     .filter({ hasText: "Studio Headphone Replacement Pads" });
