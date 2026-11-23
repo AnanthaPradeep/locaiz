@@ -12,14 +12,14 @@ test("search, wishlist, variant cart, checkout and persisted order", async ({
     page.getByRole("heading", { name: /Results for/ }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Save Studio Wireless Headphones" })
+    .getByRole("button", { name: "Add Studio Wireless Headphones to wishlist" })
     .click();
   await page
     .getByRole("link", { name: "Studio Wireless Headphones", exact: true })
     .first()
     .click();
   await page.getByLabel("Variant").selectOption("Gift packaging");
-  await page.getByRole("button", { name: "Add to cart" }).click();
+  await page.getByRole("button", { name: "Add to cart", exact: true }).click();
   await page.getByRole("link", { name: "View cart" }).click();
   await expect(page.getByText(/Gift packaging ·/)).toBeVisible();
   await page.getByRole("link", { name: "Continue to demo checkout" }).click();
@@ -29,7 +29,7 @@ test("search, wishlist, variant cart, checkout and persisted order", async ({
   await expect(page.getByText("Demo retail order")).toBeVisible();
   await page.goto("/#/account/wishlist");
   await expect(
-    page.getByRole("button", { name: "Save Studio Wireless Headphones" }),
+    page.getByRole("button", { name: "Remove Studio Wireless Headphones from wishlist" }),
   ).toHaveAttribute("aria-pressed", "true");
 });
 
@@ -108,7 +108,7 @@ test("nearby distance and simulated stock confirmation", async ({ page }) => {
 });
 
 for (const width of [360, 390, 768, 1024, 1440, 1920]) {
-  test(`responsive layout at ${width}px`, async ({ page }) => {
+  test(`responsive layout at ${width}px`, async ({ page }, testInfo) => {
     const problems: string[] = [];
     page.on("pageerror", (error) => problems.push(error.message));
     page.on("response", (response) => {
@@ -129,6 +129,9 @@ for (const width of [360, 390, 768, 1024, 1440, 1920]) {
     expect(
       await page.locator("body").evaluate((element) => element.scrollWidth),
     ).toBeLessThanOrEqual(width);
+    await page.goto("/#/shop");
+    await expect(page.getByRole("heading", { name: "Shop" })).toBeVisible();
+    expect(await page.locator("body").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(width);
     expect(problems).toEqual([]);
     const names: Record<number, string> = {
       390: "mobile",
@@ -137,7 +140,7 @@ for (const width of [360, 390, 768, 1024, 1440, 1920]) {
     };
     if (names[width])
       await page.screenshot({
-        path: `docs/screenshots/${names[width]}.png`,
+        path: testInfo.outputPath(`${names[width]}.png`),
         fullPage: true,
         animations: "disabled",
       });
@@ -162,7 +165,7 @@ test("shows product image zoom, quantity validation and linked offers", async ({
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByLabel("Quantity", { exact: true }).fill("100");
-  await expect(page.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Add to cart", exact: true })).toBeDisabled();
   await page.getByLabel("Quantity", { exact: true }).fill("2");
   await expect(page.getByText(/Items subtotal/)).toBeVisible();
   await page.getByRole("link", { name: "Compare sourcing offers" }).click();
@@ -192,7 +195,7 @@ test("limits variant quantities and links eligible Together deals", async ({ pag
   await expect(page.getByText(/stoneware-cups-gift/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Join Group" })).toHaveCount(0);
   await page.getByLabel("Quantity", { exact: true }).fill("9");
-  await expect(page.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Add to cart", exact: true })).toBeDisabled();
 });
 
 test("supplier facets require a single matching offer and reset URL pagination", async ({ page }) => {

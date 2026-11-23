@@ -137,7 +137,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [menu, setMenu] = useState(false);
-  const { theme, setPreference, cart } = useDemo();
+  const { theme, setPreference, cart, liked } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
   const count = Object.values(cart).reduce((sum, value) => sum + value, 0);
@@ -242,11 +242,12 @@ export function Shell({ children }: { children: ReactNode }) {
               <MessageCircle size={20} />
             </Link>
             <Link
-              className="icon-button optional"
-              aria-label="Wishlist"
+              className="icon-button optional cart-button"
+              aria-label={`Wishlist, ${liked.length} saved products`}
               to="/account/wishlist"
             >
               <Heart size={20} />
+              {liked.length > 0 && <span>{liked.length}</span>}
             </Link>
             <Link
               className="icon-button cart-button"
@@ -327,9 +328,9 @@ export function Shell({ children }: { children: ReactNode }) {
           <MapPin size={19} />
           Nearby
         </NavLink>
-        <NavLink to="/account/wishlist">
+        <NavLink to="/account/wishlist" aria-label={`Saved, ${liked.length} products`}>
           <Heart size={19} />
-          Saved
+          {liked.length ? `Saved (${liked.length})` : "Saved"}
         </NavLink>
         <NavLink to="/account/cart">
           <ShoppingBag size={19} />

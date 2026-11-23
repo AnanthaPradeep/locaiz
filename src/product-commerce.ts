@@ -59,6 +59,10 @@ export type RetailVariant = {
   cartKey: string;
 };
 
+export function availableCartUnits(variant: RetailVariant, cart: Record<string, number>) {
+  return Math.max(0, variant.stock - (cart[variant.cartKey] ?? 0));
+}
+
 export function retailVariants(item: Listing): RetailVariant[] {
   const ids: VariantId[] = ["standard", "gift"];
   return ids.map((id) => {

@@ -1,5 +1,7 @@
 # Implementation status
 
+Shared product cards use a native PDP link over the full card surface. Retail cart and wishlist controls work independently, with variant selection and demo stock limits. Playwright saves responsive screenshots in test output instead of replacing the tracked documentation images.
+
 Retail checkout remains a demo. The retail model links variants to cart keys, stock request names, sourcing product offers and Together listing IDs. Configured environments can browse published offers separately at `/sourcing/published`. That repository applies category, supplier review, offer filtering, ordering and pagination on the server. It reads the existing restricted supplier review status and never grants buyer or seller write access to that field. The Pages build remains in Demo Mode.
 
 The PLP/PDP draft adds combinable product facets, a keyboard-accessible quick-view dialog, variant-specific demo retail pricing and stock limits, gallery thumbnails and navigation, and a Together link for eligible standard variants. Sourcing offers keep original currencies and link to the existing quote form. Supplier verification and other live catalogue attributes require published records.

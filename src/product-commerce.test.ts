@@ -1,6 +1,6 @@
 ﻿import { expect, it } from "vitest";
 import { products } from "./catalog";
-import { productSourcing, retailVariants, togetherListing } from "./product-commerce";
+import { availableCartUnits, productSourcing, retailVariants, togetherListing } from "./product-commerce";
 
 it("keeps gift inventory, pricing, and cart identity independent", () => {
   const item = products.find((entry) => entry.id === "studio-headphones")!;
@@ -12,4 +12,13 @@ it("keeps gift inventory, pricing, and cart identity independent", () => {
   expect(productSourcing(item.id, gift.id).offers).toHaveLength(0);
   expect(togetherListing("stoneware-cups", standard.id)).toBe("cup-club");
   expect(togetherListing("stoneware-cups", gift.id)).toBeUndefined();
+});
+
+it("caps each variant independently and rejects missing demo stock", () => {
+  const item = products.find((entry) => entry.id === "globe-lamp")!;
+  const [standard, gift] = retailVariants(item);
+  expect(availableCartUnits(standard, { [standard.cartKey]: 9 })).toBe(1);
+  expect(availableCartUnits(standard, { [standard.cartKey]: 11 })).toBe(0);
+  expect(availableCartUnits(gift, {})).toBe(0);
+  expect(availableCartUnits(standard, { [gift.cartKey]: 3 })).toBe(10);
 });
