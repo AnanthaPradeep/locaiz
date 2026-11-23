@@ -82,9 +82,9 @@ test("shareable catalogue filters and side-by-side product estimates", async ({
   page,
 }) => {
   await page.goto("/#/shop");
-  await page.getByLabel("Category").selectOption("Fashion");
+  await page.getByLabel("Category").selectOption("Fashion & Apparel");
   await expect(page).toHaveURL(/category=Fashion/);
-  await expect(page.getByText("1 result", { exact: true })).toBeVisible();
+  await expect(page.getByText("5 results", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Compare products" }).click();
   await page.getByLabel("First product").selectOption("everyday-tote");
   await expect(page.getByText("₹998", { exact: true })).toBeVisible();

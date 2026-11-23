@@ -1019,3 +1019,23 @@ progress {
     transition-duration: 0.01ms !important;
   }
 }
+
+.catalogue-categories { margin-block: 16px 20px; }
+.catalogue-categories [aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--ink); }
+.catalogue-range { margin-block: 4px 16px; color: var(--muted); }
+.catalogue-card-spec { display:block; margin-top: 4px; }
+.catalogue-facet { width: 100%; display: grid; gap: 4px; }
+.catalogue-facet label { display: flex; align-items: center; gap: 8px; }
+.catalogue-facet input[type="checkbox"] { min-height: auto; width: auto; }
+.commerce-filter-dialog { max-height: 85vh; overflow: auto; }
+
+.catalogue-search { display: grid; max-width: 420px; margin-block: 16px; }
+.catalogue-layout { display: grid; grid-template-columns: minmax(205px, 230px) minmax(0, 1fr); gap: 20px; }
+.catalogue-sidebar { display: grid; gap: 14px; align-content: start; max-height: 75vh; overflow: auto; }
+.catalogue-sidebar h2 { font-size: 1.25rem; margin: 0; }
+.catalogue-sidebar fieldset { margin: 0; }
+.catalogue-applied { margin-block: 12px; }
+@media (max-width: 950px) {
+  .catalogue-layout { grid-template-columns: minmax(0, 1fr); }
+  .catalogue-sidebar { display: none; }
+}

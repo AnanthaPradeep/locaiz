@@ -1,3 +1,4 @@
+import { legacyShopCategories, shopCategories } from "./demo-retail";
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useMatch, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -28,6 +29,10 @@ const MarketMap = lazy(() => import("./market-map"));
 
 const filterFields = {
   brand: "Brand",
+  material: "Material / construction",
+  feature: "Product attributes",
+  variant: "Variant",
+  category: "Category",
   subcategory: "Subcategory",
   countryOfSupplier: "Supplier country",
   supplierCity: "Supplier city",
@@ -44,9 +49,13 @@ const filterFields = {
 function productFacets(item: Listing, activeDeal: boolean) {
   if (item.section !== "shop") return {};
   const { product: source, offers: matching } = productSourcing(item.id);
-  const subcategory = retailSubcategory(item.id);
+  const subcategory = retailSubcategory(item.id) ?? item.subcategory;
   return {
     brand: [item.detail],
+    material: item.specifications?.Material ? [item.specifications.Material] : [],
+    feature: item.specifications?.Feature ? [item.specifications.Feature] : [],
+    variant: item.demoVariants?.map((variant) => variant.label) ?? [],
+    category: [item.category],
     subcategory: subcategory ? [subcategory] : [],
     countryOfSupplier: matching.flatMap((offer) => {
       const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
@@ -60,9 +69,9 @@ function productFacets(item: Listing, activeDeal: boolean) {
     supplierType: matching.flatMap((offer) =>
       suppliers.find((supplier) => supplier.id === offer.supplierId)?.roles ?? [],
     ),
-    method: ["Retail", ...matching.map((offer) => offer.method)],
+    method: [item.quoteOnly ? "Quote only" : "Retail", ...matching.map((offer) => offer.method)],
     pickup: matching.flatMap((offer) => offer.pickup ? [placeName(offer.pickup)] : []),
-    available: retailVariants(item).some((variant) => variant.stock > 0) ? ["In demo stock"] : [],
+    available: [item.quoteOnly ? "Quote only" : retailVariants(item).some((variant) => variant.stock > 0) ? "In demo stock" : "Out of demo stock"],
     community: activeDeal && togetherListing(item.id, "standard") ? ["Deal available"] : [],
   };
 }
@@ -126,13 +135,12 @@ export default function Marketplace() {
   if (section === "business") return <Business panel="dashboard" />;
   const items = search
     ? (query.data ?? [])
-    : findListings(
-        "",
-        section as Section,
+    : findListings(section === "shop" ? term : "", section as Section,
         "",
         section === "nearby" ? city : "",
       );
   const category = params.get("category") ?? "";
+  const chosenCategories = params.getAll("category");
   const country = params.get("country") ?? "";
   const sort = params.get("sort") ?? "";
   const distance = params.get("distance") ?? "";
@@ -142,21 +150,33 @@ export default function Marketplace() {
   const minimumPrice = nonnegative(params.get("minPrice"));
   const maxMoq = nonnegative(params.get("maxMoq"));
   const clearable = ["category", "maxPrice", ...Object.keys(filterFields)];
-  const facetKeys = ["subcategory", "brand", "origin", "countryOfSupplier", "supplierCity", "supplierType", "method", "pickup", "available", "community"] as const;
+  const facetKeys = ["category", "material", "feature", "variant", "subcategory", "brand", "origin", "countryOfSupplier", "supplierCity", "supplierType", "method", "pickup", "available", "community"] as const;
   const rows = items.map((item) => ({ item, facets: productFacets(item, dealOpen) }));
   const optionValues = (key: typeof facetKeys[number]) =>
-    [...new Set(rows.flatMap(({ facets }) => facets[key] ?? []))].sort();
-  const activeFacets = facetKeys.flatMap((key) => {
-    const value = params.get(key);
-    return value && optionValues(key).includes(value) ? [{ key, value }] : [];
+    [...new Set(rows.flatMap(({ item, facets }) =>
+      (["material", "feature", "variant", "subcategory"].includes(key) &&
+        chosenCategories.length && !chosenCategories.some((category) =>
+          item.category === category || legacyShopCategories[category]?.includes(item.category)))
+        ? [] : facets[key] ?? [],
+    ))].sort();
+  const activeFacets = facetKeys.filter((key) => key !== "category").flatMap((key) => {
+    const values = params.getAll(key).filter((value) => optionValues(key).includes(value));
+    return values.length ? [{ key, values }] : [];
   });
+  function toggleFacet(key: string, value: string) {
+    const next = new URLSearchParams(params);
+    if (next.getAll(key).includes(value)) next.delete(key, value);
+    else next.append(key, value);
+    next.delete("page");
+    setParams(next);
+  }
   const offerFacetKeys = ["countryOfSupplier", "supplierCity", "supplierType", "method", "pickup"];
   const activeOfferFacets = activeFacets.filter(({ key }) => offerFacetKeys.includes(key));
   const matchesOffer = (item: Listing) => {
     if (!activeOfferFacets.length && maxMoq === undefined) return true;
     if (item.section !== "shop") return false;
     if ((maxMoq === undefined || maxMoq >= 1) &&
-        activeOfferFacets.every(({ key, value }) => key === "method" && value === "Retail")) return true;
+        activeOfferFacets.every(({ key, values }) => key === "method" && values.includes(item.quoteOnly ? "Quote only" : "Retail"))) return true;
     return productSourcing(item.id).offers.some((offer) => {
       if (maxMoq !== undefined && offer.moq > maxMoq) return false;
       const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
@@ -167,30 +187,51 @@ export default function Marketplace() {
         method: [offer.method],
         pickup: offer.pickup ? [placeName(offer.pickup)] : [],
       };
-      return activeOfferFacets.every(({ key, value }) => attributes[key].includes(value));
+      return activeOfferFacets.every(({ key, values }) => values.some((value) => attributes[key].includes(value)));
     });
   };
   const filtered = rows.filter(
     ({ item, facets }) =>
-      (!category || item.category === category) &&
+      (!chosenCategories.length || chosenCategories.some((value) => item.category === value || (item.section === "shop" && legacyShopCategories[value]?.includes(item.category)))) &&
       (!country || country === item.detail) &&
       (!distance || (item.distance ?? Infinity) <= Number(distance)) &&
       (!productListing ||
         ((maximumPrice === undefined || (item.price !== undefined && item.price <= maximumPrice)) &&
           (minimumPrice === undefined || (item.price !== undefined && item.price >= minimumPrice)) &&
-          activeFacets.every(({ key, value }) => facets[key]?.some((option) => option === value)) &&
+          activeFacets.every(({ key, values }) => facets[key]?.some((option) => values.includes(option))) &&
           matchesOffer(item))),
   ).map(({ item }) => item);
   if (sort)
     filtered.sort((a, b) => {
+      if (sort === "newest") return (b.addedOn ?? 0) - (a.addedOn ?? 0);
       if (sort !== "price" && sort !== "price-desc")
         return a.name.localeCompare(b.name);
       if (a.price === undefined) return b.price === undefined ? 0 : 1;
       if (b.price === undefined) return -1;
       return sort === "price" ? a.price - b.price : b.price - a.price;
     });
+  const advancedFields = productListing && (<>
+                  {(["minPrice", "maxMoq"] as const).map((key) => (
+                    <label key={key}>{filterFields[key]}
+                      <input type="number" min="0" value={nonnegative(params.get(key)) ?? ""} onChange={(event) => setOption(key, event.target.value)} />
+                    </label>
+                  ))}
+                  {facetKeys.map((key) => {
+                    const values = optionValues(key);
+                    return values.length > 0 && (
+                      <fieldset className="catalogue-facet" key={key}><legend>{filterFields[key]}</legend>
+                        {values.map((value) => (
+                          <label key={value}>
+                            <input type="checkbox" checked={params.getAll(key).includes(value)} onChange={() => toggleFacet(key, value)} />
+                            {value}
+                          </label>
+                        ))}
+                      </fieldset>
+                    );
+                  })}
+  </>);
   const canMap = section === "nearby" || section === "global";
-  const pageSize = 8;
+  const pageSize = 12;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const requestedPage = Number(params.get("page"));
   const page = Number.isInteger(requestedPage)
@@ -215,6 +256,8 @@ export default function Marketplace() {
           : descriptions[section as Section]
       }
     >
+      {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
+      {section === "shop" && <label className="catalogue-search">Search products<input type="search" value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
       <div className="filterbar">
         {(section === "global" ||
           section === "shop" ||
@@ -300,6 +343,7 @@ export default function Marketplace() {
           >
             <option value="">Featured</option>
             <option value="name">Name</option>
+            {productListing && <option value="newest">Newest</option>}
             <option value="price">Price, low to high</option>
             {productListing && <option value="price-desc">Price, high to low</option>}
           </select>
@@ -330,22 +374,7 @@ export default function Marketplace() {
                 <Dialog.Content className="dialog detail-actions commerce-filter-dialog">
                   <Dialog.Title>Product filters</Dialog.Title>
                   <Dialog.Description>Combine filters to narrow your results.</Dialog.Description>
-                  {(["minPrice", "maxMoq"] as const).map((key) => (
-                    <label key={key}>{filterFields[key]}
-                      <input type="number" min="0" value={nonnegative(params.get(key)) ?? ""} onChange={(event) => setOption(key, event.target.value)} />
-                    </label>
-                  ))}
-                  {facetKeys.map((key) => {
-                    const values = optionValues(key);
-                    return values.length > 0 && (
-                      <label key={key}>{filterFields[key]}
-                        <select value={activeFacets.find((facet) => facet.key === key)?.value ?? ""} onChange={(event) => setOption(key, event.target.value)}>
-                          <option value="">Any</option>
-                          {values.map((value) => <option key={value}>{value}</option>)}
-                        </select>
-                      </label>
-                    );
-                  })}
+                  {advancedFields}
                   <Dialog.Close className="button">Show results</Dialog.Close>
                 </Dialog.Content>
               </Dialog.Portal>
@@ -392,9 +421,14 @@ export default function Marketplace() {
       </div>
       {productListing && (
         <div className="actions" aria-label="Active product filters">
-          {activeFacets.map(({ key, value }) => (
-            <button key={key} className="outline" onClick={() => setOption(key, "")} aria-label={`Remove ${filterFields[key]} filter`}>{value} ×</button>
-          ))}
+          {chosenCategories.map((value) => <button key={value} className="outline" onClick={() => toggleFacet("category", value)} aria-label={`Remove ${value} category`}>{value} ×</button>)}
+          {(["minPrice", "maxPrice", "maxMoq"] as const).map((key) => {
+            const value = nonnegative(params.get(key));
+            return value !== undefined && <button key={key} className="outline" onClick={() => setOption(key, "")}>{key === "maxPrice" ? "Maximum price (₹)" : filterFields[key]} {value} ×</button>;
+          })}
+          {activeFacets.flatMap(({ key, values }) => values.map((value) => (
+            <button key={`${key}:${value}`} className="outline" onClick={() => toggleFacet(key, value)} aria-label={`Remove ${filterFields[key]} filter`}>{value} ×</button>
+          )))}
         </div>
       )}
       {query.isLoading && <p role="status">Searching…</p>}
@@ -415,6 +449,13 @@ export default function Marketplace() {
       {filtered.length === 0 && !query.isLoading && (
         <p className="record">No listings match these filters.</p>
       )}
+      {productListing && filtered.length > 0 && <p className="catalogue-range">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length} {section === "shop" ? "products" : "results"}</p>}
+      <div className={section === "shop" ? "catalogue-layout" : undefined}>
+        {section === "shop" && <aside className="record catalogue-sidebar" aria-label="Catalogue filters">
+          <h2>Filters</h2>
+          {advancedFields}
+        </aside>}
+        <div className="catalogue-results">
       <div className={listView ? "product-grid product-list" : "product-grid"}>
         {visibleItems.map((item) => (
           <ListingCard item={item} key={item.id} quickView={productListing} />
@@ -425,12 +466,14 @@ export default function Marketplace() {
           <button className="outline" disabled={page === 1} onClick={() => setOption("page", page === 2 ? "" : String(page - 1))}>
             Previous
           </button>
-          <span aria-live="polite">Page {page} of {pageCount}</span>
+          {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => <button key={number} className={number === page ? "button" : "outline"} aria-label={`Page ${number}`} aria-current={number === page ? "page" : undefined} onClick={() => setOption("page", number === 1 ? "" : String(number))}>{number}</button>)}
           <button className="outline" disabled={page === pageCount} onClick={() => setOption("page", String(page + 1))}>
             Next
           </button>
         </nav>
       )}
+        </div>
+      </div>
     </Page>
   );
 }
@@ -557,7 +600,8 @@ function ListingDetail({ item }: { item: Listing }) {
           </div>
         )}
         <div className="record detail-actions">
-          {item.section === "shop" && (
+          {item.section === "shop" && item.quoteOnly && <><h2>Request a quote</h2><Link className="button" to={`/connect?kind=Manufacturing&product=${encodeURIComponent(item.name)}`}>Request quotation</Link></>}
+          {item.section === "shop" && !item.quoteOnly && (
             <>
               <h2>{money(price)}</h2>
               <label>
@@ -905,13 +949,12 @@ function ListingDetail({ item }: { item: Listing }) {
                 </Link>
               </p>
             )}
-            <h3>Sample review · 4/5</h3>
-            <p>“Comfortable to use every day.”</p>
+            {item.specifications && <><h3>Product specifications</h3><dl>{Object.entries(item.specifications).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></>}
           </section>
           <h2>Related products</h2>
           <div className="product-grid">
             {products
-              .filter((product) => product.id !== item.id)
+              .filter((product) => product.id !== item.id && product.category === item.category).slice(0, 4)
               .map((product) => (
                 <ListingCard item={product} key={product.id} />
               ))}

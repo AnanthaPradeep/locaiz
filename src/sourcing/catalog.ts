@@ -162,6 +162,7 @@ export interface Product {
 export const products: Product[] = [
   {
     id: "reed-mat",
+    legacyId: "pattamadai-mat",
     name: "Handwoven reed mat",
     category: "Handwoven mats",
     origin: "pattamadai",
@@ -189,6 +190,7 @@ export const products: Product[] = [
   },
   {
     id: "wood-tray",
+    legacyId: "carved-wood-tray",
     name: "Carved wooden tray",
     category: "Wood crafts",
     origin: "yiwu",
@@ -253,6 +255,7 @@ export const products: Product[] = [
   },
   {
     id: "coupling",
+    legacyId: "shaft-coupling",
     name: "Machined shaft coupling",
     category: "Mechanical parts",
     origin: "chennai",
