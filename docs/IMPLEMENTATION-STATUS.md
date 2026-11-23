@@ -1,5 +1,7 @@
 # Implementation status
 
+The first PLP increment adds URL-backed price filtering, price sorting in both directions and grid/list views to Shop and universal search. It reuses the demo catalogue, product cards, wishlist and detail routes.
+
 Village-to-Global extends the demo catalogue and existing entry points. Browser-local enquiries and storefront drafts use the existing store. The additive Supabase schema has no hosted connection. Authenticated Nearby Stock Confirmation continues to use its Phase 2 configuration.
 
 The local code implements the initial browser demo across all seven marketplace destinations. See the [feature matrix](FEATURE-MATRIX.md) for gaps against the full brief. The frontend uses fixture prices, shops, stock, provider and supplier records; transactions stay in the browser.

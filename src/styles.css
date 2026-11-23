@@ -474,6 +474,20 @@ h3 {
 .card-media:hover img {
   transform: scale(1.035);
 }
+.product-grid.product-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+.product-list .listing-card {
+  display: grid;
+  grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  align-items: center;
+}
+.product-list .card-media {
+  align-self: stretch;
+}
+.product-list .card-copy {
+  padding-right: 48px;
+}
 .save {
   background: var(--paper);
   border-radius: 50%;

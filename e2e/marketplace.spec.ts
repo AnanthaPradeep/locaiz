@@ -143,3 +143,15 @@ for (const width of [360, 390, 768, 1024, 1440, 1920]) {
       });
   });
 }
+test("restores Shop price filters and list view from the URL", async ({ page }) => {
+  await page.goto("./#/shop?maxPrice=1&sort=price-desc&view=list");
+  await expect(page.getByRole("button", { name: "List view" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.locator(".product-list .listing-card").first()).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText("No listings match these filters.")).toBeVisible();
+});

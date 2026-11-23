@@ -84,18 +84,26 @@ export default function Marketplace() {
   const country = params.get("country") ?? "";
   const sort = params.get("sort") ?? "";
   const distance = params.get("distance") ?? "";
+  const productListing = search || section === "shop";
+  const listView = productListing && params.get("view") === "list";
+  const maximumPrice = params.get("maxPrice") ?? "";
   const filtered = items.filter(
     (item) =>
       (!category || item.category === category) &&
       (!country || country === item.detail) &&
-      (!distance || (item.distance ?? Infinity) <= Number(distance)),
+      (!distance || (item.distance ?? Infinity) <= Number(distance)) &&
+      (!productListing ||
+        !maximumPrice ||
+        (item.price !== undefined && item.price <= Number(maximumPrice))),
   );
   if (sort)
-    filtered.sort((a, b) =>
-      sort === "price"
-        ? (a.price ?? Infinity) - (b.price ?? Infinity)
-        : a.name.localeCompare(b.name),
-    );
+    filtered.sort((a, b) => {
+      if (sort !== "price" && sort !== "price-desc")
+        return a.name.localeCompare(b.name);
+      if (a.price === undefined) return b.price === undefined ? 0 : 1;
+      if (b.price === undefined) return -1;
+      return sort === "price" ? a.price - b.price : b.price - a.price;
+    });
   const canMap = section === "nearby" || section === "global";
   return (
     <Page
@@ -199,8 +207,43 @@ export default function Marketplace() {
             <option value="">Featured</option>
             <option value="name">Name</option>
             <option value="price">Price, low to high</option>
+            {productListing && <option value="price-desc">Price, high to low</option>}
           </select>
         </label>
+        {productListing && (
+          <>
+            <label>
+              Maximum price (₹)
+              <input
+                type="number"
+                min="0"
+                value={maximumPrice}
+                onChange={(event) => setOption("maxPrice", event.target.value)}
+              />
+            </label>
+            <button
+              className="outline"
+              aria-label="List view"
+              aria-pressed={listView}
+              onClick={() => setOption("view", listView ? "" : "list")}
+            >
+              {listView ? "Switch to grid" : "Switch to list"}
+            </button>
+            {(category || maximumPrice) && (
+              <button
+                className="outline"
+                onClick={() => {
+                  const next = new URLSearchParams(params);
+                  next.delete("category");
+                  next.delete("maxPrice");
+                  setParams(next);
+                }}
+              >
+                Clear filters
+              </button>
+            )}
+          </>
+        )}
         {canMap && (
           <button
             className="outline"
@@ -244,7 +287,7 @@ export default function Marketplace() {
       {filtered.length === 0 && !query.isLoading && (
         <p className="record">No listings match these filters.</p>
       )}
-      <div className="product-grid">
+      <div className={listView ? "product-grid product-list" : "product-grid"}>
         {filtered.map((item) => (
           <ListingCard item={item} key={item.id} />
         ))}
