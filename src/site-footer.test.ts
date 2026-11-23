@@ -1,4 +1,5 @@
-﻿import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { SocialLinks } from "./site-footer";
 import type { SocialProfile } from "./organisation";
@@ -44,12 +45,12 @@ it("renders only enabled account URLs on the expected platform", () => {
       enabled: false,
     },
   ];
-  const markup = renderToStaticMarkup(<SocialLinks profiles={profiles} />);
+  const markup = renderToStaticMarkup(createElement(SocialLinks, { profiles }));
   for (const name of ["Instagram", "Facebook", "LinkedIn", "YouTube"]) {
     expect(markup).toContain(`LOCAIZ on ${name} (opens in a new tab)`);
   }
   expect(
     markup.match(/target="_blank" rel="noopener noreferrer"/g),
   ).toHaveLength(4);
-  expect(renderToStaticMarkup(<SocialLinks />)).toBe("");
+  expect(renderToStaticMarkup(createElement(SocialLinks, {}))).toBe("");
 });
