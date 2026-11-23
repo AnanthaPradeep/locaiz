@@ -656,8 +656,7 @@ function ListingDetail({ item }: { item: Listing }) {
                     : "Save to wishlist"}
                 </button>
               </div>
-              {(item.category === "Electronics" ||
-                item.category === "Spare Parts") && (
+              {["studio-headphones", "audio-pads"].includes(item.id) && (
                 <Link className="outline" to={stockPath(item.id, variant.label)}>
                   Check Nearby Stock{!stockEnabled ? " · Demo Mode" : ""}
                 </Link>
