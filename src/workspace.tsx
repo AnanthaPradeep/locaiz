@@ -402,7 +402,7 @@ export default function Workspace({
       );
       break;
     case "stock":
-      title = "Stock checks";
+      title = "Stock checks · Demo Mode";
       content = (
         <Records
           entries={demo.stock.map((entry) => ({
@@ -623,14 +623,19 @@ export default function Workspace({
     }
     case "notifications":
       content = (
-        <Records
-          entries={[
-            ...demo.orders,
-            ...demo.bookings,
-            ...demo.requirements,
-          ].sort((a, b) => b.date.localeCompare(a.date))}
-          empty="No marketplace activity yet."
-        />
+        <>
+          <Link className="outline" to="/account/stock-notifications">
+            Stock notifications
+          </Link>
+          <Records
+            entries={[
+              ...demo.orders,
+              ...demo.bookings,
+              ...demo.requirements,
+            ].sort((a, b) => b.date.localeCompare(a.date))}
+            empty="No marketplace activity yet."
+          />
+        </>
       );
       break;
     case "compare":
@@ -780,6 +785,7 @@ export function Business({ panel }: { panel: string }) {
       intro="Local demo workspace · Verification unsubmitted"
     >
       <nav className="panel-nav" aria-label="Business sections">
+        <Link to="/business/stock">Stock Requests</Link>
         {businessPanels.map((link) => (
           <Link key={link} to={`/business/${link.toLowerCase()}`}>
             {link}

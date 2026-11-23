@@ -12,7 +12,9 @@ Backend work is documented at the design level. Full marketplace data, productio
 - The brand ZIP passed its integrity check. All three guideline pages were rendered and visually reviewed.
 - The production build reports chunk-size warnings. MapLibre loads on demand.
 
-GitHub Actions and the public Pages URL remain unverified.
+GitHub Actions published the [public Pages demo](https://ananthapradeep.github.io/locaiz/). Its homepage, Shop route and Shop route refresh were verified after deployment.
+
+The Phase 2 source includes an opt-in Supabase stock pilot. When the frontend has no Supabase configuration, the existing stock experience is labelled Demo Mode. A hosted LOCAIZ Supabase project and verified participating shops have yet to be configured. The connected test suite targets a disposable local Supabase stack.
 
 ## Verified locally
 

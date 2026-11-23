@@ -1,5 +1,7 @@
 # Database design for a connected phase
 
+Phase 2 implements the stock pilot in `supabase/migrations/`. It adds pilot eligibility, participating shops, private staff membership, buyer requests, shop assignments and a recipient-scoped revision feed. The existing browser catalogue remains the source for display metadata. A future shared catalogue can migrate the textual catalogue IDs without changing request or assignment ownership. [Stock pilot data flow](NEARBY-STOCK-CONFIRMATION.md)
+
 | Domain | Relationships and access |
 |---|---|
 | Identity | Auth users own profiles and addresses. Business members connect profiles to businesses with explicit roles. |

@@ -31,3 +31,35 @@ jobs:
             playwright-report/
             test-results/
           if-no-files-found: ignore
+  stock-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: supabase/setup-cli@v3
+        with:
+          version: ^3
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start disposable Supabase
+        run: supabase start >/dev/null
+      - name: Verify authenticated browser sessions and access controls
+        shell: bash
+        run: |
+          settings="$(supabase status -o json)"
+          export VITE_SUPABASE_URL="$(jq -er '.API_URL' <<< "$settings")"
+          export VITE_SUPABASE_PUBLISHABLE_KEY="$(jq -er '.PUBLISHABLE_KEY // .ANON_KEY' <<< "$settings")"
+          export LOCAIZ_LOCAL_ADMIN_KEY="$(jq -er '.SECRET_KEY // .SERVICE_ROLE_KEY' <<< "$settings")"
+          export LOCAIZ_PILOT_PASSWORD="$(openssl rand -hex 18)"
+          echo "::add-mask::$LOCAIZ_LOCAL_ADMIN_KEY"
+          echo "::add-mask::$LOCAIZ_PILOT_PASSWORD"
+          node scripts/seed-stock-pilot.mjs
+          unset LOCAIZ_LOCAL_ADMIN_KEY
+          npm run build
+          npm run test:e2e -- --grep @stock
+      - if: always()
+        run: supabase stop

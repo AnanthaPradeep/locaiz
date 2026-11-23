@@ -19,6 +19,7 @@ import { modules } from "./shell";
 import { useDemo } from "./store";
 import { Business, RequirementForm } from "./workspace";
 import { Missing, Page } from "./page";
+import { stockEnabled, stockPath } from "./stock/config";
 
 const MarketMap = lazy(() => import("./market-map"));
 
@@ -142,6 +143,16 @@ export default function Marketplace() {
                 ))}
             </select>
           </label>
+        )}
+        {section === "nearby" && (
+          <Link
+            className="button"
+            to={
+              stockEnabled ? stockPath("studio-headphones") : "/account/stock"
+            }
+          >
+            {stockEnabled ? "Check Nearby Stock" : "Stock checks · Demo Mode"}
+          </Link>
         )}
         {section === "nearby" && (
           <label>
@@ -342,6 +353,12 @@ function ListingDetail({ item }: { item: Listing }) {
                     : "Save to wishlist"}
                 </button>
               </div>
+              {(item.category === "Electronics" ||
+                item.category === "Spare Parts") && (
+                <Link className="outline" to={stockPath(item.id, option)}>
+                  Check Nearby Stock{!stockEnabled ? " · Demo Mode" : ""}
+                </Link>
+              )}
               <Link to="/account/cart">View cart</Link>
               <p>
                 Demo delivery in 3–5 days. Sample pickup may be available
@@ -356,30 +373,36 @@ function ListingDetail({ item }: { item: Listing }) {
                 {item.distance} km from the city centre · Stock source:
                 unverified demo fixtures.
               </p>
-              <button
-                className="button"
-                onClick={() => {
-                  if (
-                    demo.stock.some(
-                      (request) =>
-                        request.title === item.name &&
-                        Date.now() - Date.parse(request.date) < 86400000,
-                    )
-                  ) {
-                    setMessage("A demo request is already active.");
-                    return;
-                  }
-                  demo.add(
-                    "stock",
-                    item.name,
-                    "Simulated stock confirmation",
-                    "Pending",
-                  );
-                  setMessage("Demo stock request created.");
-                }}
-              >
-                Request stock check
-              </button>
+              {stockEnabled ? (
+                <Link className="button" to={stockPath("studio-headphones")}>
+                  Check Nearby Stock
+                </Link>
+              ) : (
+                <button
+                  className="button"
+                  onClick={() => {
+                    if (
+                      demo.stock.some(
+                        (request) =>
+                          request.title === item.name &&
+                          Date.now() - Date.parse(request.date) < 86400000,
+                      )
+                    ) {
+                      setMessage("A demo request is already active.");
+                      return;
+                    }
+                    demo.add(
+                      "stock",
+                      item.name,
+                      "Simulated stock confirmation",
+                      "Pending",
+                    );
+                    setMessage("Demo stock request created.");
+                  }}
+                >
+                  Request stock check
+                </button>
+              )}
               <Link to="/account/stock">View stock requests</Link>
               {item.coords && (
                 <a

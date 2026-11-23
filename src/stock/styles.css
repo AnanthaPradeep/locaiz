@@ -1,0 +1,47 @@
+.stock-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.stock-form fieldset,
+.stock-filter {
+  width: min(100%, 390px);
+}
+.stock-form fieldset {
+  padding: 12px;
+  border: 1px solid var(--line);
+}
+.stock-form legend {
+  padding: 0 6px;
+}
+.stock-form .stock-choice {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 10px;
+}
+.stock-choice input {
+  accent-color: var(--ink);
+}
+.stock-product {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.stock-product img {
+  width: 84px;
+  height: 72px;
+  object-fit: cover;
+}
+.stock-dialog {
+  max-height: 90dvh;
+  overflow: auto;
+}
+.stock-card,
+.stock-dialog {
+  overflow-wrap: anywhere;
+}

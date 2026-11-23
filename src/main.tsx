@@ -4,6 +4,7 @@ import { HashRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Shell } from "./shell";
 import { Home } from "./home";
+import { stockEnabled } from "./stock/config";
 import "@fontsource/space-grotesk/latin-700.css";
 import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-700.css";
@@ -11,6 +12,9 @@ import "./styles.css";
 
 const Marketplace = lazy(() => import("./marketplace"));
 const Workspace = lazy(() => import("./workspace"));
+const Stock = lazy(() =>
+  import("./stock/screens").then((module) => ({ default: module.StockScreen })),
+);
 const client = new QueryClient();
 
 class AppErrorBoundary extends Component<
@@ -56,6 +60,40 @@ createRoot(document.getElementById("root")!).render(
       <AppErrorBoundary>
         <Shell>
           <Routes>
+            <Route
+              path="/account/stock-new"
+              element={
+                <Loading>
+                  <Stock panel="new" />
+                </Loading>
+              }
+            />
+            {stockEnabled && (
+              <Route
+                path="/account/stock"
+                element={
+                  <Loading>
+                    <Stock panel="buyer" />
+                  </Loading>
+                }
+              />
+            )}
+            <Route
+              path="/account/stock-notifications"
+              element={
+                <Loading>
+                  <Stock panel="notifications" />
+                </Loading>
+              }
+            />
+            <Route
+              path="/business/stock"
+              element={
+                <Loading>
+                  <Stock panel="seller" />
+                </Loading>
+              }
+            />
             <Route path="/" element={<Home />} />
             <Route
               path="/search"

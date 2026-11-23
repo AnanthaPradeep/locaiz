@@ -39,6 +39,9 @@ jobs:
       - run: npm run build
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_STOCK_PILOT: ${{ vars.VITE_STOCK_PILOT }}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist

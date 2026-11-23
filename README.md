@@ -19,6 +19,9 @@ React and TypeScript power the frontend. Vite builds the static application. Rea
 
 ## Review the demo
 
+- [Live GitHub Pages demo](https://ananthapradeep.github.io/locaiz/)
+- [Nearby Stock Confirmation pilot setup](docs/NEARBY-STOCK-CONFIRMATION.md)
+
 - Screenshots at [1440px](docs/screenshots/desktop.png), [768px](docs/screenshots/tablet.png) and [390px](docs/screenshots/mobile.png)
 - [Feature matrix](docs/FEATURE-MATRIX.md) and [implementation status](docs/IMPLEMENTATION-STATUS.md)
 - [Architecture](docs/ARCHITECTURE.md), [database design](docs/DATABASE-DESIGN.md) and [security](docs/SECURITY.md)
