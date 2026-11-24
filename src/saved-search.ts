@@ -126,7 +126,7 @@ export function evaluate(
     id: item.section + "/" + item.id,
     title: item.name,
     reason: item.category + " · matches your saved criteria",
-    href: "/" + item.section + "/" + item.id,
+    href: "/listing/" + item.section + "/" + item.id,
   }));
 }
 

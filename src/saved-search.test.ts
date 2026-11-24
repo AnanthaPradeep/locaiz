@@ -30,7 +30,7 @@ describe("saved search matching", () => {
     },
   );
   it.each([
-    ["shop", "Alabaster Match Demo Lamp", "/shop/demo-match-alabaster-lamp"],
+    ["shop", "Alabaster Match Demo Lamp", "/listing/shop/demo-match-alabaster-lamp"],
     ["sourcing", "Demo restock offer", "#demo-match-reed-mat-offer"],
   ] as const)(
     "alerts once for a newly published %s sample",
