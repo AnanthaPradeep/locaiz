@@ -70,13 +70,13 @@ test.describe("authenticated stock pilot @stock", () => {
       await expect(
         shopA.getByText("Live stock updates connected"),
       ).toBeVisible();
-      await buyer.goto("/#/listing/shop/studio-headphones");
-      await buyer
-        .getByRole("link", { name: "Check Nearby Stock", exact: true })
-        .click();
+      await buyer.goto("/#/search?find=1&q=wireless+headphones&qty=2&city=Nagercoil");
+      await buyer.getByRole("button", { name: /Pickup nearby/ }).click();
+      await buyer.getByRole("link", { name: "Check stock", exact: true }).click();
       await buyer.getByLabel("Email").fill(email("buyer-a"));
       await buyer.getByLabel("Password").fill(password!);
       await buyer.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(buyer.getByLabel("Quantity", { exact: true })).toHaveValue("2");
       await buyer.getByLabel("Pilot Shop A", { exact: false }).check();
       await buyer.getByLabel("Pilot Shop B", { exact: false }).check();
       await buyer
