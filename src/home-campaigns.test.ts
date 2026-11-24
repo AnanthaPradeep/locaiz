@@ -1,15 +1,16 @@
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it } from "vitest";
 import { HomeCampaignSection } from "./home-campaign-section";
-import { homeCampaigns } from "./home-campaigns";
+import { homeCampaigns, type HomeCampaign } from "./home-campaigns";
+
+function renderCampaigns(campaigns: readonly HomeCampaign[]) {
+  return renderToStaticMarkup(createElement(MemoryRouter, null, createElement(HomeCampaignSection, { campaigns })));
+}
 
 it("renders default campaigns in order with a responsive source and no promotional labels", () => {
-  const html = renderToStaticMarkup(
-    <MemoryRouter>
-      <HomeCampaignSection campaigns={[...homeCampaigns].reverse()} />
-    </MemoryRouter>,
-  );
+  const html = renderCampaigns([...homeCampaigns].reverse());
   expect(html.indexOf("Crafted Close to Home")).toBeLessThan(
     html.indexOf("Upgrade Your Everyday Tech"),
   );
@@ -22,20 +23,10 @@ it("renders default campaigns in order with a responsive source and no promotion
   expect(html).not.toContain("home-campaign-labels");
 });
 it("omits disabled campaigns and renders configured sponsorship and discount labels", () => {
-  const html = renderToStaticMarkup(
-    <MemoryRouter>
-      <HomeCampaignSection
-        campaigns={[
-          { ...homeCampaigns[0], enabled: false },
-          {
-            ...homeCampaigns[1],
-            sponsored: true,
-            discountLabel: "Configured test offer",
-          },
-        ]}
-      />
-    </MemoryRouter>,
-  );
+  const html = renderCampaigns([
+    { ...homeCampaigns[0], enabled: false },
+    { ...homeCampaigns[1], sponsored: true, discountLabel: "Configured test offer" },
+  ]);
   expect(html).not.toContain("Crafted Close to Home");
   expect(html).toContain("Sponsored");
   expect(html).toContain("Configured test offer");
