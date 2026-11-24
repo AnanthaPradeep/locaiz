@@ -198,9 +198,14 @@ export function findListings(
   section?: Section,
   category?: string,
   city?: string,
+  includeAlertSample = false,
 ) {
   const terms = query.toLowerCase().trim().split(/\s+/);
-  return listings.filter(
+  const lamp = listings.find((item) => item.id === "globe-lamp" && item.section === "shop");
+  const catalogue = includeAlertSample && lamp ? [...listings, {
+    ...lamp, id: "demo-match-alabaster-lamp", name: "Alabaster Match Demo Lamp",
+  }] : listings;
+  return catalogue.filter(
     (item) =>
       (!section || item.section === section) &&
       (!category || item.category === category || (item.section === "shop" && legacyShopCategories[category]?.includes(item.category))) &&
@@ -233,11 +238,11 @@ export function wholesalePrice(quantity: number) {
 }
 
 export interface CatalogRepository {
-  search(query: string): Promise<Listing[]>;
+  search(query: string, includeAlertSample?: boolean): Promise<Listing[]>;
 }
 
 export const demoCatalog: CatalogRepository = {
-  async search(query) {
-    return findListings(query);
+  async search(query, includeAlertSample) {
+    return findListings(query, undefined, undefined, undefined, includeAlertSample);
   },
 };

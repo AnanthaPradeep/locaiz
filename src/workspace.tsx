@@ -1,3 +1,4 @@
+import { MatchAlerts, SavedSearches } from "./saved-search-ui";
 import { useState, type FormEvent, type ReactNode } from "react";
 import {
   Link,
@@ -12,6 +13,7 @@ import { ListingCard } from "./listing-card";
 import { Missing, Page } from "./page";
 import { useDemo, type Activity } from "./store";
 import {
+  alertSampleOffer,
   ancestry,
   formatMinor,
   matchingOffers,
@@ -38,7 +40,7 @@ export function RequirementForm() {
   const demo = useDemo();
   const navigate = useNavigate();
   const [error, setError] = useState("");
-  const sourcingOffer = offers.find(
+  const sourcingOffer = (demo.includeAlertSample ? [...offers, alertSampleOffer] : offers).find(
     (offer) => offer.id === params.get("offer"),
   );
   const sourcingProduct = sourcingProducts.find(
@@ -352,6 +354,7 @@ const accountLinks = [
   "Requirements",
   "Messages",
   "Notifications",
+  "Saved Searches",
   "Settings",
 ];
 const info: Record<string, string> = {
@@ -383,8 +386,12 @@ export default function Workspace({
         {panel === "help" && <Link className="outline" to="/contact">Contact Us</Link>}
       </Page>
     );
+  const unreadMatches = demo.matchAlerts.filter((alert) => !alert.read).length;
+  const availableListings = demo.includeAlertSample
+    ? findListings("", undefined, undefined, undefined, true)
+    : listings;
   const lines = Object.entries(demo.cart).flatMap(([key, quantity]) => {
-    const product = listings.find(
+    const product = availableListings.find(
       (item) => item.id === key.split(":")[0] && item.section === "shop",
     );
     const variant = product && retailVariants(product).find((entry) => entry.cartKey === key);
@@ -484,7 +491,7 @@ export default function Workspace({
       content = ids.length ? (
         <div className="product-grid">
           {ids
-            .map((id) => listings.find((item) => item.id === id))
+            .map((id) => availableListings.find((item) => item.id === id))
             .map((item) => item && <ListingCard item={item} key={item.id} />)}
         </div>
       ) : (
@@ -896,12 +903,17 @@ export default function Workspace({
       );
       break;
     }
+    case "saved-searches":
+      title = "Saved searches";
+      content = <SavedSearches />;
+      break;
     case "notifications":
       content = (
         <>
           <Link className="outline" to="/account/stock-notifications">
             Stock notifications
           </Link>
+          <MatchAlerts />
           <Records
             entries={[
               ...demo.orders,
@@ -1022,8 +1034,9 @@ export default function Workspace({
     <Page title={title} label="YOUR LOCAIZ">
       <nav className="panel-nav" aria-label="Account sections">
         {accountLinks.map((link) => (
-          <Link key={link} to={`/account/${link.toLowerCase()}`}>
+          <Link key={link} to={`/account/${link.toLowerCase().replaceAll(" ", "-")}`}>
             {link}
+            {link === "Notifications" && unreadMatches > 0 && ` (${unreadMatches} unread matches)`}
           </Link>
         ))}
       </nav>
