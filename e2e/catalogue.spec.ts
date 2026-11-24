@@ -93,6 +93,6 @@ test("desktop filters stay visible beside the results and mobile uses the dialog
   await page.goto("/#/shop");
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(sidebar).toBeHidden();
-  await page.getByRole("button", { name: "Filters", exact: true }).click();
+  await page.getByRole("button", { name: "More product filters" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 });
