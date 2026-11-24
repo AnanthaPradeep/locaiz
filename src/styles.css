@@ -1157,9 +1157,3 @@ progress {
   border-color: var(--ink);
   color: var(--milk);
 }
-.search input::placeholder,
-.catalogue-search input::placeholder,
-.find-query input::placeholder {
-  color: var(--milk);
-  opacity: .72;
-}
