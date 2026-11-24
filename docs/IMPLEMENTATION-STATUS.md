@@ -47,3 +47,4 @@ The shared footer includes marketplace, account, support and company navigation 
 Shop includes 50 illustrative products across ten departments with 12 items per page, URL-backed filters, product-specific details and 50 local primary images. Run node scripts/audit-catalogue.mjs with Node 22 to verify the seed and image inventory. See PRODUCT-IMAGE-SOURCES.md and the catalogue contact sheet for image provenance and mappings.
 
 Saved Searches and Match Alerts support Shop, Universal Search and Global Atlas in browser-local Demo Mode. See [Saved Searches](SAVED-SEARCHES.md) for the simulator and [Matching Engine](MATCHING-ENGINE.md) for the future authenticated design.
+The desktop Shop filter panel stays in view while scrolling results, with a fixed heading and a separate scroll area for filter options. The mobile Filters dialog remains available.

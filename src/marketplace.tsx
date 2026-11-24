@@ -376,10 +376,16 @@ export default function Marketplace() {
       )}
       {productListing && filtered.length > 0 && <p className="catalogue-range">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length} {section === "shop" ? "products" : "results"}</p>}
       <div className={section === "shop" ? "catalogue-layout" : undefined}>
-        {section === "shop" && <aside className="record catalogue-sidebar" aria-label="Catalogue filters">
-          <h2>Filters</h2>
-          {advancedFields}
-        </aside>}
+        {section === "shop" && (
+          <aside className="catalogue-sidebar" aria-label="Catalogue filters">
+            <div className="record catalogue-filter-panel">
+              <h2>Filters</h2>
+              <div className="catalogue-filter-options">
+                {advancedFields}
+              </div>
+            </div>
+          </aside>
+        )}
         <div className="catalogue-results">
       <div className={listView ? "product-grid product-list" : "product-grid"}>
         {visibleItems.map((item) => (
