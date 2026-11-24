@@ -16,7 +16,7 @@ export function MatchCheck() {
   useEffect(() => {
     check();
   }, [check, pathname]);
-  useEffect(() => useDemo.persist.onFinishHydration(check), [check]);
+  useEffect(() => useDemo.persist?.onFinishHydration(check), [check]);
   return null;
 }
 

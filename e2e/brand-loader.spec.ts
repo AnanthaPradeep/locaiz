@@ -153,7 +153,7 @@ test("a failed entry script reaches the themed reload screen", async ({
   await page.unroute(entry);
   await page.getByRole("button", { name: "Reload LOCAIZ" }).click();
   await expect(
-    page.getByRole("heading", { name: "Contact Us", level: 1 }),
+    page.getByRole("heading", { name: "Every connection starts somewhere.", level: 1 }),
   ).toBeVisible();
   await expect(page.locator("#startup-loader")).toHaveCount(0);
 });
