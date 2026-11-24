@@ -7,7 +7,7 @@ test("homepage campaigns appear in order and open matching destinations", async 
   const section = page.getByRole("region", { name: "Featured collections" });
   const sections = await page
     .locator("main > section")
-    .evaluateAll((els) => els.map((el) => el.innerText));
+    .evaluateAll((els) => els.map((el) => el.textContent ?? ""));
   const position = sections.findIndex((label) =>
     label.includes("Crafted Close to Home"),
   );
