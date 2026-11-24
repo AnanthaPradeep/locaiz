@@ -75,3 +75,24 @@ test("multi-select department filters combine with price and persist in the URL"
   await page.reload();
   await expect(page.getByText("3 results", { exact: true })).toBeVisible();
 });
+
+test("desktop filters stay visible beside the results and mobile uses the dialog", async ({ page }) => {
+  await page.goto("/#/shop");
+  const sidebar = page.getByRole("complementary", { name: "Catalogue filters" });
+  const panel = sidebar.locator(".catalogue-filter-panel");
+  const heading = sidebar.getByRole("heading", { name: "Filters" });
+  const options = sidebar.locator(".catalogue-filter-options");
+  await expect(panel).toBeVisible();
+  await options.evaluate((element) => { element.scrollTop = 300; });
+  await expect(heading).toBeInViewport();
+  await sidebar.evaluate((element) => {
+    window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY + 180);
+  });
+  await expect.poll(async () => Math.round((await panel.boundingBox())?.y ?? -1)).toBe(16);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/shop");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(sidebar).toBeHidden();
+  await page.getByRole("button", { name: "More product filters" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+});

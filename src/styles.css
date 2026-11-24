@@ -1030,9 +1030,34 @@ progress {
 .commerce-filter-dialog { max-height: 85vh; overflow: auto; }
 
 .catalogue-search { display: grid; max-width: 420px; margin-block: 16px; }
-.catalogue-layout { display: grid; grid-template-columns: minmax(205px, 230px) minmax(0, 1fr); gap: 20px; }
-.catalogue-sidebar { display: grid; gap: 14px; align-content: start; max-height: 75vh; overflow: auto; }
-.catalogue-sidebar h2 { font-size: 1.25rem; margin: 0; }
+.catalogue-layout { display: grid; grid-template-columns: clamp(230px, 17vw, 280px) minmax(0, 1fr); gap: 20px; }
+.catalogue-sidebar {
+  border-inline-end: 1px solid var(--line);
+  padding-inline-end: 12px;
+}
+.catalogue-filter-panel.record {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+}
+.catalogue-sidebar h2 {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.catalogue-filter-options {
+  display: grid;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 14px 16px 16px;
+}
 .catalogue-sidebar fieldset { margin: 0; }
 .catalogue-applied { margin-block: 12px; }
 @media (max-width: 950px) {
