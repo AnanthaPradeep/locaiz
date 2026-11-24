@@ -1,3 +1,4 @@
+import { intentKeys, intentParams, parseIntent, retailOptions, sourcingOptions, productIntent } from "./buyer-intent";
 import { findListings } from "./catalog";
 import { catalogueFilters } from "./catalogue-filters";
 import { searchOffers } from "./sourcing/catalog";
@@ -72,6 +73,14 @@ export function snapshot(scope: Scope, params: URLSearchParams): Criteria {
     throw new Error("Enter a keyword or select a filter first.");
   if (criteria.toString().length > 2500)
     throw new Error("Save fewer filters for this search.");
+  if (scope === "search" && params.get("find") === "1") {
+    const intent = parseIntent(params);
+    for (const [key, value] of intentParams(intent)) {
+      if (intentKeys.some(candidate => candidate === key)) criteria.set(key, value);
+    }
+    criteria.set("find", "1");
+    criteria.sort();
+  }
   const preferences = new URLSearchParams();
   for (const key of ["view", "sort"]) {
     const value = params.get(key);
@@ -105,6 +114,23 @@ export function evaluate(
   includeAlertSample = false,
 ): Match[] {
   const params = new URLSearchParams(criteria.query);
+  if (criteria.scope === "search" && params.get("find") === "1") {
+    const intent = parseIntent(params);
+    const ready = retailOptions(intent, params, {}, activeDeal)
+      .filter(({ available }) => intent.unit === "units" && available >= (intent.quantity ?? 1))
+      .map(({ item, variant }) => ({
+        id: "shop/" + item.id + "/" + variant.id,
+        title: item.name, reason: "Demo retail match for your saved quantity",
+        href: "/listing/shop/" + item.id + "?" + intentParams(productIntent(intent, item, variant.id)),
+      }));
+    const sourced = sourcingOptions(intent, includeAlertSample)
+      .filter(({ warnings }) => warnings.length === 0)
+      .map(({ offer, supplier, product }) => ({
+        id: offer.id, title: product.name + " / " + supplier.name, reason: "Sample sourcing match. Shipping needs confirmation.",
+        href: "/sourcing/product/" + product.id + "#" + offer.id,
+      }));
+    return [...ready, ...sourced];
+  }
   if (criteria.scope === "sourcing") {
     return searchOffers(params, includeAlertSample).map(
       ({ offer, supplier, product }) => ({

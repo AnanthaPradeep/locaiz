@@ -50,3 +50,5 @@ Saved Searches and Match Alerts support Shop, Universal Search and Global Atlas 
 The desktop Shop filter panel stays in view while scrolling results, with a fixed heading and a separate scroll area for filter options. The mobile Filters dialog remains available.
 
 Supplier Quote Comparison supports same-requirement comparisons, explicit cost completeness and delivery warnings, and local buyer decisions. See [Supplier Quote Comparison](SUPPLIER-QUOTE-COMPARISON.md).
+
+Find It Your Way connects Home, guided Search, PDP buying options, the existing stock pilot and a reviewed Connect handoff. See [Find It Your Way](FIND-IT-YOUR-WAY.md).

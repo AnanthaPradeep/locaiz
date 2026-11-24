@@ -1132,3 +1132,14 @@ progress {
 .quote-table thead button { display: block; margin-top: .5rem; }
 .quote-table td { font-variant-numeric: tabular-nums; }
 .quote-summary { display: block; font-weight: normal; }
+
+.find-stack, .find-form, .find-card { display: grid; gap: .8rem; min-width: 0; }
+.find-stack > :is(h2, p), .find-card > :is(h3, p) { margin: 0; overflow-wrap: anywhere; }
+.find-query { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; }
+.find-query label { flex: 1 1 14rem; min-width: 0; }
+.find-fields, .find-cards { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.find-fields { margin-block-start: .75rem; }
+.find-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.find-groups [aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.find-stack > .button { justify-self: start; }
+.hero-copy .find-form { margin-block: 1rem; }

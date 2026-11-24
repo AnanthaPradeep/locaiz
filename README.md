@@ -55,3 +55,5 @@ The [Shop catalogue](docs/PLP-FEATURES.md) has fifty demo products and local ima
 Saved Searches and Match Alerts are available in browser-local Demo Mode. See [Saved Searches](docs/SAVED-SEARCHES.md) for usage and simulation.
 
 See [Supplier Quote Comparison](docs/SUPPLIER-QUOTE-COMPARISON.md) to try the browser-local buyer decision workspace.
+
+See [Find It Your Way](docs/FIND-IT-YOUR-WAY.md) for guided product and supplier discovery.

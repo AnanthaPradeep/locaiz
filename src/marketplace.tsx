@@ -1,3 +1,5 @@
+import { FindBuyingOptions, PdpBuyingOptions } from "./find-it";
+import { parseIntent } from "./buyer-intent";
 import { shopCategories } from "./demo-retail";
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useMatch, useParams, useSearchParams } from "react-router-dom";
@@ -97,9 +99,10 @@ export default function Marketplace() {
         label="LOCAIZ CONNECT"
         intro={descriptions.connect}
       >
-        <RequirementForm />
+        <RequirementForm key={params.toString()} />
       </Page>
     );
+  if (search && params.get("find") === "1") return <Page title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><FindBuyingOptions params={params} /></Page>;
   if (section === "business") return <Business panel="dashboard" />;
   const items = search
     ? (query.data ?? [])
@@ -182,6 +185,7 @@ export default function Marketplace() {
     >
       {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
       {section === "shop" && <label className="catalogue-search">Search products<input type="search" value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
+      {search && <Link className="outline" to={"/search?" + new URLSearchParams([...params, ["find", "1"]])}>Explore buying options</Link>}
       {productListing && <SavedSearchButton scope={search ? "search" : "shop"} params={params} />}
       <div className={section === "shop" ? "filterbar catalogue-toolbar" : "filterbar"}>
         {(section === "global" ||
@@ -411,8 +415,10 @@ export default function Marketplace() {
 
 function ListingDetail({ item }: { item: Listing }) {
   const demo = useDemo();
-  const [quantity, setQuantity] = useState(1);
-  const [option, setOption] = useState("standard");
+  const [params] = useSearchParams();
+  const intent = parseIntent(params);
+  const [quantity, setQuantity] = useState(intent.item === item.id ? intent.quantity ?? 1 : 1);
+  const [option, setOption] = useState(intent.item === item.id ? intent.sku || "standard" : "standard");
   const [photoIndex, setPhotoIndex] = useState(0);
   const touchStart = useRef<number | null>(null);
   const [message, setMessage] = useState("");
@@ -588,14 +594,13 @@ function ListingDetail({ item }: { item: Listing }) {
                 </button>
               </div>
               {["studio-headphones", "audio-pads"].includes(item.id) && (
-                <Link className="outline" to={stockPath(item.id, variant.label)}>
+                <Link className="outline" to={stockPath(item.id, variant.label, { quantity: quantity <= 99 ? quantity : undefined, pickup: intent.pickupDate, note: intent.notes })}>
                   Check Nearby Stock{!stockEnabled ? " · Demo Mode" : ""}
                 </Link>
               )}
               <Link to="/account/cart">View cart</Link>
               <p>
-                Demo delivery in 3–5 days. Sample pickup may be available
-                locally.
+                Delivery estimate and pickup availability are unconfirmed.
               </p>
             </>
           )}
@@ -835,6 +840,7 @@ function ListingDetail({ item }: { item: Listing }) {
           </Link>
         </section>
       )}
+      {item.section === "shop" && <PdpBuyingOptions item={item} variantId={variant.id} label={variant.label} quantity={quantity} />}
       {item.section === "shop" && (
         <>
           <section className="record">

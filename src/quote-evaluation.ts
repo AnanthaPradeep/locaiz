@@ -1,5 +1,6 @@
 export type QuoteContext = {
   quantity?: number;
+  unit?: string;
   destination?: string;
   deadline?: string;
   custom?: boolean;
@@ -45,7 +46,8 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
     typeof quantity === "number" &&
     Number.isSafeInteger(quantity) &&
     quantity > 0;
-  const meetsQuantity = validQuantity && quantity >= quote.moq;
+  const comparableUnit = !context.unit || context.unit === "units";
+  const meetsQuantity = comparableUnit && validQuantity && quantity >= quote.moq;
   const tier = meetsQuantity
     ? quote.tiers.reduce<(typeof quote.tiers)[number] | undefined>(
         (best, current) =>
@@ -105,7 +107,8 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
   const warnings: string[] = [];
   const questions: string[] = [];
   if (!validQuantity) warnings.push("Requested quantity not specified");
-  if (validQuantity && !meetsQuantity) {
+  if (!comparableUnit) warnings.push("Requested unit of measure needs confirmation");
+  if (comparableUnit && validQuantity && !meetsQuantity) {
     warnings.push("Does not meet requested quantity");
     questions.push("Can you supply " + quantity + " units?");
   }
@@ -154,7 +157,7 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
     questions.push("What is the unit price for the requested quantity?");
   if (quote.fees.Tax === "pending") questions.push("Are taxes included?");
   const ineligible =
-    (validQuantity && !meetsQuantity) ||
+    (comparableUnit && validQuantity && !meetsQuantity) ||
     delivery === false ||
     late ||
     expired ||
@@ -162,7 +165,7 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
     (context.specifications?.trim() && quote.specificationsConfirmed === false);
   const eligibility = ineligible
     ? "Does not meet requirement"
-    : !validQuantity ||
+    : !comparableUnit || !validQuantity ||
         delivery !== true ||
         (context.custom && quote.custom !== true) ||
         (context.specifications?.trim() &&

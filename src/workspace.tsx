@@ -1,3 +1,4 @@
+import { parseIntent } from "./buyer-intent";
 import { BasketComparisonDemo, QuoteComparison } from "./quote-comparison";
 import { MatchAlerts, SavedSearches } from "./saved-search-ui";
 import { useState, type FormEvent, type ReactNode } from "react";
@@ -25,15 +26,18 @@ import {
 const requirements = z.object({
   title: z.string().trim().min(3),
   kind: z.enum(["Retail", "Wholesale", "Manufacturing", "Repair"]),
-  budget: z.number().positive(),
-  quantity: z.number().int().positive(),
-  needed: z.string().min(1),
-  city: z.string().trim().min(2),
+  budget: z.number().positive().max(1e12).optional(),
+  quantity: z.number().int().positive().max(1000000),
+  needed: z.string(),
+  city: z.string().trim().min(2).max(80),
 });
 const pickupEnquiryStatus = "Demo pickup enquiry saved";
 
 export function RequirementForm() {
   const [params] = useSearchParams();
+  const guided = params.get("find") === "1";
+  const intent = parseIntent(params);
+  const [review, setReview] = useState("");
   const demo = useDemo();
   const navigate = useNavigate();
   const [error, setError] = useState("");
@@ -51,6 +55,7 @@ export function RequirementForm() {
   >({
     defaultValues: {
       kind:
+        (guided && intent.notes) ? "Manufacturing" :
         params.get("kind") === "Repair"
           ? "Repair"
           : sourcingOffer?.custom
@@ -60,9 +65,11 @@ export function RequirementForm() {
             : params.has("market") || sourcingOffer?.method === "Wholesale"
               ? "Wholesale"
               : "Retail",
-      city: demo.city,
-      title: sourcingProduct?.name ?? params.get("product")?.slice(0, 120),
-      quantity: sourcingOffer
+      city: intent.city || demo.city,
+      title: (guided && intent.query ? intent.query : sourcingProduct?.name) ?? params.get("product")?.slice(0, 120),
+      budget: intent.budget,
+      needed: intent.needed,
+      quantity: guided ? intent.quantity ?? 1 : sourcingOffer
         ? Math.min(
             1000000,
             Math.max(Number(params.get("quantity")) || 1, sourcingOffer.moq),
@@ -160,8 +167,8 @@ export function RequirementForm() {
     <form
       className="record form"
       onSubmit={handleSubmit((values, event) => {
-        const result = requirements.safeParse(values);
-        if (!result.success) {
+        const result = requirements.safeParse({ ...values, budget: Number.isNaN(values.budget) ? undefined : values.budget });
+        if (!result.success || (!guided && (!result.data.budget || !result.data.needed))) {
           setError(
             "Check the requirement, budget, quantity, date and delivery city.",
           );
@@ -174,7 +181,7 @@ export function RequirementForm() {
             : null;
         const destination = String(form?.get("destination") ?? "");
         const budgetCurrency = String(form?.get("budgetCurrency") ?? "INR");
-        const budgetLabel = sourcingOffer
+        const budgetLabel = budget === undefined ? "Budget not specified" : (sourcingOffer || guided)
           ? new Intl.NumberFormat("en-IN", {
               style: "currency",
               currency: budgetCurrency,
@@ -191,7 +198,7 @@ export function RequirementForm() {
         if (
           sourcing &&
           (!Number.isSafeInteger(quantity) ||
-            quantity < sourcingOffer!.moq ||
+            (!guided && quantity < sourcingOffer!.moq) ||
             quantity > 1000000 ||
             !places.some((place) => place.country === destination))
         ) {
@@ -203,31 +210,48 @@ export function RequirementForm() {
         const specifics = sourcing
           ? ` · Preferred supplier ${intendedSupplier?.name} · Delivery ${destination} · Specifications ${form?.get("specifications") || "Not supplied"}${sourcing.custom ? " · Custom order" : ""}${form?.get("sample") ? " · Sample requested" : ""}`
           : "";
+        const specifications = String(form?.get("specifications") ?? "").trim();
+        const unit = guided ? intent.unit : "units";
+        const custom = form?.get("custom") === "on";
+        const details = [
+          title, kind, quantity + " " + unit, budget === undefined ? budgetLabel : budgetLabel + " budget",
+          [city, destination].filter(Boolean).join(" / "), needed ? "needed " + needed : "No deadline specified",
+          specifications, custom && "Customisation required", intendedSupplier && "Preferred supplier " + intendedSupplier.name,
+          intent.sku && "Variant " + intent.sku,
+        ].filter(Boolean).join(" / ");
+        if (guided && review !== details) {
+          setError("");
+          setReview(details);
+          return;
+        }
         demo.add(
-          "requirements",
-          title,
-          `${kind} · ${quantity} units · ${budgetLabel} budget · ${city} · needed ${needed}${market ? ` · ${market.name}` : ""}${specifics}`,
+          "requirements", title,
+          details + (market ? " / " + market.name : "") + (!guided ? specifics : ""),
           sourcing ? "Demo sourcing enquiry" : "Open",
           sourcing,
-          { quantity, destination: destination || city, deadline: needed, custom: sourcing?.custom, budget, budgetCurrency: sourcing ? budgetCurrency : "INR", specifications: String(form?.get("specifications") ?? "").trim() },
+          { quantity, unit, destination: destination || city, deadline: needed || undefined, custom, budget,
+            budgetCurrency: sourcing || guided ? budgetCurrency : "INR", specifications,
+            ...(guided ? { buyerIntent: { ...intent, query: title, quantity, city, country: destination, needed, budget, currency: budgetCurrency, notes: specifications } } : {}),
+          },
         );
         navigate("/account/requirements");
       })}
     >
       {market && <p>Request for {market.name} · sample wholesale market</p>}
-      {sourcingOffer && (
+      {(sourcingOffer || guided) && (
         <>
           <p>
-            Sample sourcing enquiry for {intendedSupplier?.name}. Saved on this
+            {intendedSupplier ? "Sample sourcing enquiry for " + intendedSupplier.name + "." : "Demo buyer requirement."} Saved on this
             device.
           </p>
           <label>
             Delivery country
             <select
               name="destination"
-              required
-              defaultValue={sourcingOffer.shipping[0]}
+              required={!!sourcingOffer}
+              defaultValue={intent.country || sourcingOffer?.shipping[0] || ""}
             >
+              {!sourcingOffer && <option value="">Choose country</option>}
               {places
                 .filter((place) => place.country)
                 .map((place) => (
@@ -239,13 +263,13 @@ export function RequirementForm() {
           </label>
           <label>
             Specifications and notes
-            <input name="specifications" maxLength={500} />
+            <input name="specifications" maxLength={500} defaultValue={intent.notes} />
           </label>
           <label>
             <input
               type="checkbox"
               name="custom"
-              defaultChecked={Boolean(sourcingOffer.custom)}
+              defaultChecked={guided ? Boolean(intent.notes) : Boolean(sourcingOffer?.custom)}
             />{" "}
             Customisation needed
           </label>
@@ -267,22 +291,23 @@ export function RequirementForm() {
           <option>Repair</option>
         </select>
       </label>
-      {sourcingOffer && (
+      {(sourcingOffer || guided) && (
         <label>
           Budget currency
-          <select name="budgetCurrency" defaultValue={sourcingOffer.currency}>
-            {["INR", "CNY", "THB", "TRY", "VND", "USD"].map((currency) => (
+          <select name="budgetCurrency" defaultValue={intent.budget ? intent.currency : sourcingOffer?.currency ?? "INR"}>
+            {["INR", "CNY", "THB", "TRY", "VND", "USD", "EUR"].map((currency) => (
               <option key={currency}>{currency}</option>
             ))}
           </select>
         </label>
       )}
       <label>
-        {sourcingOffer ? "Total budget" : "Total budget (₹)"}
+        {sourcingOffer || guided ? "Total budget" : "Total budget (₹)"}
         <input
-          required
+          required={!guided}
           type="number"
-          min={1}
+          min={guided ? 0.01 : 1}
+          step={guided ? "0.01" : "1"}
           {...register("budget", { valueAsNumber: true })}
         />
       </label>
@@ -291,14 +316,14 @@ export function RequirementForm() {
         <input
           required
           type="number"
-          min={sourcingOffer?.moq ?? 1}
+          min={guided ? 1 : sourcingOffer?.moq ?? 1}
           {...register("quantity", { valueAsNumber: true })}
         />
       </label>
       <label>
         Needed by
         <input
-          required
+          required={!guided}
           type="date"
           min={new Date().toLocaleDateString("en-CA")}
           {...register("needed")}
@@ -308,9 +333,10 @@ export function RequirementForm() {
         Delivery city
         <input required maxLength={80} {...register("city")} />
       </label>
+      {review && <section className="record" aria-label="Requirement review"><h2>Review requirement</h2><p>{review}</p><p>Saved on this device in Demo Mode.</p></section>}
       <p role="alert">{error}</p>
       <button className="button" disabled={formState.isSubmitting}>
-        Post demo requirement
+        {guided ? (review ? "Save demo requirement" : "Review requirement") : "Post demo requirement"}
       </button>
     </form>
   );

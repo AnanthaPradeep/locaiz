@@ -1,3 +1,4 @@
+import { parseIntent } from "../buyer-intent";
 import {
   useEffect,
   useId,
@@ -178,6 +179,7 @@ export function StockScreen({
 
 function CreateRequest() {
   const [params] = useSearchParams();
+  const intent = parseIntent(params);
   const product = productFor(params.get("product") || "studio-headphones");
   const variant = params.get("variant") || "Standard";
   const [selected, setSelected] = useState<string[]>([]);
@@ -276,16 +278,16 @@ function CreateRequest() {
               type="number"
               min="1"
               max="99"
-              defaultValue="1"
+              defaultValue={intent.quantity && intent.quantity <= 99 ? intent.quantity : 1}
             />
           </label>
           <label>
             Preferred pickup date
-            <input name="pickup" type="date" />
+            <input name="pickup" type="date" defaultValue={intent.pickupDate} />
           </label>
           <label>
             Message to shops
-            <textarea name="note" maxLength={500} rows={3} />
+            <textarea name="note" maxLength={500} rows={3} defaultValue={intent.notes} />
           </label>
           <p>
             Stock replies are informational. An item is only reserved through a

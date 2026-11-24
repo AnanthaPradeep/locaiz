@@ -1,10 +1,11 @@
+import type { BuyerIntent } from "./buyer-intent";
 import type { QuoteContext } from "./quote-evaluation";
 import { compareMatches, evaluate, type Criteria, type MatchAlert, type SavedSearch } from "./saved-search";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SourcingRequest } from "./sourcing/catalog";
 
-export type RequirementDetails = QuoteContext & { budget?: number; budgetCurrency?: string; specifications?: string };
+export type RequirementDetails = QuoteContext & { budget?: number; budgetCurrency?: string; specifications?: string; buyerIntent?: BuyerIntent };
 export type QuoteDecision = {
   quoteId: string; supplierId: string; supplierName?: string; revision: number; quantity?: number;
   destination?: string; date: string; warnings: string[]; status: "selected";

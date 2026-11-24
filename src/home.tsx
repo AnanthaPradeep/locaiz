@@ -1,3 +1,4 @@
+import { FindProductForm } from "./find-it";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -43,6 +44,7 @@ export function Home() {
             Shop thoughtfully, discover businesses nearby and source from the
             world's wholesale markets. All in one place.
           </p>
+          <FindProductForm />
           <div className="actions">
             <Link className="button" to="/shop">
               Explore marketplace <ArrowRight size={17} />
