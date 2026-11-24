@@ -1163,3 +1163,25 @@ progress {
   color: var(--milk);
   opacity: .72;
 }
+
+.home-campaign-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 2vw, 24px); }
+.home-campaign { display: grid; grid-template-rows: auto 1fr; min-width: 0; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; }
+.home-campaign--featured { grid-column: 1 / -1; grid-template: "copy image" 1fr / minmax(0, 2fr) minmax(0, 3fr); }
+.home-campaign picture { position: relative; display: block; aspect-ratio: 3 / 2; background: var(--panel); }
+.home-campaign picture img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 7px 7px 0 0; }
+.home-campaign--featured picture { grid-area: image; aspect-ratio: 16 / 9; }
+.home-campaign--featured picture img { object-position: right center; border-radius: 0 7px 7px 0; }
+.home-campaign-copy { display: grid; align-content: start; justify-items: start; gap: 12px; padding: clamp(18px, 3vw, 38px); }
+.home-campaign--featured .home-campaign-copy { grid-area: copy; align-content: center; }
+.home-campaign-copy h3 { margin: 0; font-size: clamp(1.35rem, 2.5vw, 2rem); }
+.home-campaign--featured h3 { font-size: clamp(1.65rem, 3.6vw, 3.2rem); }
+.home-campaign-copy p { margin: 0; max-width: 48ch; color: var(--muted); }
+.home-campaign-copy .button { min-height: 44px; }
+.home-campaign-labels { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: .85rem; }
+
+@media (max-width: 650px) {
+  .home-campaign-grid { grid-template-columns: minmax(0, 1fr); }
+  .home-campaign--featured { grid-template: "image" auto "copy" 1fr / minmax(0, 1fr); }
+  .home-campaign--featured picture { aspect-ratio: 4 / 5; }
+  .home-campaign--featured picture img { object-position: center; border-radius: 7px 7px 0 0; }
+}
