@@ -6,7 +6,7 @@ import type { SourcingRequest } from "./sourcing/catalog";
 
 export type RequirementDetails = QuoteContext & { budget?: number; budgetCurrency?: string; specifications?: string };
 export type QuoteDecision = {
-  quoteId: string; supplierId: string; revision: number; quantity?: number;
+  quoteId: string; supplierId: string; supplierName?: string; revision: number; quantity?: number;
   destination?: string; date: string; warnings: string[]; status: "selected";
 };
 export type QuoteWorkspace = {

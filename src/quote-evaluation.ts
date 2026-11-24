@@ -111,7 +111,16 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
   }
   if (delivery === false) warnings.push("Delivery destination unsupported");
   if (delivery === undefined) warnings.push("Delivery eligibility unconfirmed");
-  if (delivery !== true || quote.fees.Shipping === "pending")
+  if (
+    !Object.hasOwn(quote.fees, "Shipping") ||
+    quote.fees.Shipping === "pending"
+  )
+    warnings.push("Shipping awaiting quotation");
+  if (
+    delivery !== true ||
+    !Object.hasOwn(quote.fees, "Shipping") ||
+    quote.fees.Shipping === "pending"
+  )
     questions.push(
       "Can you confirm delivery and shipping cost to " +
         (destination || "the requested destination") +

@@ -54,4 +54,10 @@ test("compares quantity, incomplete totals and timing, then saves a local decisi
   await expect(
     table.getByRole("button", { name: "Shortlist" }).nth(1),
   ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("link", { name: "Back to requirements" }).click();
+  await expect(
+    page.getByText(
+      /Selected quote: Reed & Cane Workshop.*Shipping awaiting quotation/,
+    ),
+  ).toBeVisible();
 });

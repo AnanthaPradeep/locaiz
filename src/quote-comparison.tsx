@@ -108,10 +108,16 @@ export function QuoteComparison({ request }: { request: Activity }) {
           {
             quoteId: quote.id,
             supplierId: quote.supplierId ?? quote.id,
+            supplierName: quote.supplier,
             revision: quote.revision,
             quantity: context.quantity,
             destination: context.destination,
-            warnings: current.warnings,
+            warnings: [
+              ...current.warnings,
+              ...(current.completeness === "Fully quoted"
+                ? []
+                : [current.completeness]),
+            ],
             date: new Date().toISOString(),
             status: "selected",
           },

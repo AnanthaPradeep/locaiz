@@ -656,13 +656,18 @@ export default function Workspace({
           <Records
             entries={demo.requirements}
             empty="Your requirements will appear here."
-            action={(entry) =>
-              entry.status === pickupEnquiryStatus ? null : (
-                <Link className="outline" to={`/account/quotes?id=${entry.id}`}>
+            action={(entry) => {
+              if (entry.status === pickupEnquiryStatus) return null;
+              const decision = demo.quoteWorkspaces[entry.id]?.decisions.at(-1);
+              return <>
+                {decision && <p>Selected quote: {decision.supplierName ?? decision.supplierId}
+                  {decision.warnings.length > 0 && " / " + decision.warnings.join(" / ")}
+                </p>}
+                <Link className="outline" to={"/account/quotes?id=" + entry.id}>
                   Compare sample quotations
                 </Link>
-              )
-            }
+              </>;
+            }}
           />
         </>
       );
