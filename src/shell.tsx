@@ -1,3 +1,4 @@
+import { BrandHome } from "./brand-logo";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -21,7 +22,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { asset, findListings } from "./catalog";
+import { findListings } from "./catalog";
 import { useDemo } from "./store";
 import { SiteFooter } from "./site-footer";
 
@@ -49,19 +50,6 @@ export const modules = [
     icon: Store,
   },
 ];
-
-export function Brand() {
-  return (
-    <Link className="brand" to="/" aria-label="LOCAIZ home">
-      <img className="brand-symbol" src={asset("brand/symbol.svg")} alt="" />
-      <img
-        className="wordmark"
-        src={asset("brand/wordmark.svg")}
-        alt="LOCAIZ"
-      />
-    </Link>
-  );
-}
 
 function LocationPicker() {
   const { city, setPreference } = useDemo();
@@ -143,9 +131,6 @@ export function Shell({ children }: { children: ReactNode }) {
   const count = Object.values(cart).reduce((sum, value) => sum + value, 0);
   const suggestions = query.trim() ? findListings(query).slice(0, 5) : [];
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-  useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname, location.search]);
   function search(event: FormEvent) {
@@ -181,7 +166,7 @@ export function Shell({ children }: { children: ReactNode }) {
           >
             <Menu size={22} />
           </button>
-          <Brand />
+          <BrandHome />
           <LocationPicker />
           <div
             className="search-area"
@@ -286,7 +271,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {children}
       </div>
       <SiteFooter
-        brand={<Brand />}
+        brand={<BrandHome />}
         marketplace={modules.filter(({ id }) => id !== "business").map(({ title, id }) => ({
           label: title,
           to: id === "global" ? "/sourcing" : `/${id}`,

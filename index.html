@@ -9,9 +9,70 @@
     <link rel="apple-touch-icon" href="%BASE_URL%brand/locaiz-180.png" />
     <meta name="theme-color" content="#0A0A0A" />
     <title>LOCAIZ — Local Roots. Global Reach.</title>
+    <script>
+      (() => {
+        const html = document.documentElement;
+        let theme = "light";
+        try {
+          if (JSON.parse(localStorage.getItem("__LOCAIZ_THEME_STORAGE__"))?.state?.theme === "dark") theme = "dark";
+        } catch {}
+        html.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#0A0A0A" : "#FFF6EC";
+        html.dataset.startup = "pending";
+        const fail = () => {
+          if (html.dataset.startup === "pending") html.dataset.startup = "failed";
+        };
+        const timeout = setTimeout(fail, 30000);
+        const scriptFailed = (event) => {
+          if (event.target instanceof HTMLScriptElement && event.target.type === "module") fail();
+        };
+        window.addEventListener("error", scriptFailed, true);
+        document.addEventListener("locaiz:ready", () => {
+          clearTimeout(timeout);
+          window.removeEventListener("error", scriptFailed, true);
+        }, { once: true });
+      })();
+    </script>
+    <style>
+      :root { color-scheme: light; --startup-background: #fff6ec; --startup-ink: #0a0a0a; background: #fff6ec; }
+      :root[data-theme="dark"] { color-scheme: dark; --startup-background: #0a0a0a; --startup-ink: #fff6ec; background: #0a0a0a; }
+      body { margin: 0; }
+      #startup-loader { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: var(--startup-background); color: var(--startup-ink); text-align: center; transition: opacity 150ms ease; }
+      #startup-loader[hidden], #startup-recovery, [data-startup="failed"] #startup-status { display: none; }
+      [data-startup="failed"] #startup-recovery { display: block; }
+      #startup-loader svg { display: block; width: clamp(96px, 16vw, 200px); margin-inline: auto; }
+      .startup-name { margin: 16px 0 18px; font: 700 clamp(30px, 7vw, 36px) / 1 "Space Grotesk", system-ui, sans-serif; letter-spacing: .07em; }
+      .startup-spinner { display: block; width: 20px; height: 20px; margin: 0 auto 12px; border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%; animation: startup-spin .8s linear infinite; }
+      #startup-loader[data-leaving] { opacity: 0; pointer-events: none; }
+      #startup-loader[data-leaving] .startup-spinner { animation: none; }
+      #startup-recovery { font: 1rem system-ui, sans-serif; }
+      #startup-recovery button { padding: 10px 16px; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 4px; cursor: pointer; }
+      @keyframes startup-spin { to { transform: rotate(360deg); } }
+      @media (min-width: 700px) { #startup-loader svg { width: clamp(140px, 15vw, 170px); } .startup-name { font-size: clamp(40px, 5vw, 48px); } }
+      @media (min-width: 1024px) { #startup-loader svg { width: clamp(175px, 14vw, 210px); } .startup-name { font-size: clamp(48px, 4.1vw, 58px); } }
+      @media (prefers-reduced-motion: reduce) { #startup-loader { transition: none; } .startup-spinner { animation: none; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="startup-loader">
+      <div>
+        <!-- LOCAIZ_STARTUP_SYMBOL -->
+        <p class="startup-name">LOCAIZ</p>
+        <div id="startup-status" role="status">
+          <span class="startup-spinner" aria-hidden="true"></span>
+          <span>Loading LOCAIZ</span>
+        </div>
+        <div id="startup-recovery" role="alert">
+          <p>Unable to load LOCAIZ.</p>
+          <button id="startup-reload" type="button">Reload LOCAIZ</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.getElementById("startup-reload").addEventListener("click", () => location.reload());
+    </script>
+    <noscript><style>#startup-loader { display: none; }</style><p>Enable JavaScript to open LOCAIZ.</p></noscript>
+    <div id="root" inert></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

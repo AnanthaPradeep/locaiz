@@ -1,3 +1,4 @@
+import { themeStorageKey } from "./brand-geometry";
 import type { BuyerIntent } from "./buyer-intent";
 import type { QuoteContext } from "./quote-evaluation";
 import { compareMatches, evaluate, type Criteria, type MatchAlert, type SavedSearch } from "./saved-search";
@@ -74,6 +75,12 @@ type DemoState = Record<Collection, Activity[]> & {
   update: (collection: Collection, id: string, status: string) => void;
 };
 
+function applyTheme(theme: DemoState["theme"]) {
+  if (typeof document === "undefined") return;
+  document.documentElement.dataset.theme = theme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#0A0A0A" : "#FFF6EC");
+}
+
 export const useDemo = create<DemoState>()(
   persist(
     (set) => ({
@@ -140,7 +147,7 @@ export const useDemo = create<DemoState>()(
       recent: [],
       groups: {},
       groupDeadline: Date.now() + 7 * 86400000,
-      theme: "light",
+      theme: typeof document !== "undefined" && document.documentElement.dataset.theme === "dark" ? "dark" : "light",
       city: "Chennai",
       profile: "",
       business: "",
@@ -190,7 +197,10 @@ export const useDemo = create<DemoState>()(
         })),
       join: (id, quantity) =>
         set((state) => ({ groups: { ...state.groups, [id]: quantity } })),
-      setPreference: (patch) => set(patch),
+      setPreference: (patch) => {
+        if (patch.theme) applyTheme(patch.theme);
+        set(patch);
+      },
       add: (collection, title, detail, status, sourcing, quoteContext) =>
         set((state) => ({
           [collection]: [
@@ -213,6 +223,14 @@ export const useDemo = create<DemoState>()(
           ),
         })),
     }),
-    { name: "locaiz-demo-v1" },
+    {
+      name: themeStorageKey,
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<DemoState> | undefined;
+        const theme = saved?.theme === "dark" ? "dark" : "light";
+        applyTheme(theme);
+        return { ...current, ...saved, theme };
+      },
+    },
   ),
 );

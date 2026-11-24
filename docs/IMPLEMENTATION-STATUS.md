@@ -55,3 +55,5 @@ Find It Your Way connects Home, guided Search, PDP buying options, the existing 
 Search fields in the header, Shop and guided discovery use an inverse surface with theme-aware text, placeholder and focus contrast.
 
 Home includes three curated campaigns with responsive ImageGen artwork, theme-aware HTML copy and filtered Shop or Global Atlas destinations. See [Homepage campaigns](HOMEPAGE-CAMPAIGNS.md).
+
+Header and Footer share theme-aware original SVG branding. First load uses a branded overlay with saved-theme bootstrap and recovery states. See [App loading screen](APP-LOADING-SCREEN.md).

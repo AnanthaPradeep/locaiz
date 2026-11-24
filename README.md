@@ -59,3 +59,5 @@ See [Supplier Quote Comparison](docs/SUPPLIER-QUOTE-COMPARISON.md) to try the br
 See [Find It Your Way](docs/FIND-IT-YOUR-WAY.md) for guided product and supplier discovery.
 
 [Homepage campaigns](docs/HOMEPAGE-CAMPAIGNS.md) describes the curated collections, artwork and configuration.
+
+See [Brand theming](docs/BRAND-THEMING.md) and [App loading screen](docs/APP-LOADING-SCREEN.md) for startup behaviour.
