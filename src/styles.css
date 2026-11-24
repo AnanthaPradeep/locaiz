@@ -104,6 +104,7 @@ header {
   align-items: center;
   min-height: 78px;
 }
+.brand-link { display: inline-flex; width: max-content; }
 .brand {
   display: inline-flex;
   align-items: center;
@@ -117,9 +118,6 @@ header {
 .wordmark {
   width: 91px;
   height: auto;
-}
-[data-theme="dark"] .wordmark {
-  filter: invert(1);
 }
 .location {
   display: flex;
@@ -1185,3 +1183,5 @@ progress {
   .home-campaign--featured picture { aspect-ratio: 4 / 5; }
   .home-campaign--featured picture img { object-position: center; border-radius: 7px 7px 0 0; }
 }
+
+:root:not([data-startup="ready"]) .route-loading { visibility: hidden; }
