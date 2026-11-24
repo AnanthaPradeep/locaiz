@@ -143,8 +143,9 @@ header {
 }
 .search {
   min-height: 44px;
-  border: 1px solid var(--line);
-  background: var(--canvas);
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--milk);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -156,11 +157,13 @@ header {
   min-width: 0;
   border: 0;
   background: transparent;
+  color: inherit;
   font-size: 14px;
   outline: 0;
 }
 .search:focus-within {
-  outline: 1px solid var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
 }
 .search svg {
   flex: none;
@@ -170,6 +173,10 @@ header {
   place-items: center;
   min-width: 32px;
   min-height: 32px;
+}
+.search button:focus-visible {
+  outline-color: var(--milk);
+  outline-offset: 0;
 }
 .suggestions {
   position: absolute;
@@ -1143,3 +1150,16 @@ progress {
 .find-groups [aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .find-stack > .button { justify-self: start; }
 .hero-copy .find-form { margin-block: 1rem; }
+
+.catalogue-search input,
+.find-query input {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--milk);
+}
+.search input::placeholder,
+.catalogue-search input::placeholder,
+.find-query input::placeholder {
+  color: var(--milk);
+  opacity: .72;
+}
