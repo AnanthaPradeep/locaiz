@@ -53,3 +53,5 @@ Supplier Quote Comparison supports same-requirement comparisons, explicit cost c
 
 Find It Your Way connects Home, guided Search, PDP buying options, the existing stock pilot and a reviewed Connect handoff. See [Find It Your Way](FIND-IT-YOUR-WAY.md).
 Search fields in the header, Shop and guided discovery use an inverse surface with theme-aware text, placeholder and focus contrast.
+
+Home includes three curated campaigns with responsive ImageGen artwork, theme-aware HTML copy and filtered Shop or Global Atlas destinations. See [Homepage campaigns](HOMEPAGE-CAMPAIGNS.md).

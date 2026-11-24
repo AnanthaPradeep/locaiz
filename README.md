@@ -57,3 +57,5 @@ Saved Searches and Match Alerts are available in browser-local Demo Mode. See [S
 See [Supplier Quote Comparison](docs/SUPPLIER-QUOTE-COMPARISON.md) to try the browser-local buyer decision workspace.
 
 See [Find It Your Way](docs/FIND-IT-YOUR-WAY.md) for guided product and supplier discovery.
+
+[Homepage campaigns](docs/HOMEPAGE-CAMPAIGNS.md) describes the curated collections, artwork and configuration.

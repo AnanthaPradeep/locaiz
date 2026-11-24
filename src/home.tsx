@@ -1,3 +1,4 @@
+import { HomeCampaignSection } from "./home-campaign-section";
 import { FindProductForm } from "./find-it";
 import { Link } from "react-router-dom";
 import {
@@ -81,6 +82,7 @@ export function Home() {
           </Link>
         ))}
       </section>
+      <HomeCampaignSection />
       <section className="home-section">
         <div className="section-heading">
           <div>
