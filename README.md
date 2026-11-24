@@ -53,3 +53,5 @@ Set up the Follow LOCAIZ section in src/organisation.ts under organisation.socia
 The [Shop catalogue](docs/PLP-FEATURES.md) has fifty demo products and local images. See the [data model](docs/CATALOG-DATA-MODEL.md), [image provenance](docs/PRODUCT-IMAGE-SOURCES.md) and [validation commands](docs/PLP-TESTING.md).
 
 Saved Searches and Match Alerts are available in browser-local Demo Mode. See [Saved Searches](docs/SAVED-SEARCHES.md) for usage and simulation.
+
+See [Supplier Quote Comparison](docs/SUPPLIER-QUOTE-COMPARISON.md) to try the browser-local buyer decision workspace.

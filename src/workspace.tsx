@@ -1,3 +1,4 @@
+import { BasketComparisonDemo, QuoteComparison } from "./quote-comparison";
 import { MatchAlerts, SavedSearches } from "./saved-search-ui";
 import { useState, type FormEvent, type ReactNode } from "react";
 import {
@@ -14,15 +15,11 @@ import { Missing, Page } from "./page";
 import { useDemo, type Activity } from "./store";
 import {
   alertSampleOffer,
-  ancestry,
-  formatMinor,
-  matchingOffers,
   offers,
   placeName,
   places,
   products as sourcingProducts,
   suppliers,
-  unitPrice,
 } from "./sourcing/catalog";
 
 const requirements = z.object({
@@ -212,6 +209,7 @@ export function RequirementForm() {
           `${kind} · ${quantity} units · ${budgetLabel} budget · ${city} · needed ${needed}${market ? ` · ${market.name}` : ""}${specifics}`,
           sourcing ? "Demo sourcing enquiry" : "Open",
           sourcing,
+          { quantity, destination: destination || city, deadline: needed, custom: sourcing?.custom, budget, budgetCurrency: sourcing ? budgetCurrency : "INR", specifications: String(form?.get("specifications") ?? "").trim() },
         );
         navigate("/account/requirements");
       })}
@@ -654,16 +652,22 @@ export default function Workspace({
           <Link className="button" to="/connect">
             Post a requirement
           </Link>
+          <BasketComparisonDemo />
           <Records
             entries={demo.requirements}
             empty="Your requirements will appear here."
-            action={(entry) =>
-              entry.status === pickupEnquiryStatus ? null : (
-                <Link className="outline" to={`/account/quotes?id=${entry.id}`}>
+            action={(entry) => {
+              if (entry.status === pickupEnquiryStatus) return null;
+              const decision = demo.quoteWorkspaces[entry.id]?.decisions.at(-1);
+              return <>
+                {decision && <p>Selected quote: {decision.supplierName ?? decision.supplierId}
+                  {decision.warnings.length > 0 && " / " + decision.warnings.join(" / ")}
+                </p>}
+                <Link className="outline" to={"/account/quotes?id=" + entry.id}>
                   Compare sample quotations
                 </Link>
-              )
-            }
+              </>;
+            }}
           />
         </>
       );
@@ -687,115 +691,7 @@ export default function Workspace({
         );
         break;
       }
-      if (request.sourcing) {
-        const enquiry = request.sourcing;
-        const matches = matchingOffers(enquiry);
-        content = (
-          <>
-            <p>
-              {request.title} · {enquiry.quantity} units
-            </p>
-            <p>
-              Illustrative supplier matches and item estimates. Supplier
-              confirmation is required.
-            </p>
-            {matches.length === 0 && (
-              <p>
-                No sample offer supports this quantity, destination and
-                customisation choice.
-              </p>
-            )}
-            {matches.map((offer) => {
-              const supplier = suppliers.find(
-                (item) => item.id === offer.supplierId,
-              )!;
-              const unit = unitPrice(offer, enquiry.quantity);
-              return (
-                <article className="record" key={offer.id}>
-                  <h2>
-                    <Link to={`/sourcing/supplier/${supplier.id}`}>
-                      {supplier.name}
-                    </Link>
-                  </h2>
-                  <p>
-                    {ancestry(supplier.base)
-                      .map((place) => place.name)
-                      .join(" / ")}{" "}
-                    · MOQ {offer.moq} · {offer.leadDays} day indicative
-                    production lead time
-                  </p>
-                  <p>
-                    {unit === undefined
-                      ? "Item price to be quoted"
-                      : `${formatMinor(unit, offer.currency)} per unit · ${formatMinor(unit * enquiry.quantity, offer.currency)} items subtotal`}
-                  </p>
-                  <p>
-                    Sample cost, shipping, tax, duties, delivery date and
-                    validity to be confirmed.
-                  </p>
-                </article>
-              );
-            })}
-          </>
-        );
-        break;
-      }
-      const budget =
-        Number(request.detail.match(/₹([\d,]+)/)?.[1].replaceAll(",", "")) ||
-        1000;
-      content = (
-        <>
-          <p>
-            {request.title} · {request.status}
-          </p>
-          <div className="split">
-            {["Regional Supply Studio", "Market Collective"].map(
-              (seller, index) => (
-                <div key={seller} className="record">
-                  <h2>{seller}</h2>
-                  <p>
-                    {money(Math.round(budget * (index ? 0.9 : 0.8)))} ·{" "}
-                    {index ? "4" : "7"} day sample lead time
-                  </p>
-                  <div className="actions">
-                    <button
-                      className="button"
-                      disabled={request.status?.startsWith("Accepted")}
-                      onClick={() =>
-                        demo.update(
-                          "requirements",
-                          request.id,
-                          `Accepted · ${seller}`,
-                        )
-                      }
-                    >
-                      Accept quote
-                    </button>
-                    <button
-                      className="outline"
-                      disabled={request.status?.startsWith("Accepted")}
-                      onClick={() =>
-                        demo.update(
-                          "requirements",
-                          request.id,
-                          `Rejected · ${seller}`,
-                        )
-                      }
-                    >
-                      Reject quote
-                    </button>
-                  </div>
-                  <Link
-                    to={`/account/messages?to=${encodeURIComponent(seller)}`}
-                  >
-                    Send demo counteroffer
-                  </Link>
-                </div>
-              ),
-            )}
-          </div>
-        </>
-      );
+      content = <QuoteComparison key={request.id} request={request} />;
       break;
     }
     case "messages":
