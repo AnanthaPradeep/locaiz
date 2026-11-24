@@ -1,7 +1,18 @@
+import type { QuoteContext } from "./quote-evaluation";
 import { compareMatches, evaluate, type Criteria, type MatchAlert, type SavedSearch } from "./saved-search";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SourcingRequest } from "./sourcing/catalog";
+
+export type RequirementDetails = QuoteContext & { budget?: number; budgetCurrency?: string; specifications?: string };
+export type QuoteDecision = {
+  quoteId: string; supplierId: string; revision: number; quantity?: number;
+  destination?: string; date: string; warnings: string[]; status: "selected";
+};
+export type QuoteWorkspace = {
+  selected: string[]; shortlist: string[]; drafts: Record<string, string>;
+  decisions: QuoteDecision[]; context?: QuoteContext;
+};
 
 export type Activity = {
   id: string;
@@ -10,6 +21,7 @@ export type Activity = {
   date: string;
   status?: string;
   sourcing?: SourcingRequest;
+  quoteContext?: RequirementDetails;
 };
 type Collection =
   | "orders"
@@ -21,6 +33,9 @@ type Collection =
   | "addresses"
   | "createdGroups";
 type DemoState = Record<Collection, Activity[]> & {
+  quoteWorkspaces: Record<string, QuoteWorkspace>;
+  updateQuoteWorkspace: (id: string, update: (current: QuoteWorkspace) => QuoteWorkspace) => void;
+  addBasketDemo: () => void;
   includeAlertSample: boolean;
   publishAlertSamples: () => void;
   savedSearches: SavedSearch[];
@@ -53,6 +68,7 @@ type DemoState = Record<Collection, Activity[]> & {
     detail: string,
     status?: string,
     sourcing?: SourcingRequest,
+    quoteContext?: RequirementDetails,
   ) => void;
   update: (collection: Collection, id: string, status: string) => void;
 };
@@ -60,6 +76,21 @@ type DemoState = Record<Collection, Activity[]> & {
 export const useDemo = create<DemoState>()(
   persist(
     (set) => ({
+      quoteWorkspaces: {},
+      updateQuoteWorkspace: (id, update) => set((state) => {
+        if (!state.requirements.some((request) => request.id === id)) return state;
+        return { quoteWorkspaces: { ...state.quoteWorkspaces,
+          [id]: update(state.quoteWorkspaces[id] ?? { selected: [], shortlist: [], drafts: {}, decisions: [] }),
+        } };
+      }),
+      addBasketDemo: () => set((state) => {
+        const id = "demo-basket-comparison";
+        if (state.requirements.some((request) => request.id === id)) return state;
+        const deadline = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
+        return { requirements: [{ id, title: "50 handmade baskets", detail: "Demo wholesale requirement for Chennai",
+          date: new Date().toISOString(), status: "Demo", quoteContext: { quantity: 50, destination: "Chennai",
+          deadline, custom: true, budget: 12000, budgetCurrency: "INR" } }, ...state.requirements] };
+      }),
       includeAlertSample: false,
       publishAlertSamples: () => set({ includeAlertSample: true }),
       savedSearches: [],
@@ -159,7 +190,7 @@ export const useDemo = create<DemoState>()(
       join: (id, quantity) =>
         set((state) => ({ groups: { ...state.groups, [id]: quantity } })),
       setPreference: (patch) => set(patch),
-      add: (collection, title, detail, status, sourcing) =>
+      add: (collection, title, detail, status, sourcing, quoteContext) =>
         set((state) => ({
           [collection]: [
             {
@@ -169,6 +200,7 @@ export const useDemo = create<DemoState>()(
               date: new Date().toISOString(),
               status,
               sourcing,
+              quoteContext,
             },
             ...state[collection],
           ],
