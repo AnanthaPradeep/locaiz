@@ -6,13 +6,18 @@ test("Shop paginates fifty unique products and serves every primary photo", asyn
 }) => {
   test.setTimeout(180000);
   await page.goto("/#/shop");
-  const grid = page.locator(".product-grid").first();
+  const grid = page.locator(".catalogue-results .product-grid");
   const identities = new Map<string, string>();
   for (let number = 1; number <= 5; number++) {
     if (number > 1)
       await page
         .getByRole("button", { name: `Page ${number}`, exact: true })
         .click();
+    const first = (number - 1) * 12 + 1;
+    const last = Math.min(number * 12, 50);
+    await expect(page.locator(".catalogue-range")).toHaveText(
+      `Showing ${first}–${last} of 50 products`,
+    );
     await expect(grid.locator(".listing-card")).toHaveCount(
       number === 5 ? 2 : 12,
     );
