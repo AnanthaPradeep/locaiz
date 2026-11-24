@@ -52,3 +52,4 @@ The desktop Shop filter panel stays in view while scrolling results, with a fixe
 Supplier Quote Comparison supports same-requirement comparisons, explicit cost completeness and delivery warnings, and local buyer decisions. See [Supplier Quote Comparison](SUPPLIER-QUOTE-COMPARISON.md).
 
 Find It Your Way connects Home, guided Search, PDP buying options, the existing stock pilot and a reviewed Connect handoff. See [Find It Your Way](FIND-IT-YOUR-WAY.md).
+Search fields in the header, Shop and guided discovery use an inverse surface with theme-aware text, placeholder and focus contrast.
