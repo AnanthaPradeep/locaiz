@@ -55,6 +55,7 @@ export function FindProductForm({
             required
             maxLength={120}
             defaultValue={intent?.query}
+            placeholder="e.g. Natural rattan basket"
           />
         </label>
         <button className="button">Find a product</button>

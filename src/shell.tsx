@@ -195,6 +195,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <input
                 type="search"
                 aria-label="Search marketplace"
+                placeholder="Search products, shops & services"
                 value={query}
                 onFocus={() => setFocused(true)}
                 onChange={(event) => {
