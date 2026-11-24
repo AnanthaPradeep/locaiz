@@ -18,7 +18,14 @@ const quote: Quote = {
     { quantity: 25, minor: 180 },
     { quantity: 50, minor: 150 },
   ],
-  fees: { Shipping: 400, Tax: "included" },
+  fees: {
+    Shipping: 400,
+    Tax: "included",
+    Packaging: "included",
+    Insurance: "not applicable",
+    Duties: "not applicable",
+    Other: "not applicable",
+  },
   validUntil: "2026-12-31",
 };
 const now = new Date("2026-11-24T00:00:00Z");
@@ -78,5 +85,18 @@ it("reports unsupported destinations and expired quotes", () => {
     eligibility: "Does not meet requirement",
     timeline: "Destination unsupported",
     total: undefined,
+  });
+});
+
+it("treats unconfirmed required specifications as a question for the supplier", () => {
+  expect(
+    evaluateQuote(
+      quote,
+      { ...context, specifications: "Food-safe finish" },
+      now,
+    ),
+  ).toMatchObject({
+    eligibility: "Needs confirmation",
+    warnings: ["Specifications unconfirmed"],
   });
 });

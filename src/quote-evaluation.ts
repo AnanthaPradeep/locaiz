@@ -3,7 +3,16 @@ export type QuoteContext = {
   destination?: string;
   deadline?: string;
   custom?: boolean;
+  specifications?: string;
 };
+export const feeLabels = [
+  "Shipping",
+  "Packaging",
+  "Tax",
+  "Insurance",
+  "Duties",
+  "Other",
+] as const;
 type Fee = number | "included" | "not applicable" | "pending";
 export type Quote = {
   id: string;
@@ -23,6 +32,7 @@ export type Quote = {
   validUntil?: string;
   pickup?: string;
   custom?: boolean;
+  specificationsConfirmed?: boolean;
 };
 
 function safeAmount(amount: number) {
@@ -51,7 +61,7 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
     unit !== undefined && validQuantity
       ? safeAmount(unit * quantity)
       : undefined;
-  const fees = Object.values(quote.fees);
+  const fees = feeLabels.map((label) => quote.fees[label] ?? "pending");
   const completeFees = fees.every(
     (fee) =>
       fee === "included" ||
@@ -115,6 +125,17 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
     );
     questions.push("Can you meet the requested customisation?");
   }
+  if (
+    context.specifications?.trim() &&
+    quote.specificationsConfirmed !== true
+  ) {
+    warnings.push(
+      quote.specificationsConfirmed === false
+        ? "Specifications unsupported"
+        : "Specifications unconfirmed",
+    );
+    questions.push("Can you confirm the requested product specifications?");
+  }
   if (late) warnings.push("Likely late");
   if (timeline === "Delivery estimate pending" || late)
     questions.push("Can you confirm the delivery date?");
@@ -128,12 +149,15 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
     delivery === false ||
     late ||
     expired ||
-    (context.custom && quote.custom === false);
+    (context.custom && quote.custom === false) ||
+    (context.specifications?.trim() && quote.specificationsConfirmed === false);
   const eligibility = ineligible
     ? "Does not meet requirement"
     : !validQuantity ||
         delivery !== true ||
         (context.custom && quote.custom !== true) ||
+        (context.specifications?.trim() &&
+          quote.specificationsConfirmed !== true) ||
         timeline === "Delivery estimate pending"
       ? "Needs confirmation"
       : "Meets requirement";
