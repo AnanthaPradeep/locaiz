@@ -1,3 +1,4 @@
+import { compareMatches, evaluate, type Criteria, type MatchAlert, type SavedSearch } from "./saved-search";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SourcingRequest } from "./sourcing/catalog";
@@ -20,6 +21,14 @@ type Collection =
   | "addresses"
   | "createdGroups";
 type DemoState = Record<Collection, Activity[]> & {
+  includeAlertSample: boolean;
+  publishAlertSamples: () => void;
+  savedSearches: SavedSearch[];
+  matchAlerts: MatchAlert[];
+  saveSearch: (criteria: Criteria, name: string, enabled: boolean, id?: string) => void;
+  deleteSearch: (id: string) => void;
+  checkMatches: () => void;
+  readMatches: (key?: string) => void;
   cart: Record<string, number>;
   liked: string[];
   recent: string[];
@@ -51,6 +60,49 @@ type DemoState = Record<Collection, Activity[]> & {
 export const useDemo = create<DemoState>()(
   persist(
     (set) => ({
+      includeAlertSample: false,
+      publishAlertSamples: () => set({ includeAlertSample: true }),
+      savedSearches: [],
+      matchAlerts: [],
+      saveSearch: (criteria, title, enabled, id) => set((state) => {
+        const name = title.trim();
+        if (!name || name.length > 80) throw new Error("Enter a name of 1 to 80 characters.");
+        if (state.savedSearches.some((entry) => entry.id !== id && entry.query === criteria.query && entry.scope === criteria.scope))
+          throw new Error("You already saved this search.");
+        const previous = state.savedSearches.find((entry) => entry.id === id);
+        const changed = previous?.query !== criteria.query || previous.scope !== criteria.scope;
+        const baseline = changed || (enabled && !previous?.enabled);
+        const search = {
+          ...criteria, name, enabled, id: previous?.id ?? crypto.randomUUID(),
+          checked: baseline ? new Date().toISOString() : previous.checked,
+          seen: baseline ? [...new Set([
+            ...(changed ? [] : previous.seen),
+            ...evaluate(criteria, state.groupDeadline > Date.now(), state.includeAlertSample).map(({ id }) => id),
+          ])] : previous.seen,
+          revision: (previous?.revision ?? 0) + Number(changed),
+        };
+        return { savedSearches: previous ? state.savedSearches.map((entry) => entry.id === id ? search : entry) : [search, ...state.savedSearches] };
+      }),
+      deleteSearch: (id) => set((state) => ({
+        savedSearches: state.savedSearches.filter((entry) => entry.id !== id),
+        matchAlerts: state.matchAlerts.filter((alert) => alert.searchId !== id),
+      })),
+      checkMatches: () => set((state) => {
+        if (!state.savedSearches.some((search) => search.enabled)) return state;
+        const date = new Date().toISOString();
+        const alerts: MatchAlert[] = [];
+        const savedSearches = state.savedSearches.map((search) => {
+          if (!search.enabled) return search;
+          const result = compareMatches(search, evaluate(search, state.groupDeadline > Date.now(), state.includeAlertSample), date);
+          alerts.push(...result.alerts);
+          return result.search;
+        });
+        const existing = new Set(state.matchAlerts.map(({ key }) => key));
+        return { savedSearches, matchAlerts: [...alerts.filter(({ key }) => !existing.has(key)), ...state.matchAlerts] };
+      }),
+      readMatches: (key) => set((state) => ({
+        matchAlerts: state.matchAlerts.map((alert) => !key || key === alert.key ? { ...alert, read: true } : alert),
+      })),
       cart: {},
       liked: [],
       recent: [],

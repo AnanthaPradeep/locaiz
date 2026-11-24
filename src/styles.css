@@ -1082,3 +1082,14 @@ progress {
     white-space: nowrap;
   }
 }
+
+.saved-controls { margin-block: 1rem; }
+.saved-stack { display: grid; gap: .75rem; }
+.saved-stack > :is(h2, h3, p) { margin: 0; overflow-wrap: anywhere; }
+.saved-chip { border: 1px solid var(--line); padding: .3rem .6rem; overflow-wrap: anywhere; }
+.saved-overlay { position: fixed; inset: 0; background: #0a0a0a99; z-index: 100; }
+.saved-dialog { position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%); z-index: 101; width: min(32rem, calc(100vw - 2rem)); max-height: 85dvh; overflow: auto; background: var(--paper); color: var(--ink); }
+.saved-dialog label:has(input[type="checkbox"]) { display: flex; gap: .5rem; align-items: center; }
+.saved-dialog input[type="checkbox"] { width: auto; }
+.saved-feedback:empty { position: absolute; }
+.saved-dialog .actions { flex-wrap: wrap; }

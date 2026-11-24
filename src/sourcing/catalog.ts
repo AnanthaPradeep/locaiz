@@ -532,7 +532,8 @@ export interface SourcingRequest {
 }
 
 export function matchingOffers(request: SourcingRequest) {
-  const target = offers.find((offer) => offer.id === request.offerId);
+  const target = offers.find((offer) => offer.id === request.offerId) ??
+    (request.offerId === alertSampleOffer.id ? alertSampleOffer : undefined);
   if (!target) return [];
   return offers.filter(
     (offer) =>
@@ -550,19 +551,22 @@ export function formatMinor(amount: number, currency: string) {
   );
 }
 
-export function searchOffers(params: URLSearchParams) {
+export const alertSampleOffer: Offer = { ...offers[0], id: "demo-match-reed-mat-offer" };
+
+export function searchOffers(params: URLSearchParams, includeAlertSample = false) {
   const q = (params.get("q") ?? "")
     .trim()
     .toLowerCase()
     .split(/\s+/)
     .filter(Boolean);
   const category = params.get("category") ?? "";
-  return offers.flatMap((offer) => {
+  return (includeAlertSample ? [...offers, alertSampleOffer] : offers).flatMap((offer) => {
     const product = products.find((item) => item.id === offer.productId)!;
     const supplier = suppliers.find((item) => item.id === offer.supplierId)!;
     const locality = [...ancestry(supplier.base), ...ancestry(product.origin)];
     const label = [
       product.name,
+      offer.id === alertSampleOffer.id ? "Demo restock offer" : "",
       product.category,
       supplier.name,
       product.method,

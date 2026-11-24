@@ -1,9 +1,11 @@
+import { SavedSearchButton } from "../saved-search-ui";
 import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import {
   Link,
   useNavigate,
   useParams,
   useSearchParams,
+  useLocation,
 } from "react-router-dom";
 import { Page, Missing } from "../page";
 import { asset } from "../catalog";
@@ -22,6 +24,7 @@ import {
   products,
   roles,
   searchOffers,
+  alertSampleOffer,
   suppliers,
   unitPrice,
   type Offer,
@@ -40,12 +43,14 @@ const offerLink = (offer: Offer, quantity = offer.moq, pickup = false) =>
 const productImage = (id: string) => asset(`images/sourcing/${id}.webp`);
 
 export default function Sourcing() {
+  const sample = useDemo((state) => state.includeAlertSample);
+  const catalogueOffers = sample ? [...offers, alertSampleOffer] : offers;
   const { kind, id } = useParams();
   if (kind === "published") return <PublishedSourcing />;
   if (kind === "supplier" && id) {
     const supplier = suppliers.find((item) => item.id === id);
     if (!supplier) return <Missing />;
-    const selection = offers.filter((offer) => offer.supplierId === id);
+    const selection = catalogueOffers.filter((offer) => offer.supplierId === id);
     return (
       <Page
         title={supplier.name}
@@ -122,7 +127,7 @@ export default function Sourcing() {
         </div>
         <h2>Compare supplier offers</h2>
         <div className="records">
-          {offers
+          {catalogueOffers
             .filter((offer) => offer.productId === id)
             .map((offer) => (
               <OfferCard key={offer.id} offer={offer} />
@@ -171,7 +176,8 @@ function Explore() {
   const children = places.filter((place) =>
     location ? place.parent === location : !place.parent,
   );
-  const results = searchOffers(params);
+  const includeAlertSample = useDemo((state) => state.includeAlertSample);
+  const results = searchOffers(params, includeAlertSample);
   const page = Math.min(
     Math.max(1, Math.trunc(Number(params.get("page"))) || 1),
     Math.max(1, Math.ceil(results.length / pageSize)),
@@ -200,6 +206,7 @@ function Explore() {
       label="VILLAGE TO GLOBAL"
       intro="Find village crafts, workshop parts and factory-made goods. Compare sample offers and ask suppliers about pickup."
     >
+      <SavedSearchButton scope="sourcing" params={params} />
       {stockEnabled && <Link className="outline" to="/sourcing/published">Published supplier offers</Link>}
       <nav
         className="actions sourcing-shortcuts"
@@ -550,12 +557,16 @@ function OfferPreview({ offer }: { offer: Offer }) {
 }
 
 function OfferCard({ offer }: { offer: Offer }) {
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash === "#" + offer.id) document.getElementById(offer.id)?.scrollIntoView({ block: "center" });
+  }, [hash, offer.id]);
   const product = products.find((item) => item.id === offer.productId)!;
   const supplier = suppliers.find((item) => item.id === offer.supplierId)!;
   const [quantity, setQuantity] = useState(offer.moq);
   const unit = unitPrice(offer, quantity);
   return (
-    <article className="record sourcing-offer">
+    <article id={offer.id} className="record sourcing-offer">
       <span className="eyebrow">{offer.method} · Sample offer</span>
       <h3>
         <Link to={`/sourcing/product/${product.id}`}>{product.name}</Link>

@@ -1,3 +1,4 @@
+import { MatchCheck } from "./saved-search-ui";
 import { Component, lazy, Suspense, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -62,6 +63,7 @@ createRoot(document.getElementById("root")!).render(
     <HashRouter>
       <AppErrorBoundary>
         <Shell>
+          <MatchCheck />
           <Routes>
             <Route
               path="/sourcing/:kind?/:id?"

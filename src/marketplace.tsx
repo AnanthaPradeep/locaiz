@@ -1,4 +1,4 @@
-import { legacyShopCategories, shopCategories } from "./demo-retail";
+import { shopCategories } from "./demo-retail";
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useMatch, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -22,8 +22,11 @@ import { useDemo } from "./store";
 import { Business, RequirementForm } from "./workspace";
 import { Missing, Page } from "./page";
 import { stockEnabled, stockPath } from "./stock/config";
-import { productSourcing, retailSubcategory, retailVariants, togetherListing } from "./product-commerce";
-import { ancestry, suppliers, placeName, formatMinor } from "./sourcing/catalog";
+import { productSourcing, retailVariants, togetherListing } from "./product-commerce";
+import { suppliers, placeName, formatMinor } from "./sourcing/catalog";
+
+import { catalogueFilters, nonnegative } from "./catalogue-filters";
+import { SavedSearchButton } from "./saved-search-ui";
 
 const MarketMap = lazy(() => import("./market-map"));
 
@@ -46,42 +49,6 @@ const filterFields = {
   community: "Community buying",
 } as const;
 
-function productFacets(item: Listing, activeDeal: boolean) {
-  if (item.section !== "shop") return {};
-  const { product: source, offers: matching } = productSourcing(item.id);
-  const subcategory = retailSubcategory(item.id) ?? item.subcategory;
-  return {
-    brand: [item.detail],
-    material: item.specifications?.Material ? [item.specifications.Material] : [],
-    feature: item.specifications?.Feature ? [item.specifications.Feature] : [],
-    variant: item.demoVariants?.map((variant) => variant.label) ?? [],
-    category: [item.category],
-    subcategory: subcategory ? [subcategory] : [],
-    countryOfSupplier: matching.flatMap((offer) => {
-      const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
-      return supplier ? ancestry(supplier.base).filter((place) => place.country).map((place) => place.name) : [];
-    }),
-    supplierCity: matching.flatMap((offer) => {
-      const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
-      return supplier ? [placeName(supplier.base)] : [];
-    }),
-    origin: source ? ancestry(source.origin).map((place) => place.name) : [],
-    supplierType: matching.flatMap((offer) =>
-      suppliers.find((supplier) => supplier.id === offer.supplierId)?.roles ?? [],
-    ),
-    method: [item.quoteOnly ? "Quote only" : "Retail", ...matching.map((offer) => offer.method)],
-    pickup: matching.flatMap((offer) => offer.pickup ? [placeName(offer.pickup)] : []),
-    available: [item.quoteOnly ? "Quote only" : retailVariants(item).some((variant) => variant.stock > 0) ? "In demo stock" : "Out of demo stock"],
-    community: activeDeal && togetherListing(item.id, "standard") ? ["Deal available"] : [],
-  };
-}
-
-function nonnegative(value: string | null) {
-  if (value === null || !/^\d+(\.\d+)?$/.test(value)) return undefined;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : undefined;
-}
-
 const descriptions: Record<Section, string> = {
   shop: "Explore independent brands, everyday essentials and considered design.",
   nearby: "Find sample retail and wholesale shops with local pickup.",
@@ -98,13 +65,14 @@ export default function Marketplace() {
   const [params, setParams] = useSearchParams();
   const [map, setMap] = useState(false);
   const city = useDemo((state) => state.city);
+  const includeAlertSample = useDemo((state) => state.includeAlertSample);
   const dealOpen = useDemo((state) => state.groupDeadline) > Date.now();
   const active = modules.find((module) => module.id === section);
   const search = Boolean(useMatch("/search"));
   const term = params.get("q") ?? "";
   const query = useQuery({
-    queryKey: ["catalog", term],
-    queryFn: () => demoCatalog.search(term),
+    queryKey: ["catalog", term, includeAlertSample],
+    queryFn: () => demoCatalog.search(term, includeAlertSample),
     enabled: search,
   });
   const setOption = (name: string, value: string) =>
@@ -116,7 +84,7 @@ export default function Marketplace() {
       return next;
     });
   if (id) {
-    const item = findListings("", active?.id as Section).find(
+    const item = findListings("", active?.id as Section, undefined, undefined, includeAlertSample).find(
       (entry) => entry.id === id && entry.section === section,
     );
     return item ? <ListingDetail key={item.id} item={item} /> : <Missing />;
@@ -138,31 +106,17 @@ export default function Marketplace() {
     : findListings(section === "shop" ? term : "", section as Section,
         "",
         section === "nearby" ? city : "",
+        includeAlertSample,
       );
   const category = params.get("category") ?? "";
   const chosenCategories = params.getAll("category");
   const country = params.get("country") ?? "";
-  const sort = params.get("sort") ?? "";
   const distance = params.get("distance") ?? "";
+  const sort = params.get("sort") ?? "";
   const productListing = search || section === "shop";
   const listView = productListing && params.get("view") === "list";
-  const maximumPrice = nonnegative(params.get("maxPrice"));
-  const minimumPrice = nonnegative(params.get("minPrice"));
-  const maxMoq = nonnegative(params.get("maxMoq"));
   const clearable = ["category", "maxPrice", ...Object.keys(filterFields)];
-  const facetKeys = ["category", "material", "feature", "variant", "subcategory", "brand", "origin", "countryOfSupplier", "supplierCity", "supplierType", "method", "pickup", "available", "community"] as const;
-  const rows = items.map((item) => ({ item, facets: productFacets(item, dealOpen) }));
-  const optionValues = (key: typeof facetKeys[number]) =>
-    [...new Set(rows.flatMap(({ item, facets }) =>
-      (["material", "feature", "variant", "subcategory"].includes(key) &&
-        chosenCategories.length && !chosenCategories.some((category) =>
-          item.category === category || legacyShopCategories[category]?.includes(item.category)))
-        ? [] : facets[key] ?? [],
-    ))].sort();
-  const activeFacets = facetKeys.filter((key) => key !== "category").flatMap((key) => {
-    const values = params.getAll(key).filter((value) => optionValues(key).includes(value));
-    return values.length ? [{ key, values }] : [];
-  });
+  const { filtered, optionValues, activeFacets, facetKeys, maximumPrice, minimumPrice, maxMoq } = catalogueFilters(items, params, dealOpen, productListing);
   function toggleFacet(key: string, value: string) {
     const next = new URLSearchParams(params);
     if (next.getAll(key).includes(value)) next.delete(key, value);
@@ -171,37 +125,6 @@ export default function Marketplace() {
     setParams(next);
   }
   const appliedCount = chosenCategories.length + activeFacets.reduce((sum, facet) => sum + facet.values.length, 0) + [minimumPrice, maximumPrice, maxMoq].filter((value) => value !== undefined).length;
-  const offerFacetKeys = ["countryOfSupplier", "supplierCity", "supplierType", "method", "pickup"];
-  const activeOfferFacets = activeFacets.filter(({ key }) => offerFacetKeys.includes(key));
-  const matchesOffer = (item: Listing) => {
-    if (!activeOfferFacets.length && maxMoq === undefined) return true;
-    if (item.section !== "shop") return false;
-    if ((maxMoq === undefined || maxMoq >= 1) &&
-        activeOfferFacets.every(({ key, values }) => key === "method" && values.includes(item.quoteOnly ? "Quote only" : "Retail"))) return true;
-    return productSourcing(item.id).offers.some((offer) => {
-      if (maxMoq !== undefined && offer.moq > maxMoq) return false;
-      const supplier = suppliers.find((entry) => entry.id === offer.supplierId);
-      const attributes: Record<string, readonly string[]> = {
-        countryOfSupplier: supplier ? ancestry(supplier.base).filter((place) => place.country).map((place) => place.name) : [],
-        supplierCity: supplier ? [placeName(supplier.base)] : [],
-        supplierType: supplier?.roles ?? [],
-        method: [offer.method],
-        pickup: offer.pickup ? [placeName(offer.pickup)] : [],
-      };
-      return activeOfferFacets.every(({ key, values }) => values.some((value) => attributes[key].includes(value)));
-    });
-  };
-  const filtered = rows.filter(
-    ({ item, facets }) =>
-      (!chosenCategories.length || chosenCategories.some((value) => item.category === value || (item.section === "shop" && legacyShopCategories[value]?.includes(item.category)))) &&
-      (!country || country === item.detail) &&
-      (!distance || (item.distance ?? Infinity) <= Number(distance)) &&
-      (!productListing ||
-        ((maximumPrice === undefined || (item.price !== undefined && item.price <= maximumPrice)) &&
-          (minimumPrice === undefined || (item.price !== undefined && item.price >= minimumPrice)) &&
-          activeFacets.every(({ key, values }) => facets[key]?.some((option) => values.includes(option))) &&
-          matchesOffer(item))),
-  ).map(({ item }) => item);
   if (sort)
     filtered.sort((a, b) => {
       if (sort === "newest") return (b.addedOn ?? 0) - (a.addedOn ?? 0);
@@ -259,6 +182,7 @@ export default function Marketplace() {
     >
       {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
       {section === "shop" && <label className="catalogue-search">Search products<input type="search" value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
+      {productListing && <SavedSearchButton scope={search ? "search" : "shop"} params={params} />}
       <div className={section === "shop" ? "filterbar catalogue-toolbar" : "filterbar"}>
         {(section === "global" ||
           section === "shop" ||
