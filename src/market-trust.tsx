@@ -10,6 +10,8 @@ import {
   signMarketFile,
 } from "./market-foundation";
 
+import { NearbyVerification } from "./connected-nearby";
+
 type QueueEntry = {
   id: string;
   label: string;
@@ -184,6 +186,7 @@ function Trust({ session }: { session: Session }) {
     return <p role="alert">Operator access is required.</p>;
   return (
     <div className="market-stack">
+      <NearbyVerification />
       <h2>Moderation queue</h2>
       {queue.isPending && <p role="status">Loading reviews</p>}
       {queue.isError && (

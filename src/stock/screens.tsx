@@ -184,7 +184,7 @@ function CreateRequest() {
   const intent = parseIntent(params);
   const product = productFor(params.get("product") || "studio-headphones");
   const variant = params.get("variant") || "Standard";
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() => { const preferred = params.get("shop"); return preferred ? [preferred] : []; });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const submission = useRef<string | undefined>(undefined);
@@ -195,9 +195,10 @@ function CreateRequest() {
     queryFn: () => readPilot(product!.id, variant),
     enabled: !!product,
   });
+  const validSelections = selected.filter(id => query.data?.shops.some(shop => shop.id === id));
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (locked.current || !product || !selected.length) return;
+    if (locked.current || !product || !validSelections.length) return;
     locked.current = true;
     setSaving(true);
     setError("");
@@ -209,7 +210,7 @@ function CreateRequest() {
         pilot: pilotId,
         product: product.id,
         selected_variant: variant,
-        shops: selected,
+        shops: validSelections,
         units: Number(form.get("quantity") || 1),
         buyer_note: String(form.get("note") || ""),
         pickup_date: form.get("pickup") || null,
@@ -259,7 +260,7 @@ function CreateRequest() {
                 <input
                   type="checkbox"
                   checked={selected.includes(shop.id)}
-                  disabled={!selected.includes(shop.id) && selected.length >= 3}
+                  disabled={!selected.includes(shop.id) && validSelections.length >= 3}
                   onChange={(event) =>
                     setSelected((previous) =>
                       event.target.checked
@@ -296,7 +297,7 @@ function CreateRequest() {
             separate arrangement with the shop.
           </p>
           {error && <p role="alert">{error}</p>}
-          <button className="button" disabled={saving || selected.length === 0}>
+          <button className="button" disabled={saving || validSelections.length === 0}>
             {saving ? "Sending…" : "Send stock request"}
           </button>
         </>

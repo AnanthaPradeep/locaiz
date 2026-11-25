@@ -49,4 +49,3 @@ create policy storefront_owner_media on storage.objects for select to authentica
      and sourcing_private.can_manage(b.id)
  )
 );
-

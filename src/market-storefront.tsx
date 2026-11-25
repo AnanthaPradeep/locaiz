@@ -27,7 +27,7 @@ function useStorefront(id: string, editing: boolean) {
   });
 }
 
-function StorefrontPhoto({
+export function StorefrontPhoto({
   path,
   alt,
   cover = false,
