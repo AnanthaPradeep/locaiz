@@ -10,6 +10,7 @@ import {
   signMarketFile,
   trustLabels,
 } from "./market-foundation";
+import { PublicReviews } from "./market-reviews";
 import { StorefrontStory } from "./market-storefront";
 import { formatMinor } from "./sourcing/catalog";
 import { publishedCatalogue, publishedPageSize } from "./sourcing/repository";
@@ -215,6 +216,7 @@ export function PublishedProduct({ id }: { id: string }) {
             )}
           </article>
         ))}
+        {item.owner_business_id && <PublicReviews business={item.owner_business_id} product={item.id} />}
       </div>
     </Page>
   );
@@ -367,6 +369,7 @@ export default function SupplierPassport() {
             )}
           </article>
         ))}
+        <PublicReviews business={supplier.id} />
         {session ? (
           <form
             className="record form"

@@ -136,13 +136,46 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await expect(b.getByText(/Payment status unrecorded/)).toBeVisible();
     await b.getByRole("link", { name: "My Buying Journey" }).click();
     await b.getByLabel("Activity type").selectOption("Orders");
-    const orderEvent = b.getByRole("link", { name: "Order confirmed", exact: true });
+    const orderEvent = b.getByRole("link", {
+      name: "Order confirmed",
+      exact: true,
+    });
     await expect(orderEvent).toHaveCount(1);
     await orderEvent.click();
     await expect(b.getByText(/Payment status unrecorded/)).toBeVisible();
     await s.reload();
     await s.getByRole("button", { name: "Mark preparing" }).click();
     await expect(s.getByText(/preparing · shipping/)).toBeVisible();
+    await s.getByRole("button", { name: "Mark dispatched" }).click();
+    await s.getByRole("button", { name: "Mark completed" }).click();
+    await expect(s.getByText(/completed · shipping/)).toBeVisible();
+    await b.reload();
+    await b
+      .getByText("Review this completed purchase", { exact: true })
+      .click();
+    await b
+      .getByLabel("Review", { exact: true })
+      .fill("Responsive and clear communication during production.");
+    await b.getByRole("button", { name: "Submit review", exact: true }).click();
+    await expect(b.getByText("Review sent for moderation.")).toBeVisible();
+    await o.goto("/#/account/trust-center");
+    const reviewQueue = o.getByRole("region", { name: "Review moderation" });
+    const review = reviewQueue
+      .locator("form")
+      .filter({ hasText: "Responsive and clear communication" });
+    await review
+      .getByLabel("Moderation reason")
+      .fill("Approved browser test review.");
+    await review.getByRole("button", { name: "Publish review" }).click();
+    await expect(
+      reviewQueue.getByText("Moderation decision saved."),
+    ).toBeVisible();
+    await b.goto("/#/supplier/30000000-0000-4000-8000-000000000010");
+    await expect(
+      b
+        .getByRole("region", { name: "Verified reviews" })
+        .getByText("Responsive and clear communication during production."),
+    ).toBeVisible();
   } finally {
     await Promise.all([buyer.close(), seller.close(), other.close()]);
   }

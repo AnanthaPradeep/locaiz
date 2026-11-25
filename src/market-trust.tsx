@@ -1,3 +1,4 @@
+import { ReviewModeration } from "./market-reviews";
 import { useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
@@ -200,6 +201,7 @@ function Trust({ session }: { session: Session }) {
       {queue.data?.queue.map((entry) => (
         <Review key={entry.kind + entry.id} entry={entry} />
       ))}
+      <ReviewModeration />
       <h2>Audit trail</h2>
       <ul>
         {queue.data?.audit.map((event) => (
