@@ -1,3 +1,4 @@
+import { ReviewPurchase } from "./market-reviews";
 import { SupplierQuoteTable } from "./supplier-quote-table";
 import { evaluateQuote } from "./quote-evaluation";
 import { formatMinor } from "./sourcing/catalog";
@@ -953,6 +954,7 @@ function ThreadDetail({
                 Expected by {order.terms.estimatedDate} · Payment status
                 unrecorded
               </p>
+              {side === "buyer" && order.status === "completed" && <ReviewPurchase order={order.id} product={Boolean(requirement.product_id)} />}
               <div className="journey-actions">
                 {nextOrder && (
                   <button
