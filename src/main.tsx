@@ -25,6 +25,7 @@ const Contact = lazy(() =>
   import("./information").then((module) => ({ default: module.Contact })),
 );
 const TogetherLive = lazy(() => import("./together-live"));
+const VisualSearch = lazy(() => import("./visual-search"));
 const Marketplace = lazy(() => import("./marketplace"));
 const Sourcing = lazy(() => import("./sourcing/screens"));
 const Workspace = lazy(() => import("./workspace"));
@@ -33,8 +34,10 @@ const Stock = lazy(() =>
 );
 const BuyingTimeline = lazy(() => import("./buying-timeline"));
 const BulkBuying = lazy(() => import("./bulk-buying"));
+const SourcingAssistant = lazy(() => import("./sourcing-assistant-screen"));
 const BuyerSellerJourney = lazy(() => import("./buyer-seller-journey"));
 const MarketAccount = lazy(() => import("./market-account"));
+const SellerInsights = lazy(() => import("./seller-insights"));
 const MarketStudio = lazy(() => import("./market-studio"));
 const MarketTrust = lazy(() => import("./market-trust"));
 const SupplierPassport = lazy(() => import("./market-public"));
@@ -133,15 +136,18 @@ createRoot(document.getElementById("root")!).render(
               />
               <Route path="/together/live" element={<TogetherLive />} />
               <Route path="/together/group/:id" element={<TogetherLive />} />
+              <Route path="/search/image" element={<VisualSearch />} />
               <Route path="/search" element={<Marketplace />} />
               <Route path="/listing/:section/:id" element={<Marketplace />} />
               <Route path="/:section" element={<Marketplace />} />
               <Route path="/account/buying-journey" element={<BuyingTimeline />} />
               <Route path="/account/bulk-buying" element={<BulkBuying />} />
+              <Route path="/sourcing-assistant" element={<SourcingAssistant />} />
               <Route path="/account/journey" element={<BuyerSellerJourney />} />
               <Route path="/business/journey" element={<BuyerSellerJourney side="seller" />} />
               <Route path="/account/sign-in" element={<MarketAccount />} />
               {marketClient && <Route path="/account/profile" element={<MarketAccount />} />}
+              <Route path="/business/insights" element={<SellerInsights />} />
               <Route path="/business/studio" element={<MarketStudio />} />
               <Route path="/account/trust-center" element={<MarketTrust />} />
               <Route path="/supplier/:id" element={<SupplierPassport />} />

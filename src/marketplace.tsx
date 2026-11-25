@@ -105,10 +105,11 @@ export default function Marketplace() {
         intro={descriptions.connect}
       >
         {marketClient && <Link className="button" to="/account/journey?new=1">Send a live RFQ</Link>}
+        <Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link>
         <RequirementForm key={params.toString()} />
       </Page>
     );
-  if (search && params.get("find") === "1") return <Page title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><FindBuyingOptions params={params} /></Page>;
+  if (search && params.get("find") === "1") return <Page title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link><FindBuyingOptions params={params} /></Page>;
   if (section === "business") return <Business panel="dashboard" />;
   const items = search
     ? (query.data ?? [])
@@ -191,6 +192,7 @@ export default function Marketplace() {
     >
       {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
       {marketClient && section === "together" && <Link className="outline" to="/together/live">Live community groups</Link>}
+      {productListing && <Link className="outline" to="/search/image">Search by image</Link>}
       {section === "shop" && <label className="catalogue-search">Search products<input type="search" placeholder="Search by product name" value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
       {search && <Link className="outline" to={"/search?" + new URLSearchParams([...params, ["find", "1"]])}>Explore buying options</Link>}
       {productListing && <SavedSearchButton scope={search ? "search" : "shop"} params={params} />}
