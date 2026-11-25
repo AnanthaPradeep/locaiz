@@ -1,24 +1,20 @@
-﻿import { expect, test } from "vitest";
+import { expect, test } from "vitest";
 import { findListings } from "./catalog";
+const search = (query: string, category?: string) =>
+  findListings(query, "shop", category, undefined, false, true);
 
 test("ranked catalogue search prioritizes exact names and tolerates a transposition", () => {
-  expect(findListings("Studio Wireless Headphones")[0]?.id).toBe(
-    "studio-headphones",
-  );
-  expect(findListings("wireles headphones", "shop")[0]?.id).toBe(
-    "studio-headphones",
-  );
+  expect(search("Studio Wireless Headphones")[0]?.id).toBe("studio-headphones");
+  expect(search("wireles headphones")[0]?.id).toBe("studio-headphones");
 });
 
 test("uses consumer synonyms within the selected department", () => {
   expect(
-    findListings("headset", "shop", "Electronics & Audio").map(
-      (item) => item.id,
-    ),
+    search("headset", "Electronics & Audio").map((item) => item.id),
   ).toContain("studio-headphones");
-  expect(findListings("headset", "shop", "Fashion & Apparel")).toEqual([]);
+  expect(search("headset", "Fashion & Apparel")).toEqual([]);
 });
 
 test("does not correct numeric identifiers to another specification", () => {
-  expect(findListings("charger 66W", "shop")).toEqual([]);
+  expect(search("charger 66W")).toEqual([]);
 });

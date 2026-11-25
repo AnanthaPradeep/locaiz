@@ -113,7 +113,7 @@ export default function Marketplace() {
     : findListings(section === "shop" ? term : "", section as Section,
         "",
         section === "nearby" ? city : "",
-        includeAlertSample,
+        includeAlertSample, true,
       );
   const category = params.get("category") ?? "";
   const chosenCategories = params.getAll("category");
@@ -390,7 +390,7 @@ export default function Marketplace() {
                 clearable.forEach(key => next.delete(key));
                 next.delete("page");
                 setParams(next);
-              }}>Clear filters and retry</button>
+              }}>Remove refinements</button>
             )}
             {productListing && term.trim() && <Link className="outline" to={"/search?" + new URLSearchParams({find:"1",q:term})}>Find more buying options</Link>}
             {productListing && <Link className="outline" to="/shop">Browse all products</Link>}

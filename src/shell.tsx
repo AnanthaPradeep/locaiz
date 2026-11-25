@@ -130,7 +130,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const count = Object.values(cart).reduce((sum, value) => sum + value, 0);
-  const suggestions = query.trim() ? findListings(query).slice(0, 5) : [];
+  const suggestions = query.trim() ? findListings(query, undefined, undefined, undefined, false, true).slice(0, 5) : [];
   const categories = [...new Set(suggestions.filter(item => item.section === "shop").map(item => item.category))].slice(0, 2);
   useEffect(() => {
     window.scrollTo(0, 0);
