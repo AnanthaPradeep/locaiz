@@ -14,6 +14,8 @@ export type PublishedOfferQuery = {
   currency?: string;
   maxMoq?: number;
   reviewedOnly?: boolean;
+  verifiedOnly?: boolean;
+  includeTiers?: boolean;
   order?: "newest" | "moq" | "price";
   page?: number;
 };
@@ -36,6 +38,7 @@ type PublishedOffer = {
   pickup_id: string | null;
   custom_order: boolean;
   shipping_countries: string[];
+  sourcing_price_tiers?: { quantity: number; unit_price_minor: number }[];
   lead_days: number | null;
   sourcing_variants: { sourcing_products: { name: string; category_id: string; sourcing_categories?: {name:string} } };
   sourcing_businesses: { id: string; name: string; verification: string };
@@ -49,7 +52,7 @@ export function publishedCatalogue(client: SupabaseClient) {
         : 1;
       const start = (page - 1) * publishedPageSize;
       let query = client.from("sourcing_offers").select(
-        "id,product_id,variant_id,method,currency,unit_price_minor,minimum_quantity,pickup_id,lead_days,custom_order,shipping_countries,sourcing_variants!inner(sourcing_products!inner(name,category_id,sourcing_categories!inner(name))),sourcing_businesses!inner(id,name,verification)",
+        "id,product_id,variant_id,method,currency,unit_price_minor,minimum_quantity,pickup_id,lead_days,custom_order,shipping_countries,sourcing_variants!inner(sourcing_products!inner(name,category_id,sourcing_categories!inner(name))),sourcing_businesses!inner(id,name,verification)" + (filters.includeTiers ? ",sourcing_price_tiers(quantity,unit_price_minor)" : ""),
         { count: "exact" },
       ).eq("published", true).eq("sourcing_businesses.published", true)
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
@@ -65,6 +68,7 @@ export function publishedCatalogue(client: SupabaseClient) {
       if (filters.supplierRole) query = query.contains("sourcing_businesses.roles", [filters.supplierRole]);
       if (Number.isSafeInteger(filters.maxMoq) && filters.maxMoq! > 0)
         query = query.lte("minimum_quantity", filters.maxMoq!);
+      if (filters.verifiedOnly) query = query.eq("sourcing_businesses.trust_state", "verified");
       if (filters.reviewedOnly)
         query = query.in("sourcing_businesses.verification", Object.keys(supplierReviewLabels));
       if (filters.currency) query = query.eq("currency", filters.currency);
