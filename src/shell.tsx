@@ -1,3 +1,4 @@
+import { marketClient } from "./market-foundation";
 import { BrandHome } from "./brand-logo";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -215,7 +216,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Link
               className="icon-button optional"
               aria-label="Account"
-              to="/account/profile"
+              to={marketClient ? "/account/sign-in" : "/account/profile"}
             >
               <UserRound size={20} />
             </Link>
@@ -294,7 +295,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <ShoppingBag size={19} />
           Cart
         </NavLink>
-        <NavLink to="/account/profile">
+        <NavLink to={marketClient ? "/account/sign-in" : "/account/profile"}>
           <UserRound size={19} />
           Account
         </NavLink>

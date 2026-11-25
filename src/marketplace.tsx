@@ -1,3 +1,5 @@
+import { marketClient } from "./market-foundation";
+import { ConnectedResults, PublishedProduct } from "./market-public";
 import { FindBuyingOptions, PdpBuyingOptions } from "./find-it";
 import { parseIntent } from "./buyer-intent";
 import { shopCategories } from "./demo-retail";
@@ -86,6 +88,7 @@ export default function Marketplace() {
       return next;
     });
   if (id) {
+    if (marketClient && section === "shop" && id.startsWith("market-")) return <PublishedProduct id={id} />;
     const item = findListings("", active?.id as Section, undefined, undefined, includeAlertSample).find(
       (entry) => entry.id === id && entry.section === section,
     );
@@ -371,6 +374,7 @@ export default function Marketplace() {
           <MarketMap items={filtered} />
         </Suspense>
       )}
+      {marketClient && productListing && <ConnectedResults params={params} />}
       <p className="muted">
         {filtered.length} {filtered.length === 1 ? "result" : "results"}
         {section === "nearby" ? ` in ${city}` : ""}

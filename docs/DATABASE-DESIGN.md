@@ -21,3 +21,5 @@ Enable row-level security on exposed tables and grant the minimum Data API privi
 Index foreign keys used for joins and ownership checks. Start with membership by profile and business, supplier offers by product, quotations by requirement, orders by buyer, and bookings by provider and slot. Verify those indexes against query plans on representative data before promoting the schema.
 
 [Supabase Auth](https://supabase.com/docs/guides/auth) · [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security) · [Storage access control](https://supabase.com/docs/guides/storage/security/access-control) · [Query optimization](https://supabase.com/docs/guides/database/query-optimization) · [Supabase changelog](https://supabase.com/changelog.md)
+
+Marketplace Foundation extends sourcing businesses, private memberships, products, variants, offers and tiers with profiles, locations, inventory, media, verification, invitations, reports and audit events. See [setup](MARKETPLACE-FOUNDATION.md).

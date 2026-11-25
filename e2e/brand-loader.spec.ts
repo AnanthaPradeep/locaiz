@@ -49,10 +49,17 @@ for (const theme of ["light", "dark"] as const) {
         });
         for (const width of [360, 390, 768, 1024, 1440, 1920]) {
           await page.setViewportSize({ width, height: 900 });
-          await expect.poll(async () => (await loader.locator("svg").boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(
-            width < 700 ? 96 : width < 1024 ? 140 : 175,
-          );
-          expect((await loader.locator("svg").boundingBox())?.width).toBeLessThanOrEqual(210);
+          await expect
+            .poll(
+              async () =>
+                (await loader.locator("svg").boundingBox())?.width ?? 0,
+            )
+            .toBeGreaterThanOrEqual(
+              width < 700 ? 96 : width < 1024 ? 140 : 175,
+            );
+          expect(
+            (await loader.locator("svg").boundingBox())?.width,
+          ).toBeLessThanOrEqual(210);
         }
       } finally {
         release();
@@ -152,7 +159,10 @@ test("a failed entry script reaches the themed reload screen", async ({
   await page.unroute(entry);
   await page.getByRole("button", { name: "Reload LOCAIZ" }).click();
   await expect(
-    page.getByRole("heading", { name: "Every connection starts somewhere.", level: 1 }),
+    page.getByRole("heading", {
+      name: "Every connection starts somewhere.",
+      level: 1,
+    }),
   ).toBeVisible();
   await expect(page.locator("#startup-loader")).toHaveCount(0);
 });

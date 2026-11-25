@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { pilotId, stockKey, stockUrl } from "./config";
 
 export const stockClient =
-  stockUrl && stockKey ? createClient(stockUrl, stockKey) : null;
+  stockUrl && stockKey ? createClient(stockUrl, stockKey, import.meta.env.VITE_MARKETPLACE_FOUNDATION === "1" ? { auth: { flowType: "pkce" } } : undefined) : null;
 
 export interface RequestRow {
   id: string;

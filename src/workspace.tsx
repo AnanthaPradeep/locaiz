@@ -1,3 +1,4 @@
+import { marketClient } from "./market-foundation";
 import { parseIntent } from "./buyer-intent";
 import { BasketComparisonDemo, QuoteComparison } from "./quote-comparison";
 import { MatchAlerts, SavedSearches } from "./saved-search-ui";
@@ -995,6 +996,7 @@ export function Business({ panel }: { panel: string }) {
       intro="Local demo workspace · Verification unsubmitted"
     >
       <nav className="panel-nav" aria-label="Business sections">
+        {marketClient && <Link to="/business/studio">Seller Studio</Link>}
         <Link to="/sourcing/onboarding">Create supplier storefront</Link>
         <Link to="/business/stock">Stock Requests</Link>
         {businessPanels.map((link) => (

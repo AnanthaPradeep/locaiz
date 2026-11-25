@@ -13,3 +13,5 @@
 | Business | Profile, product/service drafts, local publish state, order and booking status, count summaries | Storefront publishing, item editing and stock movements, seller-originated quotes, verification and role permissions |
 | Account | Local profile, settings, addresses, wishlist, cart, orders, bookings and activity | Authentication, account recovery and sync |
 | Admin | Local activity summary | Authenticated administration and audit trail |
+
+The optional connected Foundation build extends Accounts, Business and Global Atlas with verified email accounts, one-or-many business memberships, Seller Studio, Trust Passports and operator moderation. Customer-facing Pages remains Demo Mode. See [setup](MARKETPLACE-FOUNDATION.md).

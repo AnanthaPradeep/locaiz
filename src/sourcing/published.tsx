@@ -1,3 +1,4 @@
+import { marketClient } from "../market-foundation";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { Page } from "../page";
@@ -68,8 +69,8 @@ export function PublishedSourcing() {
               <div className="product-grid">
                 {results.data.items.map((offer) => (
                   <article className="record" key={offer.id}>
-                    <h2>{offer.sourcing_variants.sourcing_products.name}</h2>
-                    <p>{offer.sourcing_businesses.name} · {supplierReviewLabels[offer.sourcing_businesses.verification] ?? "Unreviewed"}</p>
+                    <h2>{marketClient && offer.product_id.startsWith("market-") ? <Link to={"/listing/shop/" + offer.product_id}>{offer.sourcing_variants.sourcing_products.name}</Link> : offer.sourcing_variants.sourcing_products.name}</h2>
+                    <p>{marketClient ? <Link to={"/supplier/" + offer.sourcing_businesses.id}>{offer.sourcing_businesses.name}</Link> : offer.sourcing_businesses.name} · {supplierReviewLabels[offer.sourcing_businesses.verification] ?? "Unreviewed"}</p>
                     <p>{offer.method} · Minimum order {offer.minimum_quantity}</p>
                     <p>{offer.unit_price_minor === null ? "Quote required" : formatMinor(offer.unit_price_minor, offer.currency)}</p>
                   </article>

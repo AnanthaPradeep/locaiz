@@ -1185,3 +1185,16 @@ progress {
 }
 
 :root:not([data-startup="ready"]) .route-loading { visibility: hidden; }
+
+.market-stack { display: grid; gap: 1rem; min-width: 0; }
+.market-stack > :is(p,h2,h3) { margin: 0; overflow-wrap: anywhere; }
+.market-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.market-metrics > div { padding: 16px; border: 1px solid var(--line); background: var(--paper); }
+.market-metrics dd { font: 700 1.5rem var(--display); margin: 8px 0 0; }
+.market-photo { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.market-editor { max-width: 52rem; }
+.market-stack label:has(input[type="checkbox"]) { display: flex; gap: .5rem; align-items: center; }
+.market-stack input[type="checkbox"] { width: auto; min-height: auto; }
+.market-stack :is(input,select,textarea) { max-width: 100%; }
+.market-stack summary { cursor: pointer; }
+.market-stack details > .form { margin-top: 1rem; }

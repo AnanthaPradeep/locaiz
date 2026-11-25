@@ -57,3 +57,5 @@ Search fields in the header, Shop and guided discovery use an inverse surface wi
 Home includes three curated campaigns with responsive ImageGen artwork, theme-aware HTML copy and filtered Shop or Global Atlas destinations. See [Homepage campaigns](HOMEPAGE-CAMPAIGNS.md).
 
 Header and Footer share theme-aware original SVG branding. First load uses a branded overlay with saved-theme bootstrap and recovery states. See [App loading screen](APP-LOADING-SCREEN.md).
+
+The repository includes an optional connected Marketplace Foundation build. Public GitHub Pages remains Demo Mode. See [setup and verification](MARKETPLACE-FOUNDATION.md).
