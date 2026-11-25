@@ -48,6 +48,7 @@ export function ConnectedResults({ params }: { params: URLSearchParams }) {
       publishedCatalogue(marketClient!).offers({
         keyword,
         categoryNames: categories,
+        marketplaceOnly: true,
         page,
         order: "newest",
       }),

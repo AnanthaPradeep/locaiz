@@ -5,6 +5,7 @@ export type PublishedOfferQuery = {
   categoryNames?: string[];
   keyword?: string;
   businessId?: string;
+  marketplaceOnly?: boolean;
   productId?: string;
   variantId?: string;
   supplierRole?: string;
@@ -52,6 +53,7 @@ export function publishedCatalogue(client: SupabaseClient) {
         { count: "exact" },
       ).eq("published", true).eq("sourcing_businesses.published", true)
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+      if (filters.marketplaceOnly) query = query.eq("sourcing_variants.sourcing_products.publication_state","published");
       if (filters.category) query = query.eq("sourcing_variants.sourcing_products.category_id", filters.category);
       if (filters.categoryNames?.length) query = query.in("sourcing_variants.sourcing_products.sourcing_categories.name",filters.categoryNames);
       if (filters.keyword) query = query.ilike("sourcing_variants.sourcing_products.name","%"+filters.keyword.replace(/[%_]/g, "")+"%");
