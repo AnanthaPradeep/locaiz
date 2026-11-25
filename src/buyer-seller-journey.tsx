@@ -953,6 +953,7 @@ function ThreadDetail({
                 Expected by {order.terms.estimatedDate} · Payment status
                 unrecorded
               </p>
+              {side === "buyer" && order.status === "completed" && <Link className="outline" to={"/account/bulk-buying?order=" + order.id}>Start reorder draft</Link>}
               <div className="journey-actions">
                 {nextOrder && (
                   <button
