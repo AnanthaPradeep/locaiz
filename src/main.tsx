@@ -32,6 +32,7 @@ const Stock = lazy(() =>
 );
 const BuyingTimeline = lazy(() => import("./buying-timeline"));
 const BulkBuying = lazy(() => import("./bulk-buying"));
+const SourcingAssistant = lazy(() => import("./sourcing-assistant-screen"));
 const BuyerSellerJourney = lazy(() => import("./buyer-seller-journey"));
 const MarketAccount = lazy(() => import("./market-account"));
 const MarketStudio = lazy(() => import("./market-studio"));
@@ -135,6 +136,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/:section" element={<Marketplace />} />
               <Route path="/account/buying-journey" element={<BuyingTimeline />} />
               <Route path="/account/bulk-buying" element={<BulkBuying />} />
+              <Route path="/sourcing-assistant" element={<SourcingAssistant />} />
               <Route path="/account/journey" element={<BuyerSellerJourney />} />
               <Route path="/business/journey" element={<BuyerSellerJourney side="seller" />} />
               <Route path="/account/sign-in" element={<MarketAccount />} />

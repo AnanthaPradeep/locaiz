@@ -105,10 +105,11 @@ export default function Marketplace() {
         intro={descriptions.connect}
       >
         {marketClient && <Link className="button" to="/account/journey?new=1">Send a live RFQ</Link>}
+        <Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link>
         <RequirementForm key={params.toString()} />
       </Page>
     );
-  if (search && params.get("find") === "1") return <Page title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><FindBuyingOptions params={params} /></Page>;
+  if (search && params.get("find") === "1") return <Page title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link><FindBuyingOptions params={params} /></Page>;
   if (section === "business") return <Business panel="dashboard" />;
   const items = search
     ? (query.data ?? [])
