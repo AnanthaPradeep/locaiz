@@ -1261,3 +1261,15 @@ progress {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.storefront-cover {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 5 / 2;
+  object-fit: cover;
+}
+.storefront-logo {
+  width: 6rem;
+  height: 6rem;
+  object-fit: contain;
+}
