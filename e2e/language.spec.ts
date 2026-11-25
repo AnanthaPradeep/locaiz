@@ -35,3 +35,13 @@ test("mobile language switch and translated navigation fit the viewport", async 
     ),
   ).toBe(true);
 });
+
+for (const width of [768, 1024]) {
+  test("language control fits with the full navigation at " + width + "px", async ({page}) => {
+    await page.setViewportSize({width,height:900});
+    await page.goto("/#/shop");
+    await page.locator(".locale-select select").selectOption("ta");
+    await expect(page.locator("html")).toHaveAttribute("lang","ta");
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  });
+}
