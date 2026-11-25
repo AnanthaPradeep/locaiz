@@ -18,7 +18,12 @@ enabled = false
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:4173"
-enable_signup = false
+enable_signup = true
+additional_redirect_urls = ["http://127.0.0.1:4173/**", "http://localhost:4173/**"]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
 
 [realtime]
 enabled = true

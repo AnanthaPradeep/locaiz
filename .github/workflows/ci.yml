@@ -61,6 +61,7 @@ jobs:
           node scripts/seed-stock-pilot.mjs
           unset LOCAIZ_LOCAL_ADMIN_KEY
           docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/sourcing-rls.sql
+          docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/market-foundation-rls.sql
           npm run build
           npm run test:e2e -- --grep @stock
       - if: always()
