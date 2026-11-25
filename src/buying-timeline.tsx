@@ -1,3 +1,4 @@
+import { listings } from "./catalog";
 import { searchUrl } from "./saved-search";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -24,8 +25,17 @@ const links = [
   ["Stock requests", "/account/stock"],
 ] as const;
 
-async function connectedEntries(user: string): Promise<Entry[]> {
-  const [rfqs, events, orders, reservations, stock] = await Promise.all([
+async function connectedEntries(user: string) {
+  const [
+    rfqs,
+    events,
+    orders,
+    reservations,
+    stock,
+    shortlists,
+    quotes,
+    pickupAudit,
+  ] = await Promise.all([
     marketClient!
       .from("journey_rfqs")
       .select("id,title,created_at")
@@ -35,7 +45,7 @@ async function connectedEntries(user: string): Promise<Entry[]> {
     marketClient!
       .from("journey_events")
       .select("id,thread_id,kind,created_at")
-      .eq("recipient_side", "buyer")
+      .or("recipient_side.eq.buyer,actor.eq." + user)
       .order("id", { ascending: false })
       .limit(50),
     marketClient!
@@ -51,15 +61,68 @@ async function connectedEntries(user: string): Promise<Entry[]> {
       .order("created_at", { ascending: false })
       .limit(50),
     readRequests(user, false),
+    marketClient!
+      .from("journey_shortlists")
+      .select("thread_id")
+      .eq("buyer_id", user)
+      .limit(100),
+    marketClient!
+      .from("journey_threads")
+      .select(
+        "id,rfq_id,quote_state,journey_rfqs!inner(title,buyer_id),sourcing_businesses(name)",
+      )
+      .eq("journey_rfqs.buyer_id", user)
+      .not("latest_quote", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(100),
+    marketClient!
+      .from("stock_reservation_audit")
+      .select(
+        "id,status,created_at,stock_reservations!inner(buyer_id,stock_request_shops!inner(request_id))",
+      )
+      .eq("stock_reservations.buyer_id", user)
+      .neq("status", "requested")
+      .order("id", { ascending: false })
+      .limit(50),
   ]);
-  for (const result of [rfqs, events, orders, reservations])
+  for (const result of [
+    rfqs,
+    events,
+    orders,
+    reservations,
+    shortlists,
+    quotes,
+    pickupAudit,
+  ])
     if (result.error) throw result.error;
   const rows = reservations.data as unknown as {
     id: string;
     created_at: string;
     stock_request_shops: { request_id: string };
   }[];
-  return [
+  const picked = new Set(shortlists.data!.map((row) => row.thread_id));
+  const activeQuotes = (
+    quotes.data as unknown as {
+      id: string;
+      rfq_id: string;
+      quote_state: string;
+      journey_rfqs: { title: string };
+      sourcing_businesses: { name: string } | null;
+    }[]
+  )
+    .filter(
+      (row) =>
+        picked.has(row.id) ||
+        ["selected", "confirmed"].includes(row.quote_state),
+    )
+    .map((row) => ({ ...row, shortlisted: picked.has(row.id) }));
+  const pickupEvents = pickupAudit.data as unknown as {
+    id: number;
+    status: string;
+    created_at: string;
+    stock_reservations: { stock_request_shops: { request_id: string } };
+  }[];
+  const entries: Entry[] = [
     ...rfqs.data!.map((row): Entry => ({
       id: "rfq-" + row.id,
       title: row.title,
@@ -92,12 +155,40 @@ async function connectedEntries(user: string): Promise<Entry[]> {
     })),
     ...stock.map((row): Entry => ({
       id: "stock-" + row.id,
-      title: "Stock request for " + row.product_id,
+      title:
+        "Stock request for " +
+        (listings.find((item) => item.id === row.product_id)?.name ??
+          row.product_id),
       date: row.created_at,
       href: "/account/stock?request=" + row.id,
       kind: "Stock & pickup",
     })),
+    ...stock.flatMap((row) =>
+      row.stock_request_shops
+        .filter((shop) => shop.responded_at)
+        .map((shop): Entry => ({
+          id: "stock-reply-" + shop.id,
+          title:
+            shop.shop_name +
+            (shop.status === "available"
+              ? " confirmed stock"
+              : " reported unavailable stock"),
+          date: shop.responded_at!,
+          kind: "Stock & pickup",
+          href: "/account/stock?request=" + row.id,
+        })),
+    ),
+    ...pickupEvents.map((event): Entry => ({
+      id: "pickup-event-" + event.id,
+      title: "Pickup reservation " + event.status,
+      date: event.created_at,
+      kind: "Stock & pickup",
+      href:
+        "/account/stock?request=" +
+        event.stock_reservations.stock_request_shops.request_id,
+    })),
   ];
+  return { entries, activeQuotes };
 }
 
 export default function BuyingTimeline() {
@@ -122,7 +213,7 @@ export default function BuyingTimeline() {
       kind: "Searches",
     })),
     ...(marketClient
-      ? (connected.data ?? [])
+      ? (connected.data?.entries ?? [])
       : demoRequirements.map((row): Entry => ({
           id: "demo-rfq-" + row.id,
           title: row.title,
@@ -152,6 +243,31 @@ export default function BuyingTimeline() {
           </>
         )}
       </nav>
+      {!!connected.data?.activeQuotes.length && (
+        <section
+          aria-label="Shortlisted and selected quotes"
+          className="record market-stack"
+        >
+          <h2>Shortlisted and selected quotes</h2>
+          {connected.data.activeQuotes.map((quote) => (
+            <article key={quote.id} className="record market-stack">
+              <h3>
+                <Link to={"/account/journey?thread=" + quote.id}>
+                  {quote.journey_rfqs.title}
+                </Link>
+              </h3>
+              <p>
+                {quote.sourcing_businesses?.name ?? "Supplier"} ·{" "}
+                {quote.quote_state.replaceAll("_", " ")}
+                {quote.shortlisted ? " · Shortlisted" : ""}
+              </p>
+              <Link to={"/account/journey?rfq=" + quote.rfq_id + "&compare=1"}>
+                Open supplier comparison
+              </Link>
+            </article>
+          ))}
+        </section>
+      )}
       <section
         className="journey-panel journey-stack"
         aria-labelledby="buying-activity"
