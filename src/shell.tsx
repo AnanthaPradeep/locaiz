@@ -131,6 +131,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const count = Object.values(cart).reduce((sum, value) => sum + value, 0);
   const suggestions = query.trim() ? findListings(query).slice(0, 5) : [];
+  const categories = [...new Set(suggestions.filter(item => item.section === "shop").map(item => item.category))].slice(0, 2);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname, location.search]);
@@ -197,7 +198,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </button>
             </form>
             {focused && suggestions.length > 0 && (
-              <ul className="suggestions">
+              <ul className="suggestions" aria-label="Marketplace search suggestions">
                 {suggestions.map((item) => (
                   <li key={item.id}>
                     <Link
@@ -206,6 +207,13 @@ export function Shell({ children }: { children: ReactNode }) {
                     >
                       {item.name}
                       <span>{item.section}</span>
+                    </Link>
+                  </li>
+                ))}
+                {categories.map(category => (
+                  <li key={category}>
+                    <Link to={"/shop?" + new URLSearchParams({category})} onClick={() => setFocused(false)}>
+                      {category}<span>Category</span>
                     </Link>
                   </li>
                 ))}
