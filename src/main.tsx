@@ -30,6 +30,7 @@ const Workspace = lazy(() => import("./workspace"));
 const Stock = lazy(() =>
   import("./stock/screens").then((module) => ({ default: module.StockScreen })),
 );
+const BuyingTimeline = lazy(() => import("./buying-timeline"));
 const BuyerSellerJourney = lazy(() => import("./buyer-seller-journey"));
 const MarketAccount = lazy(() => import("./market-account"));
 const MarketStudio = lazy(() => import("./market-studio"));
@@ -131,6 +132,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/search" element={<Marketplace />} />
               <Route path="/listing/:section/:id" element={<Marketplace />} />
               <Route path="/:section" element={<Marketplace />} />
+              <Route path="/account/buying-journey" element={<BuyingTimeline />} />
               <Route path="/account/journey" element={<BuyerSellerJourney />} />
               <Route path="/business/journey" element={<BuyerSellerJourney side="seller" />} />
               <Route path="/account/sign-in" element={<MarketAccount />} />

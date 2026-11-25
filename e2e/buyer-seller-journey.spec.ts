@@ -131,6 +131,12 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await b.getByText("Review and create order", { exact: true }).click();
     await b.getByRole("button", { name: "Confirm and create order" }).click();
     await expect(b.getByText(/Payment status unrecorded/)).toBeVisible();
+    await b.getByRole("link", { name: "My Buying Journey" }).click();
+    await b.getByLabel("Activity type").selectOption("Orders");
+    const orderEvent = b.getByRole("link", { name: "Order confirmed", exact: true });
+    await expect(orderEvent).toHaveCount(1);
+    await orderEvent.click();
+    await expect(b.getByText(/Payment status unrecorded/)).toBeVisible();
     await s.reload();
     await s.getByRole("button", { name: "Mark preparing" }).click();
     await expect(s.getByText(/preparing · shipping/)).toBeVisible();
