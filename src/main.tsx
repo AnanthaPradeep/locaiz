@@ -24,6 +24,7 @@ const About = lazy(() =>
 const Contact = lazy(() =>
   import("./information").then((module) => ({ default: module.Contact })),
 );
+const TogetherLive = lazy(() => import("./together-live"));
 const VisualSearch = lazy(() => import("./visual-search"));
 const Marketplace = lazy(() => import("./marketplace"));
 const Sourcing = lazy(() => import("./sourcing/screens"));
@@ -133,6 +134,8 @@ createRoot(document.getElementById("root")!).render(
                 path="/account/about"
                 element={<Navigate replace to="/about" />}
               />
+              <Route path="/together/live" element={<TogetherLive />} />
+              <Route path="/together/group/:id" element={<TogetherLive />} />
               <Route path="/search/image" element={<VisualSearch />} />
               <Route path="/search" element={<Marketplace />} />
               <Route path="/listing/:section/:id" element={<Marketplace />} />

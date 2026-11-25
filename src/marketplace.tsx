@@ -191,6 +191,7 @@ export default function Marketplace() {
       }
     >
       {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
+      {marketClient && section === "together" && <Link className="outline" to="/together/live">Live community groups</Link>}
       {productListing && <Link className="outline" to="/search/image">Search by image</Link>}
       {section === "shop" && <label className="catalogue-search">Search products<input type="search" placeholder="Search by product name" value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
       {search && <Link className="outline" to={"/search?" + new URLSearchParams([...params, ["find", "1"]])}>Explore buying options</Link>}
