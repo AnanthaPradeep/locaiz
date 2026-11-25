@@ -33,6 +33,7 @@ import { suppliers, placeName, formatMinor } from "./sourcing/catalog";
 import { catalogueFilters, nonnegative } from "./catalogue-filters";
 import { SavedSearchButton } from "./saved-search-ui";
 
+const ConnectedNearby = lazy(() => import("./connected-nearby").then(module => ({default:module.ConnectedNearby})));
 const MarketMap = lazy(() => import("./market-map"));
 
 const filterFields = {
@@ -376,6 +377,7 @@ export default function Marketplace() {
           <MarketMap items={filtered} />
         </Suspense>
       )}
+      {marketClient && section === "nearby" && <Suspense fallback={<p role="status">Loading nearby shops</p>}><ConnectedNearby /></Suspense>}
       {marketClient && productListing && <ConnectedResults params={params} />}
       <p className="muted">
         {filtered.length} {filtered.length === 1 ? "result" : "results"}

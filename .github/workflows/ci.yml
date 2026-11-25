@@ -66,6 +66,8 @@ jobs:
           docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/buyer-seller-journey-rls.sql
           docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/pickup-reservations-rls.sql
           docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/seed-journey-browser.sql
+          docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/market-nearby-rls.sql
+          docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/seed-nearby-browser.sql
           export VITE_MARKETPLACE_FOUNDATION=1
           export LOCAIZ_MAILPIT_URL="$(jq -r '.MAILPIT_URL // .INBUCKET_URL // "http://127.0.0.1:54324"' <<< "$settings")"
           npm run build
