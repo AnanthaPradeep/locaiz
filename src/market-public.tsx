@@ -36,6 +36,7 @@ function Media({ path, alt }: { path: string; alt: string }) {
 }
 
 export function ConnectedResults({ params }: { params: URLSearchParams }) {
+  const browseViewer = useMarketSession()?.user.id;
   const page = Number(params.get("connectedPage"));
   const keyword = (params.get("q") ?? "").trim().slice(0, 120);
   const categories = params.getAll("category");
@@ -58,6 +59,12 @@ export function ConnectedResults({ params }: { params: URLSearchParams }) {
       }),
     enabled: !!marketClient,
   });
+  const currentOffers = results.data?.items;
+  useEffect(() => {
+    if (!browseViewer || !keyword || !currentOffers?.length) return;
+    const productIds = [...new Set(currentOffers.map(offer => offer.product_id))];
+    void marketClient?.rpc("record_search_page", { products: productIds }).then(() => undefined);
+  }, [browseViewer, keyword, currentOffers]);
   const update = (page: number) => {
     const next = new URLSearchParams(params);
     next.set("connectedPage", String(page));
