@@ -59,12 +59,17 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     ).toBeVisible();
     await b.getByRole("link", { name: /Browser QA quotation/ }).click();
 
-    const thread = new URLSearchParams(new URL(b.url()).hash.split("?")[1]).get("thread");
+    const thread = new URLSearchParams(new URL(b.url()).hash.split("?")[1]).get(
+      "thread",
+    );
     const sellerThread = "/business/journey?thread=" + thread;
     await s.goto("/#" + sellerThread);
     await signIn(s, "seller-b");
-    await expect(s.getByRole("link", { name: "RFQ received", exact: true })
-      .and(s.locator('a[href="#' + sellerThread + '"]'))).toBeVisible();
+    await expect(
+      s
+        .getByRole("link", { name: "RFQ received", exact: true })
+        .and(s.locator('a[href="#' + sellerThread + '"]')),
+    ).toBeVisible();
     await s.getByRole("button", { name: "Accept invitation" }).click();
     await s.getByRole("button", { name: "Get private attachment" }).click();
     await expect(
@@ -128,6 +133,22 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await b.getByRole("button", { name: "Select quote", exact: true }).click();
     await expect(b.getByText(/Quote selected/)).toBeVisible();
     await expect(b.getByRole("heading", { name: /^Order / })).toHaveCount(0);
+    await b
+      .getByRole("button", { name: "Shortlist quote", exact: true })
+      .click();
+    await expect(
+      b.getByRole("button", { name: "Remove from shortlist" }),
+    ).toBeVisible();
+    await b.getByRole("link", { name: "My Buying Journey" }).click();
+    await expect(
+      b.getByRole("region", { name: "Shortlisted and selected quotes" }),
+    ).toContainText("Shortlisted");
+    const selection = b.getByRole("link", {
+      name: "Quote selected",
+      exact: true,
+    });
+    await expect(selection).toHaveCount(1);
+    await selection.click();
     await s.reload();
     await s.getByRole("button", { name: "Confirm quoted terms" }).click();
     await b.reload();

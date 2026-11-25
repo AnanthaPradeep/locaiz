@@ -51,6 +51,10 @@ select set_config('request.jwt.claim.sub',(select id::text from auth.users where
 set local role authenticated;
 select public.journey_action('select_quote',jsonb_build_object('id',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote')));
 do $$begin
+ if not exists(select 1 from public.journey_events where thread_id=current_setting('journey_test.thread')::uuid and kind='Quote selected')
+ then raise exception 'Buyer cannot see their own quote selection in their timeline';end if;
+end $$;
+do $$begin
  if exists(select 1 from public.journey_orders where thread_id=current_setting('journey_test.thread')::uuid)
  then raise exception 'Selection created an order'; end if;
  begin

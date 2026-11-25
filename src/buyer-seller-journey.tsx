@@ -1233,7 +1233,8 @@ function Journey({ user, side }: { user: string; side: Side }) {
 }
 
 function LiveComparison({ user, thread }: { user: string; thread: Thread }) {
-  const [open, setOpen] = useState(false);
+  const [params] = useSearchParams();
+  const [open, setOpen] = useState(params.get("compare") === "1");
   const [differences, setDifferences] = useState(false);
   const requirement = thread.journey_rfqs;
   const quotes = useQuery({
@@ -1363,6 +1364,7 @@ function LiveComparison({ user, thread }: { user: string; thread: Thread }) {
   return (
     <details
       className="journey-panel"
+      open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary>Compare supplier quotes</summary>
