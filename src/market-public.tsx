@@ -206,6 +206,14 @@ export function PublishedProduct({ id }: { id: string }) {
                 ? "Pickup offered, stock unconfirmed"
                 : "Ask the supplier about fulfilment"}
             </p>
+            {item.owner_business_id && (
+              <Link
+                className="outline"
+                to={"/account/journey?" + new URLSearchParams({supplier:item.owner_business_id,product:item.id,variant:offer.variant_id})}
+              >
+                Enquire about this variant
+              </Link>
+            )}
           </article>
         ))}
       </div>

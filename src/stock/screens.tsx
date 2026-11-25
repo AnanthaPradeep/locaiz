@@ -611,7 +611,11 @@ function RequestCard({
                     ? "Expired"
                     : "Pending"
                 : shop.status === "available"
-                  ? "Available"
+                  ? closed || (shop.quote_expires_at && Date.parse(shop.quote_expires_at) <= now)
+                    ? "Confirmation expired"
+                    : shop.available_quantity !== null && shop.available_quantity < request.quantity
+                      ? "Partially available"
+                      : "Available"
                   : "Out of stock"}
             </p>
             {shop.responded_at && <p>Replied {time(shop.responded_at)}</p>}

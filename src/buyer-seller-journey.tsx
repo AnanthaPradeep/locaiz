@@ -2,7 +2,11 @@ import { SupplierQuoteTable } from "./supplier-quote-table";
 import { evaluateQuote } from "./quote-evaluation";
 import { formatMinor } from "./sourcing/catalog";
 import { useEffect, useState, type FormEvent } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { MarketGate, useMarketMutation } from "./market-account";
 import { marketClient } from "./market-foundation";
@@ -46,6 +50,7 @@ function Requirement({
   user,
   supplier,
   product,
+  variant,
   assignment,
   startOpen,
   submitted,
@@ -53,6 +58,7 @@ function Requirement({
   user: string;
   supplier: string | null;
   product: string | null;
+  variant: string | null;
   assignment: string | null;
   startOpen: boolean;
   submitted: (id: string) => void;
@@ -88,6 +94,7 @@ function Requirement({
         ...Object.fromEntries(fields),
         submission,
         product,
+        variant,
         stockAssignment: assignment,
         budget: fields.get("budget") || null,
         businesses: fields.getAll("supplier"),
@@ -446,6 +453,9 @@ type Thread = {
     title: string;
     specifications: string;
     custom: boolean;
+    budget_minor: number | null;
+    product_id: string | null;
+    variant_id: string | null;
     quantity: number;
     unit: string;
     destination: string;
@@ -482,7 +492,6 @@ function ThreadDetail({
 }) {
   const { id, journey_rfqs: requirement } = thread;
   const mutation = useMarketMutation();
-  const [limit, setLimit] = useState(25);
   const [attachment, setAttachment] = useState<{
     key: string;
     path: string;
@@ -490,16 +499,29 @@ function ThreadDetail({
   }>();
   const [messageKey, setMessageKey] = useState(() => crypto.randomUUID());
   const [download, setDownload] = useState<{ path: string; url: string }>();
+  const messages = useInfiniteQuery({
+    queryKey: ["market", "journey-messages", user, id],
+    initialPageParam: null as number | null,
+    queryFn: async ({ pageParam }) => {
+      let query = marketClient!
+        .from("journey_messages")
+        .select("id,side,body,attachment,created_at")
+        .eq("thread_id", id)
+        .order("id", { ascending: false })
+        .limit(25);
+      if (pageParam !== null) query = query.lt("id", pageParam);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Message[];
+    },
+    getNextPageParam: (page) =>
+      page.length === 25 ? page.at(-1)?.id : undefined,
+    refetchInterval: 15000,
+  });
   const details = useQuery({
-    queryKey: ["market", "journey-thread", user, id, limit],
+    queryKey: ["market", "journey-thread", user, id],
     queryFn: async () => {
       const responses = await Promise.all([
-        marketClient!
-          .from("journey_messages")
-          .select("id,side,body,attachment,created_at")
-          .eq("thread_id", id)
-          .order("id", { ascending: false })
-          .limit(limit),
         marketClient!
           .from("journey_quote_revisions")
           .select("*")
@@ -522,9 +544,8 @@ function ThreadDetail({
           .maybeSingle(),
       ]);
       for (const { error } of responses) if (error) throw error;
-      const [messages, quotes, draft, order, shortlist] = responses;
+      const [quotes, draft, order, shortlist] = responses;
       return {
-        messages: messages.data as Message[],
         quotes: quotes.data as Quote[],
         draft: draft.data?.terms as Terms | undefined,
         order: order.data,
@@ -637,6 +658,21 @@ function ThreadDetail({
         {thread.sourcing_businesses?.name} · {requirement.quantity}{" "}
         {requirement.unit} · {requirement.destination}
       </p>
+      {requirement.product_id && (
+        <p>
+          <Link to={"/listing/shop/" + requirement.product_id}>
+            View requested product
+          </Link>
+          {requirement.variant_id && " · " + requirement.variant_id}
+        </p>
+      )}
+      {requirement.budget_minor !== null && (
+        <p>
+          Budget {price(requirement.budget_minor, requirement.currency)} ·{" "}
+          {requirement.currency}
+        </p>
+      )}
+      {requirement.custom && <p>Custom production requested</p>}
       {requirement.deadline && <p>Required by {requirement.deadline}</p>}
       {requirement.specifications && (
         <p className="journey-message">{requirement.specifications}</p>
@@ -688,58 +724,71 @@ function ThreadDetail({
       {details.data && (
         <>
           <h3>Messages</h3>
-          {details.data.messages.length === limit && (
-            <button className="button" onClick={() => setLimit(limit + 25)}>
+          {messages.isPending && <p role="status">Loading messages</p>}
+          {messages.isError && (
+            <p role="alert">
+              Unable to load messages.{" "}
+              <button
+                className="button"
+                onClick={() => void messages.refetch()}
+              >
+                Retry messages
+              </button>
+            </p>
+          )}
+          {messages.hasNextPage && (
+            <button
+              className="button"
+              disabled={messages.isFetching}
+              onClick={() => void messages.fetchNextPage()}
+            >
               Load earlier messages
             </button>
           )}
           <ol className="journey-messages">
-            {details.data.messages
-              .slice()
-              .reverse()
-              .map((message) => (
-                <li key={message.id}>
-                  <strong>
-                    {message.side === side ? "Your side" : message.side}
-                  </strong>
-                  {" · "}
-                  <time dateTime={message.created_at}>
-                    {new Date(message.created_at).toLocaleString()}
-                  </time>
-                  <p className="journey-message">{message.body}</p>
-                  {message.attachment &&
-                    (download?.path === message.attachment ? (
-                      <a
-                        href={download.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Open attachment
-                      </a>
-                    ) : (
-                      <button
-                        className="button"
-                        disabled={mutation.pending}
-                        onClick={() =>
-                          void mutation.run(async () => {
-                            const { data, error } = await marketClient!.storage
-                              .from("journey-private")
-                              .createSignedUrl(message.attachment!, 60, {
-                                download: true,
-                              });
-                            if (error) throw error;
-                            setDownload({
-                              path: message.attachment!,
-                              url: data.signedUrl,
+            {(messages.data?.pages.flat() ?? []).reverse().map((message) => (
+              <li key={message.id}>
+                <strong>
+                  {message.side === side ? "Your side" : message.side}
+                </strong>
+                {" · "}
+                <time dateTime={message.created_at}>
+                  {new Date(message.created_at).toLocaleString()}
+                </time>
+                <p className="journey-message">{message.body}</p>
+                {message.attachment &&
+                  (download?.path === message.attachment ? (
+                    <a
+                      href={download.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open attachment
+                    </a>
+                  ) : (
+                    <button
+                      className="button"
+                      disabled={mutation.pending}
+                      onClick={() =>
+                        void mutation.run(async () => {
+                          const { data, error } = await marketClient!.storage
+                            .from("journey-private")
+                            .createSignedUrl(message.attachment!, 60, {
+                              download: true,
                             });
-                          }, "Attachment link available for one minute.")
-                        }
-                      >
-                        Get private attachment
-                      </button>
-                    ))}
-                </li>
-              ))}
+                          if (error) throw error;
+                          setDownload({
+                            path: message.attachment!,
+                            url: data.signedUrl,
+                          });
+                        }, "Attachment link available for one minute.")
+                      }
+                    >
+                      Get private attachment
+                    </button>
+                  ))}
+              </li>
+            ))}
           </ol>
           <form className="journey-form" onSubmit={send}>
             <label>
@@ -1002,7 +1051,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
       let query = marketClient!
         .from("journey_threads")
         .select(
-          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,custom,quantity,unit,destination,deadline,currency,buyer_id)",
+          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,custom,budget_minor,product_id,variant_id,quantity,unit,destination,deadline,currency,buyer_id)",
         )
         .order("updated_at", { ascending: false })
         .order("id")
@@ -1053,7 +1102,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
       let query = marketClient!
         .from("journey_threads")
         .select(
-          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,custom,quantity,unit,destination,deadline,currency,buyer_id)",
+          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,custom,budget_minor,product_id,variant_id,quantity,unit,destination,deadline,currency,buyer_id)",
         )
         .eq("id", chosen);
       query =
@@ -1074,12 +1123,14 @@ function Journey({ user, side }: { user: string; side: Side }) {
           key={[
             params.get("supplier"),
             params.get("product"),
+            params.get("variant"),
             params.get("assignment"),
             params.get("new"),
           ].join(":")}
           user={user}
           supplier={params.get("supplier")}
           product={params.get("product")}
+          variant={params.get("variant")}
           assignment={params.get("assignment")}
           startOpen={params.has("new")}
           submitted={(id) => {
