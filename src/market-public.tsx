@@ -9,6 +9,7 @@ import {
   signMarketFile,
   trustLabels,
 } from "./market-foundation";
+import { StorefrontStory } from "./market-storefront";
 import { formatMinor } from "./sourcing/catalog";
 import { publishedCatalogue, publishedPageSize } from "./sourcing/repository";
 
@@ -312,6 +313,7 @@ export default function SupplierPassport() {
       intro={supplier.description}
     >
       <div className="market-stack">
+        <StorefrontStory id={supplier.id} name={supplier.name} verified={supplier.trust_state === "verified"} />
         <section className="record">
           {supplier.trust_state === "verified" && <Link className="outline" to={"/account/journey?" + new URLSearchParams({supplier:supplier.id})}>Request a quote</Link>}
           <h2>{trustLabels[supplier.trust_state] ?? "Unverified"}</h2>

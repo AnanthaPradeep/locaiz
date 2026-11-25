@@ -1,3 +1,4 @@
+import { StorefrontEditor } from "./market-storefront";
 import { useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
@@ -583,6 +584,7 @@ function BusinessCatalogue({
   return (
     <div className="market-stack">
       <BusinessSettings business={business} />
+      <StorefrontEditor key={business.id} id={business.id} />
       <dl className="market-grid market-metrics">
         <div>
           <dt>Published products</dt>

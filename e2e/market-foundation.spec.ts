@@ -52,6 +52,15 @@ test("@market seller draft, stock, approval, public catalogue and admin isolatio
     await expect(
       s.getByRole("heading", { name: "Foundation Studio QA" }),
     ).toBeVisible();
+    await s.getByText("Edit maker storefront", {exact:true}).click();
+    await s.getByLabel("Maker story").fill("Seller-written storefront fixture.");
+    await s.getByLabel("Workshop photograph").setInputFiles({
+      name:"workshop.png",mimeType:"image/png",
+      buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jK9sAAAAASUVORK5CYII=","base64"),
+    });
+    await s.getByLabel(/Publish this story/).check();
+    await s.getByRole("button", {name:"Save storefront",exact:true}).click();
+    await expect(s.getByText("Storefront saved.")).toBeVisible();
     await s.getByRole("button", { name: "Business settings" }).click();
     await s
       .getByLabel("Verification summary")
@@ -125,6 +134,9 @@ test("@market seller draft, stock, approval, public catalogue and admin isolatio
     await expect(
       b.getByRole("heading", { name: "Verified", exact: true }),
     ).toBeVisible();
+    const storefront = b.getByRole("region", {name:"Maker storefront"});
+    await expect(storefront.getByText("Seller-written storefront fixture.")).toBeVisible();
+    await expect(storefront.getByRole("img", {name:"Foundation Studio QA workshop"})).toBeVisible();
     await login(b, "buyer-a");
     await b.getByRole("link", { name: "Trust Center" }).click();
     await expect(b.getByText("Operator access is required.")).toBeVisible();
