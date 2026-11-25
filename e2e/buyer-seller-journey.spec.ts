@@ -1,4 +1,4 @@
-﻿import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const password = process.env.LOCAIZ_PILOT_PASSWORD;
 const enabled = Boolean(
@@ -9,7 +9,10 @@ async function signIn(page: Page, label: string) {
     .getByLabel("Email", { exact: true })
     .fill(label + "@stock.example.com");
   await page.getByLabel("Password", { exact: true }).fill(password!);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page
+    .locator("main form")
+    .getByRole("button", { name: "Sign in", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Conversations" }),
   ).toBeVisible();
@@ -145,4 +148,54 @@ test("public buyer workspace offers Demo Mode when disconnected", async ({
     "href",
     "#/shop",
   );
+});
+
+test("@journey a stock reservation is requested and separately approved", async ({
+  browser,
+  baseURL,
+}) => {
+  test.skip(!enabled, "Requires disposable Supabase");
+  const buyer = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  });
+  const seller = await browser.newContext({ baseURL });
+  try {
+    const b = await buyer.newPage();
+    const s = await seller.newPage();
+    async function stockLogin(page: Page, account: string, path: string) {
+      await page.goto("/#" + path);
+      await page
+        .getByLabel("Email", { exact: true })
+        .fill(account + "@stock.example.com");
+      await page.getByLabel("Password", { exact: true }).fill(password!);
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(
+        page.getByText("Signed in as " + account + "@stock.example.com"),
+      ).toBeVisible();
+    }
+    const request = "50000000-0000-4000-8000-000000000010";
+    await stockLogin(b, "buyer-b", "/account/stock-new");
+    await b.goto("/#/account/stock?request=" + request);
+    await b.getByRole("button", { name: "Request reservation" }).click();
+    await expect(b.getByText(/1 units · requested/)).toBeVisible();
+    await stockLogin(s, "seller-a", "/business/stock?request=" + request);
+    await s
+      .getByText("Inventory and pickup reservations", { exact: true })
+      .click();
+    await s
+      .getByLabel("Pickup instructions")
+      .fill("Ask for the gift packaging at the counter.");
+    await s.getByRole("button", { name: "Approve", exact: true }).click();
+    await expect(s.getByText(/1 units · approved/)).toBeVisible();
+    await b.reload();
+    await expect(b.getByText(/1 units · approved/)).toBeVisible();
+    await expect(b.getByText(/Ask for the gift packaging/)).toBeVisible();
+    await b.goto("/#/account/stock-notifications");
+    await expect(
+      b.getByRole("link", { name: "Pickup reservation approved" }),
+    ).toHaveCount(1);
+  } finally {
+    await Promise.all([buyer.close(), seller.close()]);
+  }
 });
