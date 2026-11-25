@@ -1,5 +1,15 @@
 # Implementation status
 
+## Phase 4 release
+
+The public Pages build includes an editable sourcing draft, browser-based visual matching against sample Shop images, and English, Tamil and Malayalam selection for core interface labels.
+
+The connected build includes verified supplier lookup, authenticated Together pledges with separate supplier acceptance, provider-managed Care appointments and private booking messages, and permission-scoped seller activity and demand aggregates. CI tests these workflows against disposable Supabase. Production activation requires a hosted LOCAIZ backend and applied migrations.
+
+External model integration, connected visual matching, and full translation coverage remain open. See [Phase 4 setup and safeguards](PHASE4.md).
+
+## Earlier implementation notes
+
 Cart, checkout and Quick View show the selected variant photo and product details. Product details use a 4px text gap and wrap on narrow screens.
 
 Shared product cards use a native PDP link over the full card surface. Retail cart and wishlist controls work independently, with variant selection and demo stock limits. Playwright saves responsive screenshots in test output instead of replacing the tracked documentation images.
