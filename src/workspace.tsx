@@ -956,6 +956,7 @@ export default function Workspace({
   return (
     <Page title={title} label="YOUR LOCAIZ">
       <nav className="panel-nav" aria-label="Account sections">
+        <Link to="/account/buying-journey">My Buying Journey</Link>
         {marketClient && <Link to="/account/journey">Buyer workspace</Link>}
         {accountLinks.map((link) => (
           <Link key={link} to={`/account/${link.toLowerCase().replaceAll(" ", "-")}`}>

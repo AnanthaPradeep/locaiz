@@ -1118,6 +1118,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
   const active = chosen ? selected.data : list.data?.[0];
   return (
     <div className="journey-stack">
+      {side === "buyer" && <Link to="/account/buying-journey">My Buying Journey</Link>}
       {side === "buyer" && (
         <Requirement
           key={[
