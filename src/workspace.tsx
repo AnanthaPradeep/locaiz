@@ -956,6 +956,7 @@ export default function Workspace({
   return (
     <Page title={title} label="YOUR LOCAIZ">
       <nav className="panel-nav" aria-label="Account sections">
+        {marketClient && <Link to="/account/journey">Buyer workspace</Link>}
         {accountLinks.map((link) => (
           <Link key={link} to={`/account/${link.toLowerCase().replaceAll(" ", "-")}`}>
             {link}
@@ -997,6 +998,7 @@ export function Business({ panel }: { panel: string }) {
     >
       <nav className="panel-nav" aria-label="Business sections">
         {marketClient && <Link to="/business/studio">Seller Studio</Link>}
+        {marketClient && <Link to="/business/journey">Seller enquiries</Link>}
         <Link to="/sourcing/onboarding">Create supplier storefront</Link>
         <Link to="/business/stock">Stock Requests</Link>
         {businessPanels.map((link) => (

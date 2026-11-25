@@ -1198,3 +1198,66 @@ progress {
 .market-stack :is(input,select,textarea) { max-width: 100%; }
 .market-stack summary { cursor: pointer; }
 .market-stack details > .form { margin-top: 1rem; }
+
+.journey-stack,
+.journey-form {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+.journey-layout {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(0, 3fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+.journey-panel {
+  border: 1px solid var(--line, currentColor);
+  padding: clamp(1rem, 2vw, 1.5rem);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.journey-panel summary {
+  cursor: pointer;
+  font-weight: 700;
+  margin-block-end: .75rem;
+}
+.journey-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 1rem;
+}
+.journey-form label input:not([type="checkbox"]),
+.journey-form label select,
+.journey-form textarea,
+.journey-layout aside input {
+  display: block;
+  width: 100%;
+  margin-block-start: .35rem;
+}
+.journey-choice {
+  display: block;
+  padding-block: .35rem;
+}
+.journey-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-block: .75rem;
+}
+.journey-messages {
+  display: grid;
+  gap: .75rem;
+  padding-inline-start: 1.5rem;
+}
+.journey-message {
+  white-space: pre-wrap;
+}
+.journey-layout [aria-current="true"] {
+  font-weight: 700;
+}
+@media (max-width: 48rem) {
+  .journey-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

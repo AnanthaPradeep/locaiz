@@ -178,6 +178,7 @@ export function PublishedProduct({ id }: { id: string }) {
             Supplier Trust Passport
           </Link>
         )}
+        {item.owner_business_id && <Link className="outline" to={"/account/journey?" + new URLSearchParams({supplier:item.owner_business_id,product:item.id})}>Start product enquiry</Link>}
         <div className="market-grid">
           {item.market_media.map((media) => (
             <Media
@@ -304,6 +305,7 @@ export default function SupplierPassport() {
     >
       <div className="market-stack">
         <section className="record">
+          {supplier.trust_state === "verified" && <Link className="outline" to={"/account/journey?" + new URLSearchParams({supplier:supplier.id})}>Request a quote</Link>}
           <h2>{trustLabels[supplier.trust_state] ?? "Unverified"}</h2>
           <p>
             {supplier.roles.join(", ")} /{" "}

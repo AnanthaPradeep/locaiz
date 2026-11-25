@@ -23,6 +23,7 @@ export type Quote = {
   location: string;
   role: string;
   offerUrl?: string;
+  unit?: string;
   currency: string;
   moq: number;
   tiers: readonly { quantity: number; minor: number }[];
@@ -46,7 +47,7 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
     typeof quantity === "number" &&
     Number.isSafeInteger(quantity) &&
     quantity > 0;
-  const comparableUnit = !context.unit || context.unit === "units";
+  const comparableUnit = !context.unit || context.unit === (quote.unit ?? "units");
   const meetsQuantity = comparableUnit && validQuantity && quantity >= quote.moq;
   const tier = meetsQuantity
     ? quote.tiers.reduce<(typeof quote.tiers)[number] | undefined>(
@@ -83,7 +84,7 @@ export function evaluateQuote(quote: Quote, context: QuoteContext, now: Date) {
         )
       : undefined;
   const date = now.toISOString().slice(0, 10);
-  const expired = !!quote.validUntil && quote.validUntil < date;
+  const expired = !!quote.validUntil && (quote.validUntil.includes("T") ? Date.parse(quote.validUntil) <= now.getTime() : quote.validUntil < date);
   const estimate =
     quote.lead !== undefined && quote.transit !== undefined
       ? quote.lead + quote.transit
