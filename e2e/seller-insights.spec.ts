@@ -1,4 +1,4 @@
-﻿import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test("@journey seller insights uses deduplicated real views and business permissions", async ({
   browser,
@@ -31,6 +31,7 @@ test("@journey seller insights uses deduplicated real views and business permiss
     await b.goto("/#/listing/shop/market-bulk-browser");
     expect((await recorded).ok()).toBe(true);
     await login(s, "seller-b");
+    await s.getByLabel("Managed business").selectOption({label:"Journey Browser Supplier"});
     const viewCard = s
       .getByText("Signed-in catalogue views", { exact: true })
       .locator("..");

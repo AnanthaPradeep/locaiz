@@ -192,6 +192,7 @@ export default function Marketplace() {
           : descriptions[section as Section]
       }
     >
+      {marketClient && section === "care" && <Link className="outline" to="/care/live">Live service appointments</Link>}
       {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
       {productListing && <Link className="outline" to="/search/image">{t("Search by image")}</Link>}
       {section === "shop" && <label className="catalogue-search">{t("Search products")}<input type="search" placeholder={t("Search by product name")} value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
