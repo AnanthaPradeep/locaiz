@@ -1,3 +1,4 @@
+import { rankListings } from "./listing-search";
 import { demoRetailProducts, legacyShopCategories } from "./demo-retail";
 export type Section =
   "shop" | "nearby" | "global" | "together" | "care" | "connect" | "business";
@@ -199,24 +200,24 @@ export function findListings(
   category?: string,
   city?: string,
   includeAlertSample = false,
+  ranked = false,
 ) {
-  const terms = query.toLowerCase().trim().split(/\s+/);
   const lamp = listings.find((item) => item.id === "globe-lamp" && item.section === "shop");
   const catalogue = includeAlertSample && lamp ? [...listings, {
     ...lamp, id: "demo-match-alabaster-lamp", name: "Alabaster Match Demo Lamp",
   }] : listings;
-  return catalogue.filter(
+  const candidates = catalogue.filter(
     (item) =>
       (!section || item.section === section) &&
       (!category || item.category === category || (item.section === "shop" && legacyShopCategories[category]?.includes(item.category))) &&
-      (!city || item.city === city) &&
-      terms.every((term) =>
-        [item.name, item.detail, item.category, item.city, ...Object.values(item.specifications ?? {})]
-          .join(" ")
-          .toLowerCase()
-          .includes(term),
-      ),
+      (!city || item.city === city),
   );
+  if (ranked) return rankListings(candidates, query);
+  const terms = query.toLowerCase().trim().split(/\s+/);
+  return candidates.filter(item => {
+    const searchable = [item.name, item.detail, item.category, item.city, ...Object.values(item.specifications ?? {})].join(" ").toLowerCase();
+    return terms.every(term => searchable.includes(term));
+  });
 }
 
 export const money = (amount: number) =>
@@ -243,6 +244,6 @@ export interface CatalogRepository {
 
 export const demoCatalog: CatalogRepository = {
   async search(query, includeAlertSample) {
-    return findListings(query, undefined, undefined, undefined, includeAlertSample);
+    return findListings(query, undefined, undefined, undefined, includeAlertSample, true);
   },
 };

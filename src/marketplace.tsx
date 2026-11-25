@@ -113,7 +113,7 @@ export default function Marketplace() {
     : findListings(section === "shop" ? term : "", section as Section,
         "",
         section === "nearby" ? city : "",
-        includeAlertSample,
+        includeAlertSample, true,
       );
   const category = params.get("category") ?? "";
   const chosenCategories = params.getAll("category");
@@ -381,7 +381,21 @@ export default function Marketplace() {
         {section === "nearby" ? ` in ${city}` : ""}
       </p>
       {filtered.length === 0 && !query.isLoading && (
-        <p className="record">No listings match these filters.</p>
+        <section className="record" aria-label="Search recovery">
+          <p>No listings match these filters.</p>
+          <div className="actions">
+            {productListing && clearable.some(key => params.has(key)) && (
+              <button className="outline" onClick={() => {
+                const next = new URLSearchParams(params);
+                clearable.forEach(key => next.delete(key));
+                next.delete("page");
+                setParams(next);
+              }}>Remove refinements</button>
+            )}
+            {productListing && term.trim() && <Link className="outline" to={"/search?" + new URLSearchParams({find:"1",q:term})}>Find more buying options</Link>}
+            {productListing && <Link className="outline" to="/shop">Browse all products</Link>}
+          </div>
+        </section>
       )}
       {productListing && filtered.length > 0 && <p className="catalogue-range">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length} {section === "shop" ? "products" : "results"}</p>}
       <div className={section === "shop" ? "catalogue-layout" : undefined}>
