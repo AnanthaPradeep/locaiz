@@ -80,12 +80,13 @@ export async function uploadMarketFile(
   file: File,
   prefix: string,
   evidence = false,
+  imageBucket: "market-images" | "market-storefronts" = "market-images",
 ) {
   const extension = validateUpload(file, evidence);
   await verifyFileHeader(file, extension);
   const path = prefix + "/" + crypto.randomUUID() + "." + extension;
   const { error } = await marketClient!.storage
-    .from(evidence ? "market-evidence" : "market-images")
+    .from(evidence ? "market-evidence" : imageBucket)
     .upload(path, file, { contentType: file.type });
   if (error) throw error;
   return path;

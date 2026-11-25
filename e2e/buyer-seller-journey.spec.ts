@@ -59,9 +59,12 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     ).toBeVisible();
     await b.getByRole("link", { name: /Browser QA quotation/ }).click();
 
-    await s.goto("/#/business/journey");
+    const thread = new URLSearchParams(new URL(b.url()).hash.split("?")[1]).get("thread");
+    const sellerThread = "/business/journey?thread=" + thread;
+    await s.goto("/#" + sellerThread);
     await signIn(s, "seller-b");
-    await expect(s.getByRole("link", { name: "RFQ received" })).toBeVisible();
+    await expect(s.getByRole("link", { name: "RFQ received", exact: true })
+      .and(s.locator('a[href="#' + sellerThread + '"]'))).toBeVisible();
     await s.getByRole("button", { name: "Accept invitation" }).click();
     await s.getByRole("button", { name: "Get private attachment" }).click();
     await expect(
