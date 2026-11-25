@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { FulfilmentDetails } from "./fulfilment-details";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -130,6 +131,7 @@ type PublicProduct = {
   sourcing_categories: { name: string };
 };
 export function PublishedProduct({ id }: { id: string }) {
+  const viewer = useMarketSession()?.user.id;
   const product = useQuery({
     queryKey: ["market", "public-product", id],
     queryFn: async () => {
@@ -147,6 +149,10 @@ export function PublishedProduct({ id }: { id: string }) {
     },
     enabled: !!marketClient,
   });
+  const published = Boolean(product.data);
+  useEffect(() => {
+    if (viewer && published) void marketClient?.rpc("record_product_view", {product:id}).then(() => undefined);
+  }, [viewer,published,id]);
   const offers = useQuery({
     queryKey: ["market", "public-product-offers", id],
     queryFn: () => publishedCatalogue(marketClient!).offers({ productId: id }),

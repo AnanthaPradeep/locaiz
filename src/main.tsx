@@ -36,6 +36,7 @@ const BulkBuying = lazy(() => import("./bulk-buying"));
 const SourcingAssistant = lazy(() => import("./sourcing-assistant-screen"));
 const BuyerSellerJourney = lazy(() => import("./buyer-seller-journey"));
 const MarketAccount = lazy(() => import("./market-account"));
+const SellerInsights = lazy(() => import("./seller-insights"));
 const MarketStudio = lazy(() => import("./market-studio"));
 const MarketTrust = lazy(() => import("./market-trust"));
 const SupplierPassport = lazy(() => import("./market-public"));
@@ -143,6 +144,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/business/journey" element={<BuyerSellerJourney side="seller" />} />
               <Route path="/account/sign-in" element={<MarketAccount />} />
               {marketClient && <Route path="/account/profile" element={<MarketAccount />} />}
+              <Route path="/business/insights" element={<SellerInsights />} />
               <Route path="/business/studio" element={<MarketStudio />} />
               <Route path="/account/trust-center" element={<MarketTrust />} />
               <Route path="/supplier/:id" element={<SupplierPassport />} />
