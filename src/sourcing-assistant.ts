@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 const text = (limit: number) => z.string().trim().max(limit);
 export const sourcingDraftSchema = z.object({
@@ -36,7 +36,7 @@ const numeric = (value: string) =>
 export const localSourcingProvider: SourcingDraftProvider = {
   async extract(brief) {
     const request = brief.match(
-      /^(?:(?:i|we) (?:need|want|require)\s+)?([\d,]+)\s+(?:(units|sets|pairs)\s+(?:of\s+)?)?([^,;\n]+?)(?=\s+with\b|\s+(?:delivery|deliver|budget|by)\b|[;,\n]|$)/i,
+      /^(?:(?:i|we) (?:need|want|require)\s+)?([\d,]+)\s+(?:(units?|sets?|pairs?)\s+(?:of\s+)?)?([^,;\n]+?)(?=\s+with\b|\s+(?:delivery|deliver|budget|by)\b|[;,\n]|$)/i,
     );
     const budget = brief.match(
       /\bbudget\s*:?\s*(?:(INR|USD|EUR|GBP|CNY|\u20b9|\$|\u20ac)\s*)?([\d,]+(?:\.\d{1,2})?)(?:\s+(INR|USD|EUR|GBP|CNY)\b)?(?![\d.,])/i,
@@ -55,6 +55,7 @@ export const localSourcingProvider: SourcingDraftProvider = {
       /\b(?:by|deadline:?)\s+(\d{4}-\d{2}-\d{2})(?!\d)/i,
     );
     const quantity = numeric(request?.[1] ?? "");
+    const unit = request?.[2]?.toLowerCase() ?? "";
     const amount = numeric(budget?.[2] ?? "");
     return {
       category: fieldValue(brief, /\bcategory:\s*([^,;\n]+)/i).slice(0, 100),
@@ -62,7 +63,7 @@ export const localSourcingProvider: SourcingDraftProvider = {
         request?.[3]?.trim() ?? fieldValue(brief, /^product:\s*([^,;\n]+)/i)
       ).slice(0, 120),
       quantity: quantity && quantity <= 1000000 ? quantity : null,
-      unit: request?.[2]?.toLowerCase() ?? "",
+      unit: unit && !unit.endsWith("s") ? unit + "s" : unit,
       customisation: fieldValue(
         brief,
         /\b(?:with|customisation:)\s+([^,;\n]+?)(?=\s+delivery\b|\s+budget\b|[;,\n]|$)/i,
