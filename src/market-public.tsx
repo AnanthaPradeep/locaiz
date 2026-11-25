@@ -1,3 +1,4 @@
+import { FulfilmentDetails } from "./fulfilment-details";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "./page";
@@ -92,6 +93,7 @@ export function ConnectedResults({ params }: { params: URLSearchParams }) {
                     : formatMinor(offer.unit_price_minor, offer.currency)}{" "}
                   / MOQ {offer.minimum_quantity}
                 </p>
+                <FulfilmentDetails compact shippingCountries={offer.shipping_countries} pickup={Boolean(offer.pickup_id)} />
               </article>
             ))}
           </div>
@@ -201,11 +203,7 @@ export function PublishedProduct({ id }: { id: string }) {
                 ? "Quote required"
                 : formatMinor(offer.unit_price_minor, offer.currency)}
             </p>
-            <p>
-              {offer.pickup_id
-                ? "Pickup offered, stock unconfirmed"
-                : "Ask the supplier about fulfilment"}
-            </p>
+            <FulfilmentDetails productionDays={offer.lead_days} shippingCountries={offer.shipping_countries} pickup={Boolean(offer.pickup_id)} />
             {item.owner_business_id && (
               <Link
                 className="outline"
