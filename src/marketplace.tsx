@@ -1,3 +1,4 @@
+import { FulfilmentDetails } from "./fulfilment-details";
 import { marketClient } from "./market-foundation";
 import { ConnectedResults, PublishedProduct } from "./market-public";
 import { FindBuyingOptions, PdpBuyingOptions } from "./find-it";
@@ -604,9 +605,7 @@ function ListingDetail({ item }: { item: Listing }) {
                 </Link>
               )}
               <Link to="/account/cart">View cart</Link>
-              <p>
-                Delivery estimate and pickup availability are unconfirmed.
-              </p>
+              <FulfilmentDetails />
             </>
           )}
           {item.section === "nearby" && (
