@@ -181,6 +181,12 @@ export function AccountForm({ recovery = false }: { recovery?: boolean }) {
 
 function Profile({ session }: { session: Session }) {
   const mutation = useMarketMutation();
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("flow") !== "verify") return;
+    url.searchParams.delete("flow");
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
   const recovery =
     new URLSearchParams(window.location.search).get("flow") === "recovery";
   const profile = useQuery({

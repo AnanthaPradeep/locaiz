@@ -63,13 +63,27 @@ export function validateUpload(file: File, evidence = false) {
   return extension;
 }
 
+async function verifyFileHeader(file: File, extension: string) {
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const text = new TextDecoder("ascii").decode(bytes);
+  const valid = extension === "png"
+    ? bytes[0] === 137 && text.slice(1, 4) === "PNG"
+    : extension === "jpg"
+      ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+      : extension === "webp"
+        ? text.startsWith("RIFF") && text.slice(8, 12) === "WEBP"
+        : text.startsWith("%PDF-");
+  if (!valid) throw new Error("The file content does not match its selected format.");
+}
+
 export async function uploadMarketFile(
   file: File,
   prefix: string,
   evidence = false,
 ) {
-  const path =
-    prefix + "/" + crypto.randomUUID() + "." + validateUpload(file, evidence);
+  const extension = validateUpload(file, evidence);
+  await verifyFileHeader(file, extension);
+  const path = prefix + "/" + crypto.randomUUID() + "." + extension;
   const { error } = await marketClient!.storage
     .from(evidence ? "market-evidence" : "market-images")
     .upload(path, file, { contentType: file.type });
