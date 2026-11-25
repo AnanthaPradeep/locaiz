@@ -21,3 +21,31 @@ test("buyer can edit the local sourcing draft before comparing catalogue options
     .click();
   await expect(page).toHaveURL(/qty=600/);
 });
+
+test("@journey sourcing draft shows genuine published data and warns about MOQ", async ({
+  page,
+}) => {
+  test.skip(
+    process.env.VITE_MARKETPLACE_FOUNDATION !== "1" ||
+      !process.env.LOCAIZ_PILOT_PASSWORD,
+    "Requires disposable Supabase",
+  );
+  await page.goto("/#/sourcing-assistant");
+  await page
+    .getByLabel("Describe what you need")
+    .fill("I need 1 unit of Browser Bulk Stoneware, delivery to Chennai");
+  await page.getByRole("button", { name: "Extract draft" }).click();
+  await page
+    .getByRole("button", { name: "Search published suppliers" })
+    .click();
+  const offers = page.getByRole("region", {
+    name: "Published supplier suggestions",
+  });
+  await expect(
+    offers.getByRole("link", { name: "Journey Browser Supplier" }),
+  ).toBeVisible();
+  await expect(
+    offers.getByText(/Requested quantity is below MOQ/),
+  ).toBeVisible();
+  await expect(offers.getByText(/INR/)).toBeVisible();
+});

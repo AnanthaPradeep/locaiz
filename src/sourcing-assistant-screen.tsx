@@ -1,4 +1,7 @@
-﻿import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { publishedCatalogue } from "./sourcing/repository";
+import { formatMinor } from "./sourcing/catalog";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Page } from "./page";
 import { marketClient } from "./market-foundation";
@@ -18,6 +21,124 @@ const textFields = [
   ["currency", "Currency code"],
 ] as const;
 
+function SupplierMatches({
+  draft,
+  ready,
+}: {
+  draft: SourcingDraft;
+  ready: boolean;
+}) {
+  const [requested, setRequested] = useState("");
+  const [country, setCountry] = useState("");
+  const query = useQuery({
+    queryKey: ["market", "assistant-published-suppliers", requested],
+    enabled: requested === draft.description && requested.length >= 3,
+    queryFn: () =>
+      publishedCatalogue(marketClient!).offers({
+        keyword: requested,
+        verifiedOnly: true,
+        marketplaceOnly: true,
+      }),
+  });
+  const active = requested === draft.description && requested.length >= 3;
+  return (
+    <section
+      className="record journey-stack"
+      aria-label="Published supplier suggestions"
+    >
+      <h3>Published supplier suggestions</h3>
+      <p>
+        Search uses the product description in the LOCAIZ catalogue. Quantity
+        and destination checks run in this browser.
+      </p>
+      <label>
+        Destination country code for coverage check
+        <input
+          maxLength={2}
+          value={country}
+          onChange={(event) => setCountry(event.target.value.toUpperCase())}
+        />
+      </label>
+      <button
+        className="outline"
+        onClick={() => setRequested(draft.description)}
+      >
+        Search published suppliers
+      </button>
+      {active && query.isPending && (
+        <p role="status">Searching verified supplier listings</p>
+      )}
+      {active && query.isError && (
+        <p role="alert">
+          Unable to search published suppliers.{" "}
+          <button className="outline" onClick={() => void query.refetch()}>
+            Retry supplier search
+          </button>
+        </p>
+      )}
+      {active && query.isSuccess && !query.data.items.length && (
+        <p>No published verified offers match this description.</p>
+      )}
+      {active &&
+        query.data?.items.map((offer) => {
+          const delivery =
+            country.length === 2 && offer.shipping_countries.length
+              ? offer.shipping_countries.some(
+                  (value) => value.toUpperCase() === country,
+                )
+              : undefined;
+          return (
+            <article key={offer.id} className="record market-stack">
+              <h4>{offer.sourcing_variants.sourcing_products.name}</h4>
+              <Link to={"/supplier/" + offer.sourcing_businesses.id}>
+                {offer.sourcing_businesses.name}
+              </Link>
+              <p>
+                Product title matched your description. Supplier lists{" "}
+                {offer.method.toLowerCase()}.
+              </p>
+              <p>
+                MOQ {offer.minimum_quantity}
+                {draft.quantity && draft.quantity < offer.minimum_quantity
+                  ? " · Requested quantity is below MOQ"
+                  : ""}
+              </p>
+              <p>
+                {delivery === false
+                  ? "Supplier does not list shipping to " + country
+                  : delivery === true
+                    ? "Supplier lists shipping to " + country
+                    : "Confirm destination coverage with the supplier."}
+              </p>
+              <p>
+                {offer.currency} ·{" "}
+                {offer.unit_price_minor === null
+                  ? "Quote required"
+                  : formatMinor(offer.unit_price_minor, offer.currency) +
+                    " listed per unit"}
+              </p>
+              {ready && (
+                <Link
+                  to={
+                    "/account/journey?" +
+                    new URLSearchParams({
+                      new: "1",
+                      supplier: offer.sourcing_businesses.id,
+                      product: offer.product_id,
+                      variant: offer.variant_id,
+                    })
+                  }
+                  state={{ sourcingDraft: draft }}
+                >
+                  Review RFQ for supplier
+                </Link>
+              )}
+            </article>
+          );
+        })}
+    </section>
+  );
+}
 export default function SourcingAssistant() {
   const [brief, setBrief] = useState("");
   const [draft, setDraft] = useState<SourcingDraft>();
@@ -187,6 +308,9 @@ export default function SourcingAssistant() {
               >
                 Compare catalogue buying options
               </Link>
+            )}
+            {valid && marketClient && draft.description.length >= 3 && (
+              <SupplierMatches draft={draft} ready={Boolean(ready)} />
             )}
             {ready && marketClient && (
               <Link
