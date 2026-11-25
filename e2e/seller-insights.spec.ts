@@ -30,12 +30,21 @@ test("@journey seller insights uses deduplicated real views and business permiss
     );
     await b.goto("/#/listing/shop/market-bulk-browser");
     expect((await recorded).ok()).toBe(true);
+    const recordedSearch = b.waitForResponse((response) =>
+      response.url().includes("/rpc/record_search_page"),
+    );
+    await b.goto("/#/search?q=Browser+Bulk+Stoneware");
+    expect((await recordedSearch).ok()).toBe(true);
     await login(s, "seller-b");
     await s.getByLabel("Managed business").selectOption({label:"Journey Browser Supplier"});
     const viewCard = s
       .getByText("Signed-in catalogue views", { exact: true })
       .locator("..");
     await expect(viewCard.locator("dd")).toHaveText("1");
+    const searchCard = s
+      .getByText("Signed-in search impressions", { exact: true })
+      .locator("..");
+    await expect(searchCard.locator("dd")).toHaveText("1");
     await expect(
       s.getByText("Insufficient data", { exact: true }).first(),
     ).toBeVisible();

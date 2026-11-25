@@ -11,10 +11,16 @@ set local role authenticated;
 select public.record_product_view('market-insights-test');
 select public.record_product_view('market-insights-test');
 select public.record_product_view('unavailable-product');
+select public.record_search_page(array['market-insights-test','market-insights-test','unavailable-product']);
+select public.record_search_page(array['market-insights-test']);
 do $$begin
  begin
-   perform public.seller_insights('36000000-0000-4000-8000-000000000001');
+   perform public.seller_demand('36000000-0000-4000-8000-000000000001');
    raise exception 'Buyer saw seller analytics';
+ exception when insufficient_privilege then null;end;
+ begin
+   perform public.seller_insights('36000000-0000-4000-8000-000000000001');
+   raise exception 'Buyer saw seller activity';
  exception when insufficient_privilege then null;end;
  begin
    perform count(*) from sourcing_private.product_view_events;
@@ -30,5 +36,8 @@ begin
  outcome:=public.seller_insights('36000000-0000-4000-8000-000000000001');
  if (outcome->>'productViews')::int<>1 or (outcome->>'rfqs')::int<>0 or outcome->>'responseHours' is not null
    then raise exception 'Incorrect view deduplication or empty-data handling: %',outcome;end if;
+ outcome:=public.seller_demand('36000000-0000-4000-8000-000000000001');
+ if (outcome->>'searchImpressions')::int<>1 or outcome->>'pickupConversion' is not null
+   or jsonb_array_length(outcome->'categories')<>0 then raise exception 'Invalid or disclosed demand aggregate: %',outcome;end if;
 end $$;
 rollback;
