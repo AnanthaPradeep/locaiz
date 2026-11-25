@@ -16,6 +16,8 @@ import { stockEnabled } from "./stock/config";
 import "@fontsource/space-grotesk/latin-700.css";
 import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-700.css";
+import "@fontsource/noto-sans-tamil/tamil-400.css";
+import "@fontsource/noto-sans-malayalam/malayalam-400.css";
 import "./styles.css";
 
 const About = lazy(() =>

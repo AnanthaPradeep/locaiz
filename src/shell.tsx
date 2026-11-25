@@ -1,3 +1,4 @@
+import { languages, setLanguage, useLocale } from "./i18n";
 import { marketClient } from "./market-foundation";
 import { BrandHome } from "./brand-logo";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
@@ -123,6 +124,7 @@ function LocationPicker() {
 }
 
 export function Shell({ children }: { children: ReactNode }) {
+  const {t,language}=useLocale();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -150,7 +152,7 @@ export function Shell({ children }: { children: ReactNode }) {
           document.getElementById("content")?.focus();
         }}
       >
-        Skip to content
+        {t("Skip to content")}
       </a>
       <div className="announcement">
         <span>LOCAL ROOTS. GLOBAL REACH.</span>
@@ -161,7 +163,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <header>
         <div className="header-main wrap">
           <button
-            aria-label="Toggle marketplace menu"
+            aria-label={t("Toggle marketplace menu")}
             aria-expanded={menu}
             className="icon-button menu-toggle"
             onClick={() => setMenu(!menu)}
@@ -181,8 +183,8 @@ export function Shell({ children }: { children: ReactNode }) {
               <Search size={19} />
               <input
                 type="search"
-                aria-label="Search marketplace"
-                placeholder="Search products, shops & services"
+                aria-label={t("Search marketplace")}
+                placeholder={t("Search products, shops & services")}
                 value={query}
                 onFocus={() => setFocused(true)}
                 onChange={(event) => {
@@ -193,12 +195,12 @@ export function Shell({ children }: { children: ReactNode }) {
                   if (event.key === "Escape") setFocused(false);
                 }}
               />
-              <button aria-label="Submit marketplace search" type="submit">
+              <button aria-label={t("Submit marketplace search")} type="submit">
                 <ArrowUpRight size={17} />
               </button>
             </form>
             {focused && suggestions.length > 0 && (
-              <ul className="suggestions" aria-label="Marketplace search suggestions">
+              <ul className="suggestions" aria-label={t("Marketplace search suggestions")}>
                 {suggestions.map((item) => (
                   <li key={item.id}>
                     <Link
@@ -223,14 +225,14 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="header-actions">
             <Link
               className="icon-button optional"
-              aria-label="Account"
+              aria-label={t("Account")}
               to={marketClient ? "/account/sign-in" : "/account/profile"}
             >
               <UserRound size={20} />
             </Link>
             <Link
               className="icon-button optional"
-              aria-label="Messages"
+              aria-label={t("Messages")}
               to="/account/messages"
             >
               <MessageCircle size={20} />
@@ -254,16 +256,22 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav
-          aria-label="Marketplace"
+          aria-label={t("Marketplace")}
           className={`secondary ${menu ? "expanded" : ""}`}
         >
           <div className="wrap">
             {modules.map(({ id, title, icon: Icon }) => (
               <NavLink key={id} to={`/${id}`} onClick={() => setMenu(false)}>
                 <Icon size={16} />
-                {title}
+                {t(title)}
               </NavLink>
             ))}
+            <label className="locale-select">
+              <span>{t("Language")}</span>
+              <select aria-label={t("Language preferences")} value={language.id} onChange={event=>setLanguage(event.target.value)}>
+                {languages.map(option=><option key={option.id} value={option.id} lang={option.id}>{option.label}</option>)}
+              </select>
+            </label>
             <button
               className="theme-button"
               onClick={() =>
@@ -282,30 +290,30 @@ export function Shell({ children }: { children: ReactNode }) {
       <SiteFooter
         brand={<BrandHome />}
         marketplace={modules.filter(({ id }) => id !== "business").map(({ title, id }) => ({
-          label: title,
+          label: t(title),
           to: id === "global" ? "/sourcing" : `/${id}`,
         }))}
       />
-      <nav className="mobile-nav" aria-label="Quick navigation">
+      <nav className="mobile-nav" aria-label={t("Quick navigation")}>
         <NavLink end to="/">
           <Compass size={19} />
-          Explore
+          {t("Explore")}
         </NavLink>
         <NavLink to="/nearby">
           <MapPin size={19} />
-          Nearby
+          {t("Nearby")}
         </NavLink>
         <NavLink to="/account/wishlist" aria-label={`Saved, ${liked.length} products`}>
           <Heart size={19} />
-          {liked.length ? `Saved (${liked.length})` : "Saved"}
+          {t("Saved")}{liked.length ? " (" + liked.length + ")" : ""}
         </NavLink>
         <NavLink to="/account/cart">
           <ShoppingBag size={19} />
-          Cart
+          {t("Cart")}
         </NavLink>
         <NavLink to={marketClient ? "/account/sign-in" : "/account/profile"}>
           <UserRound size={19} />
-          Account
+          {t("Account")}
         </NavLink>
       </nav>
     </>

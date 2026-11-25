@@ -1,3 +1,4 @@
+import { useLocale } from "./i18n";
 import { FulfilmentDetails } from "./fulfilment-details";
 import { marketClient } from "./market-foundation";
 import { ConnectedResults, PublishedProduct } from "./market-public";
@@ -67,6 +68,7 @@ const descriptions: Record<Section, string> = {
 };
 
 export default function Marketplace() {
+  const {t}=useLocale();
   const { section, id } = useParams();
   const [params, setParams] = useSearchParams();
   const [map, setMap] = useState(false);
@@ -100,7 +102,7 @@ export default function Marketplace() {
   if (section === "connect")
     return (
       <Page
-        title="Post your requirement"
+        translateTitle title="Post your requirement"
         label="LOCAIZ CONNECT"
         intro={descriptions.connect}
       >
@@ -109,7 +111,7 @@ export default function Marketplace() {
         <RequirementForm key={params.toString()} />
       </Page>
     );
-  if (search && params.get("find") === "1") return <Page title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link><FindBuyingOptions params={params} /></Page>;
+  if (search && params.get("find") === "1") return <Page translateTitle title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link><FindBuyingOptions params={params} /></Page>;
   if (section === "business") return <Business panel="dashboard" />;
   const items = search
     ? (query.data ?? [])
@@ -180,8 +182,8 @@ export default function Marketplace() {
         search
           ? term
             ? `Results for “${term}”`
-            : "Search the marketplace"
-          : active!.title
+            : t("Search the marketplace")
+          : t(active!.title)
       }
       label={search ? "UNIVERSAL SEARCH" : "LOCAIZ MARKETPLACE"}
       intro={
@@ -191,8 +193,8 @@ export default function Marketplace() {
       }
     >
       {section === "shop" && <><nav aria-label="Breadcrumb" className="actions"><Link to="/">Home</Link><span aria-current="page">Shop</span></nav><p className="muted">Demo catalogue · Illustrative prices, inventory and product photos.</p><nav className="actions catalogue-categories" aria-label="Shop departments">{shopCategories.map((value) => <button key={value} type="button" className="outline" aria-pressed={chosenCategories.includes(value)} onClick={() => toggleFacet("category", value)}>{value}</button>)}</nav></>}
-      {productListing && <Link className="outline" to="/search/image">Search by image</Link>}
-      {section === "shop" && <label className="catalogue-search">Search products<input type="search" placeholder="Search by product name" value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
+      {productListing && <Link className="outline" to="/search/image">{t("Search by image")}</Link>}
+      {section === "shop" && <label className="catalogue-search">{t("Search products")}<input type="search" placeholder={t("Search by product name")} value={term} onChange={(event) => setOption("q", event.target.value)} /></label>}
       {search && <Link className="outline" to={"/search?" + new URLSearchParams([...params, ["find", "1"]])}>Explore buying options</Link>}
       {productListing && <SavedSearchButton scope={search ? "search" : "shop"} params={params} />}
       <div className={section === "shop" ? "filterbar catalogue-toolbar" : "filterbar"}>
@@ -225,7 +227,7 @@ export default function Marketplace() {
             value={category}
             onChange={(event) => setOption("category", event.target.value)}
           >
-            <option value="">All categories</option>
+            <option value="">{t("All categories")}</option>
             {[...new Set(items.map((item) => item.category))]
               .sort()
               .map((value) => (
@@ -305,7 +307,7 @@ export default function Marketplace() {
               {listView ? "Switch to grid" : "Switch to list"}
             </button>
             <Dialog.Root>
-              <Dialog.Trigger className="outline" aria-label="More product filters">Filters{appliedCount > 0 && <span className="catalogue-filter-count">{appliedCount}</span>}</Dialog.Trigger>
+              <Dialog.Trigger className="outline" aria-label="More product filters">{t("Filters")}{appliedCount > 0 && <span className="catalogue-filter-count">{appliedCount}</span>}</Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay className="overlay" />
                 <Dialog.Content className="dialog detail-actions commerce-filter-dialog">
@@ -407,7 +409,7 @@ export default function Marketplace() {
         {section === "shop" && (
           <aside className="catalogue-sidebar" aria-label="Catalogue filters">
             <div className="record catalogue-filter-panel">
-              <h2>Filters</h2>
+              <h2>{t("Filters")}</h2>
               <div className="catalogue-filter-options">
                 {advancedFields}
               </div>

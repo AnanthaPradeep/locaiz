@@ -1,3 +1,4 @@
+import { commerceLocale, useLocale } from "./i18n";
 import { listings } from "./catalog";
 import { searchUrl } from "./saved-search";
 import { useState } from "react";
@@ -192,6 +193,7 @@ async function connectedEntries(user: string) {
 }
 
 export default function BuyingTimeline() {
+  const {t}=useLocale();
   const session = useMarketSession();
   const [kind, setKind] = useState("");
   const [count, setCount] = useState(20);
@@ -227,13 +229,13 @@ export default function BuyingTimeline() {
     .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
   return (
     <Page
-      title="My Buying Journey"
+      translateTitle title="My Buying Journey"
       intro="Find your buying activity and pick up where you left off."
     >
       <nav className="panel-nav" aria-label="Buying activity">
         {links.map(([label, href]) => (
           <Link key={href} to={href}>
-            {label}
+            {t(label)}
           </Link>
         ))}
         {marketClient && (
@@ -325,7 +327,7 @@ export default function BuyingTimeline() {
                 <Link to={row.href}>{row.title}</Link>
                 <br />
                 <time dateTime={row.date}>
-                  {new Date(row.date).toLocaleString()}
+                  {new Date(row.date).toLocaleString(commerceLocale())}
                 </time>{" "}
                 · {row.kind}
               </li>

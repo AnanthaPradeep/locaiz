@@ -1,3 +1,4 @@
+import { useLocale } from "./i18n";
 import { HomeCampaignSection } from "./home-campaign-section";
 import { FindProductForm } from "./find-it";
 import { Link } from "react-router-dom";
@@ -27,6 +28,7 @@ const categories = [
 ];
 
 export function Home() {
+  const {t,language}=useLocale();
   const { city } = useDemo();
   const reducedMotion = useReducedMotion();
   return (
@@ -37,9 +39,9 @@ export function Home() {
             <span className="rule" /> THE UNIFIED MARKETPLACE
           </div>
           <h1>
-            Find it near.
+            {t("Find it near.")}
             <br />
-            Source it <em>far.</em>
+            {language.id === "en" ? <>Source it <em>far.</em></> : <em>{t("Source it far.")}</em>}
           </h1>
           <p>
             Shop thoughtfully, discover businesses nearby and source from the
@@ -48,10 +50,10 @@ export function Home() {
           <FindProductForm />
           <div className="actions">
             <Link className="button" to="/shop">
-              Explore marketplace <ArrowRight size={17} />
+              {t("Explore marketplace")} <ArrowRight size={17} />
             </Link>
             <Link className="outline" to="/global">
-              <Globe2 size={17} /> Global Atlas
+              <Globe2 size={17} /> {t("Global Atlas")}
             </Link>
           </div>
         </div>
@@ -77,7 +79,7 @@ export function Home() {
         {modules.map(({ id, title, desc, icon: Icon }) => (
           <Link key={id} to={`/${id}`}>
             <Icon size={22} strokeWidth={1.6} />
-            <strong>{title}</strong>
+            <strong>{t(title)}</strong>
             <span>{desc}</span>
           </Link>
         ))}
@@ -87,10 +89,10 @@ export function Home() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">THE LOCAIZ EDIT</span>
-            <h2>Trending finds</h2>
+            <h2>{t("Trending finds")}</h2>
           </div>
           <Link className="text-link" to="/shop">
-            View all products <ArrowUpRight size={17} />
+            {t("View all products")} <ArrowUpRight size={17} />
           </Link>
         </div>
         <div className="product-grid">
@@ -101,7 +103,7 @@ export function Home() {
       </section>
       <section className="home-section">
         <div className="section-heading">
-          <h2>Shop by category</h2>
+          <h2>{t("Shop by category")}</h2>
         </div>
         <div className="category-grid">
           {categories.map(({ name, icon: Icon }) => (

@@ -1,4 +1,5 @@
-﻿type FulfilmentTerms = {
+import { useLocale } from "./i18n";
+type FulfilmentTerms = {
   productionDays?: number | null;
   transitDays?: number | null;
   shippingCountries?: string[];
@@ -12,6 +13,7 @@ export function FulfilmentDetails({
   pickup,
   compact = false,
 }: FulfilmentTerms & { compact?: boolean }) {
+  const {t}=useLocale();
   if (compact)
     return (
       <p className="muted">
@@ -23,8 +25,8 @@ export function FulfilmentDetails({
       </p>
     );
   return (
-    <section className="record market-stack" aria-label="Delivery and pickup">
-      <h3>Delivery and pickup</h3>
+    <section className="record market-stack" aria-label={t("Delivery and pickup")}>
+      <h3>{t("Delivery and pickup")}</h3>
       <dl>
         <dt>Delivery eligibility</dt>
         <dd>

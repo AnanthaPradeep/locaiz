@@ -63,7 +63,7 @@ export function MarketGate({
 }) {
   const session = useMarketSession();
   return (
-    <Page title={title}>
+    <Page translateTitle title={title}>
       {!marketClient ? (
         <p>
           Connected Marketplace is unavailable. You can continue in{" "}

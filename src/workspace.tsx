@@ -1,3 +1,4 @@
+import { useLocale } from "./i18n";
 import { marketClient } from "./market-foundation";
 import { parseIntent } from "./buyer-intent";
 import { BasketComparisonDemo, QuoteComparison } from "./quote-comparison";
@@ -35,6 +36,7 @@ const requirements = z.object({
 const pickupEnquiryStatus = "Demo pickup enquiry saved";
 
 export function RequirementForm() {
+  const {t}=useLocale();
   const [params] = useSearchParams();
   const guided = params.get("find") === "1";
   const intent = parseIntent(params);
@@ -313,7 +315,7 @@ export function RequirementForm() {
         />
       </label>
       <label>
-        Quantity
+        {t("Quantity")}
         <input
           required
           type="number"
@@ -395,6 +397,7 @@ export default function Workspace({
 }: {
   business?: boolean;
 }) {
+  const {t}=useLocale();
   const { panel = "" } = useParams();
   const [params] = useSearchParams();
   const demo = useDemo();
@@ -406,7 +409,7 @@ export default function Workspace({
   if (business) return <Business key={panel} panel={panel} />;
   if (Object.hasOwn(info, panel))
     return (
-      <Page title={panel[0].toUpperCase() + panel.slice(1)} intro={info[panel]}>
+      <Page translateTitle title={panel[0].toUpperCase() + panel.slice(1)} intro={info[panel]}>
         <Link to="/">Explore LOCAIZ</Link>
         {panel === "help" && <Link className="outline" to="/contact">Contact Us</Link>}
       </Page>
@@ -548,7 +551,7 @@ export default function Workspace({
               </div>
               {panel === "cart" ? (
                 <label>
-                  Quantity
+                  {t("Quantity")}
                   <input
                     type="number"
                     min={1}
@@ -610,7 +613,7 @@ export default function Workspace({
         </div>
       ) : (
         <p className="record">
-          Your cart is empty. <Link to="/shop">Continue shopping</Link>.
+          {t("Your cart is empty.")} <Link to="/shop">{t("Continue shopping")}</Link>.
         </p>
       );
       break;
@@ -954,13 +957,13 @@ export default function Workspace({
       return <Missing />;
   }
   return (
-    <Page title={title} label="YOUR LOCAIZ">
+    <Page translateTitle title={title} label="YOUR LOCAIZ">
       <nav className="panel-nav" aria-label="Account sections">
-        <Link to="/account/buying-journey">My Buying Journey</Link>
+        <Link to="/account/buying-journey">{t("My Buying Journey")}</Link>
         {marketClient && <Link to="/account/journey">Buyer workspace</Link>}
         {accountLinks.map((link) => (
           <Link key={link} to={`/account/${link.toLowerCase().replaceAll(" ", "-")}`}>
-            {link}
+            {t(link)}
             {link === "Notifications" && unreadMatches > 0 && ` (${unreadMatches} unread matches)`}
           </Link>
         ))}
@@ -986,6 +989,7 @@ const businessPanels = [
 ];
 
 export function Business({ panel }: { panel: string }) {
+  const {t}=useLocale();
   const demo = useDemo();
   const [feedback, setFeedback] = useState("");
   if (!businessPanels.some((value) => value.toLowerCase() === panel))
@@ -1004,7 +1008,7 @@ export function Business({ panel }: { panel: string }) {
         <Link to="/business/stock">Stock Requests</Link>
         {businessPanels.map((link) => (
           <Link key={link} to={`/business/${link.toLowerCase()}`}>
-            {link}
+            {t(link)}
           </Link>
         ))}
       </nav>
