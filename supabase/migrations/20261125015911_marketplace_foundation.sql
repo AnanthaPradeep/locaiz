@@ -102,7 +102,7 @@ language sql stable security definer set search_path = '' as $$
  select exists (
    select 1 from public.sourcing_products p join public.sourcing_businesses b on b.id=p.owner_business_id
    where p.id=split_part(object_name,'/',2) and b.id::text=split_part(object_name,'/',1)
-   and case when write_access then sourcing_private.can_catalogue(b.id) and p.publication_current_listing_state in ('draft','rejected')
+   and case when write_access then sourcing_private.can_catalogue(b.id) and p.publication_state in ('draft','rejected')
         else sourcing_private.can_catalogue(b.id) or sourcing_private.is_operator()
           or (p.publication_state='published' and b.published and b.trust_state <> 'restricted'
               and exists(select 1 from public.market_media m where m.object_name=product_media_allowed.object_name and m.product_id=p.id)) end
@@ -234,7 +234,7 @@ declare
   current_listing_state text;
   entry public.market_invites;
 begin
-  if actor is null then raise exception 'Sign in is required' using errcode='42501'; end if;
+  if actor is null or not exists(select 1 from auth.users where id=actor and email_confirmed_at is not null) then raise exception 'A verified account is required' using errcode='42501'; end if;
   if action_name = 'create_business' then
     if char_length(trim(coalesce(payload->>'name',''))) not between 2 and 120 or char_length(trim(coalesce(payload->>'city',''))) not between 2 and 120 then
       raise exception 'Provide a business name and locality';
