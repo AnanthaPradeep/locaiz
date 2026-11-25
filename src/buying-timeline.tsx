@@ -146,7 +146,10 @@ export default function BuyingTimeline() {
           </Link>
         ))}
         {marketClient && (
-          <Link to="/account/journey">Live buyer workspace</Link>
+          <>
+            <Link to="/account/journey">Live buyer workspace</Link>
+            <Link to="/account/bulk-buying">Bulk buying</Link>
+          </>
         )}
       </nav>
       <section

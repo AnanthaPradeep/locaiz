@@ -955,6 +955,7 @@ function ThreadDetail({
                 unrecorded
               </p>
               {side === "buyer" && order.status === "completed" && <ReviewPurchase order={order.id} product={Boolean(requirement.product_id)} />}
+              {side === "buyer" && order.status === "completed" && <Link className="outline" to={"/account/bulk-buying?order=" + order.id}>Start reorder draft</Link>}
               <div className="journey-actions">
                 {nextOrder && (
                   <button
