@@ -1,3 +1,4 @@
+import { sourcingDraftSchema, sourcingSpecifications, type SourcingDraft } from "./sourcing-assistant";
 import { ReviewPurchase } from "./market-reviews";
 import { SupplierQuoteTable } from "./supplier-quote-table";
 import { evaluateQuote } from "./quote-evaluation";
@@ -8,7 +9,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { MarketGate, useMarketMutation } from "./market-account";
 import { marketClient } from "./market-foundation";
 
@@ -54,6 +55,7 @@ function Requirement({
   variant,
   assignment,
   startOpen,
+  draft,
   submitted,
 }: {
   user: string;
@@ -62,6 +64,7 @@ function Requirement({
   variant: string | null;
   assignment: string | null;
   startOpen: boolean;
+  draft?: SourcingDraft;
   submitted: (id: string) => void;
 }) {
   const mutation = useMarketMutation();
@@ -150,11 +153,11 @@ function Requirement({
       <form className="journey-form" onSubmit={submit}>
         <label>
           Requirement title
-          <input name="title" required minLength={3} maxLength={120} />
+          <input name="title" defaultValue={draft?.description} required minLength={3} maxLength={120} />
         </label>
         <label>
           Specifications
-          <textarea name="specifications" maxLength={3000} />
+          <textarea name="specifications" defaultValue={draft && sourcingSpecifications(draft)} maxLength={3000} />
         </label>
         <label>
           Private requirement attachment
@@ -169,6 +172,7 @@ function Requirement({
             Quantity
             <input
               name="quantity"
+              defaultValue={draft?.quantity ?? undefined}
               type="number"
               min={1}
               max={1000000}
@@ -177,7 +181,7 @@ function Requirement({
           </label>
           <label>
             Unit
-            <select name="unit">
+            <select name="unit" defaultValue={draft?.unit || "units"}>
               <option>units</option>
               <option>sets</option>
               <option>pairs</option>
@@ -185,28 +189,28 @@ function Requirement({
           </label>
           <label>
             Destination
-            <input name="destination" required minLength={2} maxLength={120} />
+            <input name="destination" defaultValue={draft?.destination} required minLength={2} maxLength={120} />
           </label>
           <label>
             Required by
-            <input name="deadline" type="date" />
+            <input name="deadline" type="date" defaultValue={draft?.deadline} />
           </label>
           <label>
             Currency code
             <input
               name="currency"
-              defaultValue="INR"
+              defaultValue={draft?.currency || "INR"}
               required
               pattern="[A-Za-z]{3}"
             />
           </label>
           <label>
             Budget in minor units
-            <input name="budget" type="number" min={0} />
+            <input name="budget" type="number" min={0} defaultValue={draft?.budget && draft.currency ? Math.round(draft.budget * 10 ** (new Intl.NumberFormat("en", {style:"currency",currency:draft.currency}).resolvedOptions().maximumFractionDigits ?? 2)) : undefined} />
           </label>
         </div>
         <label>
-          <input type="checkbox" name="custom" /> Custom production required
+          <input type="checkbox" name="custom" defaultChecked={Boolean(draft?.customisation)} /> Custom production required
         </label>
         <fieldset>
           <legend>Invite up to five suppliers</legend>
@@ -1020,6 +1024,8 @@ function ThreadDetail({
 }
 
 function Journey({ user, side }: { user: string; side: Side }) {
+  const location = useLocation();
+  const handoff = sourcingDraftSchema.safeParse(location.state?.sourcingDraft);
   const cache = useQueryClient();
   const [params, setParams] = useSearchParams();
   const chosen = params.get("thread");
@@ -1137,6 +1143,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
           variant={params.get("variant")}
           assignment={params.get("assignment")}
           startOpen={params.has("new")}
+          draft={handoff.success ? handoff.data : undefined}
           submitted={(id) => {
             setPage(0);
             setSearch("");
