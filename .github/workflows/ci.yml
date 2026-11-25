@@ -62,7 +62,10 @@ jobs:
           unset LOCAIZ_LOCAL_ADMIN_KEY
           docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/sourcing-rls.sql
           docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/market-foundation-rls.sql
+          docker exec -i supabase_db_locaiz psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "insert into sourcing_private.operators select id from auth.users where email='seller-c@stock.example.com';"
+          export VITE_MARKETPLACE_FOUNDATION=1
+          export LOCAIZ_MAILPIT_URL="$(jq -r '.MAILPIT_URL // .INBUCKET_URL // "http://127.0.0.1:54324"' <<< "$settings")"
           npm run build
-          npm run test:e2e -- --grep @stock
+          npm run test:e2e -- --grep '@stock|@market'
       - if: always()
         run: supabase stop

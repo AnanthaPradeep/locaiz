@@ -1,3 +1,4 @@
+import { marketClient } from "./market-foundation";
 import { MatchCheck } from "./saved-search-ui";
 import {
   Component,
@@ -29,7 +30,16 @@ const Workspace = lazy(() => import("./workspace"));
 const Stock = lazy(() =>
   import("./stock/screens").then((module) => ({ default: module.StockScreen })),
 );
+const MarketAccount = lazy(() => import("./market-account"));
+const MarketStudio = lazy(() => import("./market-studio"));
+const MarketTrust = lazy(() => import("./market-trust"));
+const SupplierPassport = lazy(() => import("./market-public"));
 const client = new QueryClient();
+if (marketClient && ["verify", "recovery"].includes(new URLSearchParams(location.search).get("flow") ?? "")) {
+  const url = new URL(location.href);
+  url.hash = "/account/sign-in";
+  history.replaceState(history.state, "", url);
+}
 
 class AppErrorBoundary extends Component<
   { children: ReactNode },
@@ -120,6 +130,11 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/search" element={<Marketplace />} />
               <Route path="/listing/:section/:id" element={<Marketplace />} />
               <Route path="/:section" element={<Marketplace />} />
+              <Route path="/account/sign-in" element={<MarketAccount />} />
+              {marketClient && <Route path="/account/profile" element={<MarketAccount />} />}
+              <Route path="/business/studio" element={<MarketStudio />} />
+              <Route path="/account/trust-center" element={<MarketTrust />} />
+              <Route path="/supplier/:id" element={<SupplierPassport />} />
               <Route path="/account/:panel" element={<Workspace />} />
               <Route path="/business/:panel" element={<Workspace business />} />
               <Route path="*" element={<Marketplace />} />

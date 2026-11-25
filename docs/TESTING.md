@@ -9,3 +9,5 @@ Vitest covers search filters, quantity limits, idempotent checkout and group/who
 WCAG 2.2 AA is the design target. Screen-reader review and an independent accessibility audit remain pending.
 
 The CI stock job starts disposable Supabase and runs the tagged Playwright tests with real Auth, PostgREST and Realtime. These tests check separate browser sessions, independent seller replies, offline reconciliation, refresh persistence, cross-account RLS, unauthenticated access, invalid input, cancellation, expiry and duplicate submissions. [Local stock test setup](NEARBY-STOCK-CONFIRMATION.md)
+
+The disposable Supabase workflow runs marketplace RLS SQL and connected browser tests alongside the Stock Pilot. See [setup](MARKETPLACE-FOUNDATION.md).

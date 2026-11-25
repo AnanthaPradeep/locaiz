@@ -7,3 +7,5 @@
 - `src/home.tsx`, `src/marketplace.tsx` and `src/workspace.tsx` cover discovery, details and account or business actions. MapLibre loads on demand.
 
 A connected deployment can implement the catalogue repository with Supabase queries. Move writable actions behind typed repositories and transactional server operations before sharing state across customers and businesses.
+
+Marketplace Foundation reuses the stock Supabase session and sourcing database. The connected route modules are behind an explicit build flag. See [Marketplace Foundation](MARKETPLACE-FOUNDATION.md).

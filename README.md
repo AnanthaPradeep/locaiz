@@ -61,3 +61,5 @@ See [Find It Your Way](docs/FIND-IT-YOUR-WAY.md) for guided product and supplier
 [Homepage campaigns](docs/HOMEPAGE-CAMPAIGNS.md) describes the curated collections, artwork and configuration.
 
 See [Brand theming](docs/BRAND-THEMING.md) and [App loading screen](docs/APP-LOADING-SCREEN.md) for startup behaviour.
+
+[Marketplace Foundation setup](docs/MARKETPLACE-FOUNDATION.md) covers the optional connected account, Seller Studio and moderation build.
