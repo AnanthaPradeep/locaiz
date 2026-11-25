@@ -1,4 +1,4 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 
 test("@journey concurrent Together pledges respect capacity and need supplier acceptance", async ({
@@ -14,6 +14,7 @@ test("@journey concurrent Together pledges respect capacity and need supplier ac
   await auth.getByLabel("Email").fill("seller-b@stock.example.com");
   await auth.getByLabel("Password").fill(password!);
   await auth.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Managed business").selectOption({ label: "Journey Browser Supplier" });
   await page
     .getByText("Publish a supplier group offer", { exact: true })
     .click();
