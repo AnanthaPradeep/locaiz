@@ -5,6 +5,7 @@ import { useMarketMutation, useMarketSession } from "./market-account";
 import { formText, marketClient } from "./market-foundation";
 import { products, type Listing } from "./catalog";
 import { readPilot, readRequests } from "./stock/client";
+import { StorefrontPhoto } from "./market-storefront";
 import { stockPath } from "./stock/config";
 
 const MarketMap = lazy(() => import("./market-map"));
@@ -25,7 +26,10 @@ type Location = {
   sourcing_businesses: {
     name: string;
     pilot_business_id: string;
-    roles: string[];
+    market_storefronts: {
+      is_public: boolean;
+      cover_path: string | null;
+    } | null;
   };
 };
 type Coordinates = { latitude: number; longitude: number };
@@ -55,7 +59,7 @@ export function ConnectedNearby() {
       const { data, error } = await marketClient!
         .from("market_locations")
         .select(
-          "id,business_id,locality,country_code,pickup,latitude,longitude,opening_hours,verified_at,sourcing_businesses!inner(name,pilot_business_id,roles)",
+          "id,business_id,locality,country_code,pickup,latitude,longitude,opening_hours,verified_at,sourcing_businesses!inner(name,pilot_business_id,market_storefronts(is_public,cover_path))",
         )
         .not("verified_at", "is", null)
         .eq("sourcing_businesses.published", true)
@@ -224,7 +228,8 @@ export function ConnectedNearby() {
         </Suspense>
       )}
       <div className="market-grid">
-        {entries.map(({ shop, km }) => {
+        {entries.map(({ shop, km }, index) => {
+          const storefront = shop.sourcing_businesses.market_storefronts;
           const linked = shop.sourcing_businesses.pilot_business_id;
           const latest = requests.data
             ?.filter(
@@ -243,6 +248,12 @@ export function ConnectedNearby() {
               Date.parse(latest.item.quote_expires_at) > Date.now());
           return (
             <article className="record market-stack" key={shop.id}>
+              {index < 12 && storefront?.is_public && storefront.cover_path && (
+                <StorefrontPhoto
+                  path={storefront.cover_path}
+                  alt={shop.sourcing_businesses.name + " storefront"}
+                />
+              )}
               <h3>
                 <Link to={"/supplier/" + shop.business_id}>
                   {shop.sourcing_businesses.name}

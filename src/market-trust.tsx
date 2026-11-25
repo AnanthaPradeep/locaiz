@@ -1,4 +1,3 @@
-import { NearbyVerification } from "./connected-nearby";
 import { useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +9,8 @@ import {
   readMarketContext,
   signMarketFile,
 } from "./market-foundation";
+
+import { NearbyVerification } from "./connected-nearby";
 
 type QueueEntry = {
   id: string;
@@ -185,6 +186,7 @@ function Trust({ session }: { session: Session }) {
     return <p role="alert">Operator access is required.</p>;
   return (
     <div className="market-stack">
+      <NearbyVerification />
       <h2>Moderation queue</h2>
       {queue.isPending && <p role="status">Loading reviews</p>}
       {queue.isError && (
@@ -198,7 +200,6 @@ function Trust({ session }: { session: Session }) {
       {queue.data?.queue.map((entry) => (
         <Review key={entry.kind + entry.id} entry={entry} />
       ))}
-      <NearbyVerification />
       <h2>Audit trail</h2>
       <ul>
         {queue.data?.audit.map((event) => (
