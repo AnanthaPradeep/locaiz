@@ -102,6 +102,7 @@ export default function Marketplace() {
         label="LOCAIZ CONNECT"
         intro={descriptions.connect}
       >
+        {marketClient && <Link className="button" to="/account/journey?new=1">Send a live RFQ</Link>}
         <RequirementForm key={params.toString()} />
       </Page>
     );

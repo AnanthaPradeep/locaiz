@@ -1,3 +1,4 @@
+import { SupplierQuoteTable } from "./supplier-quote-table";
 import { useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useDemo, type Activity, type QuoteWorkspace } from "./store";
@@ -462,19 +463,7 @@ export function QuoteComparison({ request }: { request: Activity }) {
               original currency.
             </p>
           )}
-          <div
-            className="quote-table-region"
-            role="region"
-            aria-label="Supplier quote comparison"
-            tabIndex={0}
-          >
-            <table className="quote-table">
-              <thead>
-                <tr>
-                  <th scope="col">Term</th>
-                  {chosen.map((q) => (
-                    <th key={q.id} scope="col">
-                      {q.supplier}
+          <SupplierQuoteTable quotes={chosen} rows={rows} actions={actions} differences={differences} heading={q => <>{q.supplier}
                       {eligibleQuotes.includes(q) && (
                         <small className="quote-summary">
                           {minimumTotal !== undefined &&
@@ -492,33 +481,7 @@ export function QuoteComparison({ request }: { request: Activity }) {
                       >
                         Remove
                       </button>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows
-                  .filter(
-                    (row) =>
-                      !differences || new Set(chosen.map(row.value)).size > 1,
-                  )
-                  .map((row) => (
-                    <tr key={row.label}>
-                      <th scope="row">{row.label}</th>
-                      {chosen.map((q) => (
-                        <td key={q.id}>{row.value(q)}</td>
-                      ))}
-                    </tr>
-                  ))}
-                <tr>
-                  <th scope="row">Actions</th>
-                  {chosen.map((q) => (
-                    <td key={q.id}>{actions(q)}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                    </>} />
         </>
       ) : (
         <div className="quote-grid">

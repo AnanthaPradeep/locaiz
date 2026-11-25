@@ -1,3 +1,5 @@
+import { PickupPanel } from "./pickup";
+import { marketClient } from "../market-foundation";
 import { parseIntent } from "../buyer-intent";
 import {
   useEffect,
@@ -462,8 +464,24 @@ function StockNotifications({
   seller: boolean;
   now: number;
 }) {
-  const updates = entries
-    .flatMap((request) => [
+  const assignmentIds = entries.flatMap(request => request.stock_request_shops.map(shop => shop.id));
+  const pickup = useQuery({
+    queryKey: ["market", "pickup-notifications", seller, assignmentIds],
+    enabled: Boolean(marketClient && assignmentIds.length),
+    refetchInterval: 15000,
+    queryFn: async () => {
+      const {data,error} = await marketClient!.from("stock_reservation_audit")
+        .select("id,actor,status,created_at,stock_reservations!inner(assignment_id,buyer_id)")
+        .in("stock_reservations.assignment_id",assignmentIds).order("id",{ascending:false}).limit(100);
+      if (error) throw error;
+      return data as unknown as {id:number;actor:string;status:string;created_at:string;stock_reservations:{assignment_id:string;buyer_id:string}}[];
+    },
+  });
+  const requestsByAssignment = new Map(entries.flatMap(request => request.stock_request_shops.map(shop => [shop.id,request.id] as const)));
+  const reservationUpdates = (pickup.data ?? [])
+    .filter(event => seller ? event.actor === event.stock_reservations.buyer_id : event.actor !== event.stock_reservations.buyer_id)
+    .map(event => ({id:requestsByAssignment.get(event.stock_reservations.assignment_id)!,date:event.created_at,text:"Pickup reservation " + event.status}));
+  const updates = [...entries.flatMap((request) => [
       ...(seller
         ? [
             {
@@ -492,6 +510,7 @@ function StockNotifications({
           ]
         : []),
     ])
+    , ...reservationUpdates]
     .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
   return updates.length ? (
     <ul className="record">
@@ -592,7 +611,11 @@ function RequestCard({
                     ? "Expired"
                     : "Pending"
                 : shop.status === "available"
-                  ? "Available"
+                  ? closed || (shop.quote_expires_at && Date.parse(shop.quote_expires_at) <= now)
+                    ? "Confirmation expired"
+                    : shop.available_quantity !== null && shop.available_quantity < request.quantity
+                      ? "Partially available"
+                      : "Available"
                   : "Out of stock"}
             </p>
             {shop.responded_at && <p>Replied {time(shop.responded_at)}</p>}
@@ -619,6 +642,7 @@ function RequestCard({
               <p>Pickup instructions · {shop.instructions}</p>
             )}
             {shop.note && <p>Seller note · {shop.note}</p>}
+            {marketClient && <PickupPanel request={request} shop={shop} seller={seller} now={now} refreshed={refreshed} />}
             {seller && !closed && shop.status === "pending" && (
               <div className="actions">
                 <Reply shop={shop} available refreshed={refreshed} />

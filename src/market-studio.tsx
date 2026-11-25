@@ -819,7 +819,7 @@ function Studio({ session }: { session: Session }) {
 export default function MarketStudio() {
   return (
     <MarketGate title="Seller Studio">
-      {(session) => <Studio key={session.user.id} session={session} />}
+      {(session) => <><Link className="outline" to="/business/journey">Seller enquiries</Link><Studio key={session.user.id} session={session} /></>}
     </MarketGate>
   );
 }

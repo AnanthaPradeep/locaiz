@@ -100,3 +100,20 @@ it("treats unconfirmed required specifications as a question for the supplier", 
     warnings: ["Specifications unconfirmed"],
   });
 });
+
+it("compares quotes using an explicit shared unit of measure", () => {
+  const contextForSets = { ...context, unit: "sets" };
+  expect(evaluateQuote(quote, contextForSets, now).total).toBeUndefined();
+  expect(
+    evaluateQuote({ ...quote, unit: "sets" }, contextForSets, now).total,
+  ).toBe(7900);
+});
+
+it("expires a connected quote at its timestamp during the same day", () => {
+  const exactExpiry = { ...quote, validUntil: "2026-11-24T12:00:00Z" };
+  expect(evaluateQuote(exactExpiry, context, now).expired).toBe(false);
+  expect(
+    evaluateQuote(exactExpiry, context, new Date(exactExpiry.validUntil))
+      .expired,
+  ).toBe(true);
+});
