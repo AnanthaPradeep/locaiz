@@ -1,3 +1,4 @@
+import { commerceLocale } from "./i18n";
 import { rankListings } from "./listing-search";
 import { demoRetailProducts, legacyShopCategories } from "./demo-retail";
 export type Section =
@@ -221,7 +222,7 @@ export function findListings(
 }
 
 export const money = (amount: number) =>
-  new Intl.NumberFormat("en-IN", {
+  new Intl.NumberFormat(commerceLocale(), {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,

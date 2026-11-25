@@ -1,3 +1,4 @@
+import { useLocale } from "./i18n";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { asset, money, type Listing } from "./catalog";
@@ -23,6 +24,7 @@ export function FindProductForm({
   intent?: BuyerIntent;
   existing?: URLSearchParams;
 }) {
+  const {t}=useLocale();
   const navigate = useNavigate();
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,7 +51,7 @@ export function FindProductForm({
     <form className="find-form" onSubmit={submit}>
       <div className="find-query">
         <label>
-          What are you looking for?
+          {t("What are you looking for?")}
           <input
             name="q"
             required

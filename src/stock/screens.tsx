@@ -1,3 +1,4 @@
+import { commerceLocale, useLocale } from "../i18n";
 import { PickupPanel } from "./pickup";
 import { marketClient } from "../market-foundation";
 import { parseIntent } from "../buyer-intent";
@@ -27,12 +28,12 @@ import { pilotId } from "./config";
 import "./styles.css";
 
 const time = (value: string) =>
-  new Date(value).toLocaleString("en-IN", {
+  new Date(value).toLocaleString(commerceLocale(), {
     dateStyle: "medium",
     timeStyle: "short",
   });
 const price = (amount: number, currency: string) =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(
+  new Intl.NumberFormat(commerceLocale(), { style: "currency", currency }).format(
     amount,
   );
 const problem = (error: unknown) =>
@@ -132,6 +133,7 @@ export function StockScreen({
 }: {
   panel: "new" | "buyer" | "seller" | "notifications";
 }) {
+  const {t}=useLocale();
   const titles = {
     new: "Check Nearby Stock",
     buyer: "My Stock Requests",
@@ -140,14 +142,14 @@ export function StockScreen({
   };
   return (
     <Page
-      title={titles[panel]}
+      translateTitle title={titles[panel]}
       label={panel === "seller" ? "LOCAIZ BUSINESS" : "LOCAIZ NEARBY"}
     >
-      <nav className="panel-nav" aria-label="Stock navigation">
+      <nav className="panel-nav" aria-label={t("Stock navigation")}>
         <Link to="/nearby">Nearby</Link>
-        <Link to="/account/stock">My Stock Requests</Link>
+        <Link to="/account/stock">{t("My Stock Requests")}</Link>
         <Link to="/business/stock">Seller inbox</Link>
-        <Link to="/account/stock-notifications">Stock notifications</Link>
+        <Link to="/account/stock-notifications">{t("Stock notifications")}</Link>
       </nav>
       {!stockClient ? (
         <div className="record">
@@ -180,6 +182,7 @@ export function StockScreen({
 }
 
 function CreateRequest() {
+  const {t}=useLocale();
   const [params] = useSearchParams();
   const intent = parseIntent(params);
   const product = productFor(params.get("product") || "studio-headphones");
@@ -298,7 +301,7 @@ function CreateRequest() {
           </p>
           {error && <p role="alert">{error}</p>}
           <button className="button" disabled={saving || validSelections.length === 0}>
-            {saving ? "Sending…" : "Send stock request"}
+            {saving ? "Sending…" : t("Send stock request")}
           </button>
         </>
       )}

@@ -1,3 +1,4 @@
+import { commerceLocale, useLocale } from "./i18n";
 import { SupplierQuoteTable } from "./supplier-quote-table";
 import { useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -27,6 +28,7 @@ export function BasketComparisonDemo() {
 }
 
 export function QuoteComparison({ request }: { request: Activity }) {
+  const {t}=useLocale();
   const [params, setParams] = useSearchParams();
   const sample = useDemo((state) => state.includeAlertSample);
   const work = useDemo((state) => state.quoteWorkspaces[request.id]) ?? empty;
@@ -324,7 +326,7 @@ export function QuoteComparison({ request }: { request: Activity }) {
 
   return (
     <section className="quote-stack">
-      <Link to="/account/requirements">Back to requirements</Link>
+      <Link to="/account/requirements">{t("Back to requirements")}</Link>
       <h2>{request.title}</h2>
       <p>
         Demo Mode · Illustrative supplier quotes. Decisions and drafts stay on
@@ -335,8 +337,8 @@ export function QuoteComparison({ request }: { request: Activity }) {
       )}
       {request.quoteContext?.budget !== undefined && (
         <p>
-          Budget{" "}
-          {new Intl.NumberFormat("en-IN", {
+          {t("Budget")}{" "}
+          {new Intl.NumberFormat(commerceLocale(), {
             style: "currency",
             currency: request.quoteContext.budgetCurrency ?? "INR",
           }).format(request.quoteContext.budget)}
@@ -349,10 +351,10 @@ export function QuoteComparison({ request }: { request: Activity }) {
         {context.custom && " · Customisation required"}
       </p>
       <details className="record">
-        <summary>Set comparison details</summary>
+        <summary>{t("Set comparison details")}</summary>
         <form className="quote-context" onSubmit={saveContext}>
           <label>
-            Requested quantity
+            {t("Requested quantity")}
             <input
               type="number"
               min="1"
@@ -363,7 +365,7 @@ export function QuoteComparison({ request }: { request: Activity }) {
             />
           </label>
           <label>
-            Delivery destination
+            {t("Delivery destination")}
             <input
               name="destination"
               required

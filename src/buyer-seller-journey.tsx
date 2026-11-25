@@ -1,3 +1,4 @@
+import { useLocale } from "./i18n";
 import { sourcingDraftSchema, sourcingSpecifications, type SourcingDraft } from "./sourcing-assistant";
 import { ReviewPurchase } from "./market-reviews";
 import { SupplierQuoteTable } from "./supplier-quote-table";
@@ -67,6 +68,7 @@ function Requirement({
   draft?: SourcingDraft;
   submitted: (id: string) => void;
 }) {
+  const {t}=useLocale();
   const mutation = useMarketMutation();
   const [submission, setSubmission] = useState(() => crypto.randomUUID());
   const suppliers = useQuery({
@@ -152,11 +154,11 @@ function Requirement({
       <summary>Send a request for quotation</summary>
       <form className="journey-form" onSubmit={submit}>
         <label>
-          Requirement title
+          {t("Requirement title")}
           <input name="title" defaultValue={draft?.description} required minLength={3} maxLength={120} />
         </label>
         <label>
-          Specifications
+          {t("Specifications")}
           <textarea name="specifications" defaultValue={draft && sourcingSpecifications(draft)} maxLength={3000} />
         </label>
         <label>
@@ -169,7 +171,7 @@ function Requirement({
         </label>
         <div className="journey-fields">
           <label>
-            Quantity
+            {t("Quantity")}
             <input
               name="quantity"
               defaultValue={draft?.quantity ?? undefined}
@@ -188,7 +190,7 @@ function Requirement({
             </select>
           </label>
           <label>
-            Destination
+            {t("Destination")}
             <input name="destination" defaultValue={draft?.destination} required minLength={2} maxLength={120} />
           </label>
           <label>

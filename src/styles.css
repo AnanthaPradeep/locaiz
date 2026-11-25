@@ -1273,3 +1273,42 @@ progress {
   height: 6rem;
   object-fit: contain;
 }
+
+.locale-select {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+.locale-select select {
+  min-height: 44px;
+}
+:lang(ta) body, :lang(ta) button, :lang(ta) input, :lang(ta) select {
+  font-family: "Manrope", "Noto Sans Tamil", sans-serif;
+}
+:lang(ml) body, :lang(ml) button, :lang(ml) input, :lang(ml) select {
+  font-family: "Manrope", "Noto Sans Malayalam", sans-serif;
+}
+:lang(ta) h1, :lang(ta) h2, :lang(ta) h3 {
+  font-family: "Space Grotesk", "Noto Sans Tamil", sans-serif;
+}
+:lang(ml) h1, :lang(ml) h2, :lang(ml) h3 {
+  font-family: "Space Grotesk", "Noto Sans Malayalam", sans-serif;
+}
+
+.secondary > div {
+  flex-wrap: wrap;
+  column-gap: clamp(12px, 2vw, 38px);
+  row-gap: 0;
+}
+.locale-select {
+  max-width: 100%;
+}
+.locale-select select {
+  max-width: 100%;
+}
+.locale-select option[lang="ta"] {
+  font-family: "Noto Sans Tamil", sans-serif;
+}
+.locale-select option[lang="ml"] {
+  font-family: "Noto Sans Malayalam", sans-serif;
+}

@@ -1,3 +1,4 @@
+import { useLocale } from "./i18n";
 import {
   Heart,
   ArrowUpRight,
@@ -104,6 +105,7 @@ function CardShoppingActions({
   url: string;
   quickView: boolean;
 }) {
+  const {t}=useLocale();
   const cart = useDemo((state) => state.cart);
   const variants = retailVariants(item);
   const available = variants.filter(
@@ -139,7 +141,7 @@ function CardShoppingActions({
               if (event.detail <= 1 && available[0]) add(available[0]);
             }}
           >
-            Add to Cart
+            {t("Add to Cart")}
           </button>
         )}
         {quickView && (
@@ -175,6 +177,7 @@ function ShoppingDialog({
   mode: "cart" | "preview";
   onAdd: (variant: RetailVariant) => boolean;
 }) {
+  const {t}=useLocale();
   const cart = useDemo((state) => state.cart);
   const saved = useDemo((state) => state.liked.includes(item.id));
   const toggleLike = useDemo((state) => state.toggleLike);
@@ -203,7 +206,7 @@ function ShoppingDialog({
         aria-label={preview ? `Quick view ${item.name}` : undefined}
         disabled={!preview && !available.length}
       >
-        {preview ? "Quick view" : "Add to Cart"}
+        {t(preview ? "Quick view" : "Add to Cart")}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
@@ -263,7 +266,7 @@ function ShoppingDialog({
                 else setOpen(false);
               }}
             >
-              Add to Cart
+              {t("Add to Cart")}
             </button>
             {preview && (
               <button
