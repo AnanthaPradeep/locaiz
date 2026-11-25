@@ -49,11 +49,10 @@ for (const theme of ["light", "dark"] as const) {
         });
         for (const width of [360, 390, 768, 1024, 1440, 1920]) {
           await page.setViewportSize({ width, height: 900 });
-          const bounds = await loader.locator("svg").boundingBox();
-          expect(bounds?.width).toBeGreaterThanOrEqual(
+          await expect.poll(async () => (await loader.locator("svg").boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(
             width < 700 ? 96 : width < 1024 ? 140 : 175,
           );
-          expect(bounds?.width).toBeLessThanOrEqual(210);
+          expect((await loader.locator("svg").boundingBox())?.width).toBeLessThanOrEqual(210);
         }
       } finally {
         release();

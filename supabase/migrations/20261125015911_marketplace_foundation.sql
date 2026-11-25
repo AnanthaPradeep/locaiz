@@ -102,7 +102,7 @@ language sql stable security definer set search_path = '' as $$
  select exists (
    select 1 from public.sourcing_products p join public.sourcing_businesses b on b.id=p.owner_business_id
    where p.id=split_part(object_name,'/',2) and b.id::text=split_part(object_name,'/',1)
-   and case when write_access then sourcing_private.can_catalogue(b.id) and p.publication_state in ('draft','rejected')
+   and case when write_access then sourcing_private.can_catalogue(b.id) and p.publication_current_listing_state in ('draft','rejected')
         else sourcing_private.can_catalogue(b.id) or sourcing_private.is_operator()
           or (p.publication_state='published' and b.published and b.trust_state <> 'restricted'
               and exists(select 1 from public.market_media m where m.object_name=product_media_allowed.object_name and m.product_id=p.id)) end
@@ -231,7 +231,7 @@ declare
   memo text := left(nullif(trim(payload->>'notes'),''),2000);
   place text;
   offer uuid;
-  state text;
+  current_listing_state text;
   entry public.market_invites;
 begin
   if actor is null then raise exception 'Sign in is required' using errcode='42501'; end if;
@@ -270,13 +270,13 @@ begin
   elsif action_name in ('save_listing','inventory','attach_media','listing_state') then
     if not sourcing_private.can_catalogue(business) then raise exception 'Business catalogue permission required' using errcode='42501'; end if;
     if target is not null then
-      select publication_state into state from public.sourcing_products where id=target and owner_business_id=business for update;
+      select publication_state into current_listing_state from public.sourcing_products where id=target and owner_business_id=business for update;
       if not found then raise exception 'Listing is unavailable for this business' using errcode='42501'; end if;
     elsif action_name <> 'save_listing' then
       raise exception 'Listing required';
     end if;
     if action_name='save_listing' then
-      if target is not null and state not in ('draft','rejected') then raise exception 'Only drafts or rejected listings can be edited'; end if;
+      if target is not null and current_listing_state not in ('draft','rejected') then raise exception 'Only drafts or rejected listings can be edited'; end if;
       if char_length(trim(coalesce(payload->>'name',''))) not between 2 and 120 or sku !~ '^[A-Za-z0-9_-]{1,80}$' then
         raise exception 'Provide a product name and a valid SKU';
       end if;
@@ -318,7 +318,7 @@ begin
         where product_id=target and variant_id=sku;
       if not found then raise exception 'SKU does not exist'; end if;
     elsif action_name='attach_media' then
-      if state not in ('draft','rejected') or split_part(payload->>'path','/',1)<>business::text or
+      if current_listing_state not in ('draft','rejected') or split_part(payload->>'path','/',1)<>business::text or
         split_part(payload->>'path','/',2)<>target or not exists(
           select 1 from storage.objects where bucket_id='market-images' and name=payload->>'path') then
         raise exception 'Upload the image to the current draft first';
@@ -326,8 +326,8 @@ begin
       insert into public.market_media(object_name,product_id,alt_text)
         values(payload->>'path',target,left(coalesce(payload->>'alt',''),160));
     else
-      if (verb='submitted' and state in ('draft','rejected') and exists(select 1 from public.sourcing_offers where product_id=target))
-         or (verb='archived' and state <> 'archived') then
+      if (verb='submitted' and current_listing_state in ('draft','rejected') and exists(select 1 from public.sourcing_offers where product_id=target))
+         or (verb='archived' and current_listing_state <> 'archived') then
         update public.sourcing_products set publication_state=verb where id=target;
         if verb='archived' then update public.sourcing_offers set published=false where product_id=target; end if;
       else raise exception 'This listing transition is unavailable'; end if;
@@ -348,8 +348,8 @@ begin
   elsif action_name in ('review_listing','review_supplier','review_report') then
     if not sourcing_private.is_operator() then raise exception 'Trust operator permission required' using errcode='42501'; end if;
     if action_name='review_listing' then
-      select owner_business_id, publication_state into business,state from public.sourcing_products where id=target and owner_business_id is not null for update;
-      if not found or state not in ('submitted','under_review') or verb not in ('under_review','published','rejected') or verb is null then
+      select owner_business_id, publication_state into business,current_listing_state from public.sourcing_products where id=target and owner_business_id is not null for update;
+      if not found or current_listing_state not in ('submitted','under_review') or verb not in ('under_review','published','rejected') or verb is null then
         raise exception 'Invalid moderation transition';
       end if;
       if verb='published' and not exists(select 1 from public.sourcing_businesses where id=business and trust_state='verified' and published)
