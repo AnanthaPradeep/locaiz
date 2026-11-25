@@ -27,6 +27,7 @@ const Contact = lazy(() =>
 const Marketplace = lazy(() => import("./marketplace"));
 const Sourcing = lazy(() => import("./sourcing/screens"));
 const Workspace = lazy(() => import("./workspace"));
+const CareLive = lazy(() => import("./care-live"));
 const Stock = lazy(() =>
   import("./stock/screens").then((module) => ({ default: module.StockScreen })),
 );
@@ -136,6 +137,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/:section" element={<Marketplace />} />
               <Route path="/account/buying-journey" element={<BuyingTimeline />} />
               <Route path="/account/bulk-buying" element={<BulkBuying />} />
+              <Route path="/care/live" element={<CareLive />} />
               <Route path="/sourcing-assistant" element={<SourcingAssistant />} />
               <Route path="/account/journey" element={<BuyerSellerJourney />} />
               <Route path="/business/journey" element={<BuyerSellerJourney side="seller" />} />
