@@ -45,6 +45,19 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await b.getByLabel("Quantity", { exact: true }).fill("12");
     await b.getByLabel("Destination", { exact: true }).fill("Chennai");
     await b.getByLabel("Journey Browser Supplier").check();
+    const sendRfq = b.getByRole("button", { name: "Send RFQ" });
+    await b.getByLabel("Private requirement attachment").setInputFiles({
+      name: "invalid.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("Plain text QA fixture"),
+    });
+    await sendRfq.click();
+    await expect(b.getByRole("alert")).toHaveText(
+      "The file content does not match its selected format.",
+    );
+    await expect(b.getByLabel("Requirement title")).toHaveValue(
+      "Browser QA quotation",
+    );
     await b.getByLabel("Private requirement attachment").setInputFiles({
       name: "spec.png",
       mimeType: "image/png",
@@ -53,7 +66,7 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
         "base64",
       ),
     });
-    await b.getByRole("button", { name: "Send RFQ" }).click();
+    await sendRfq.click();
     await expect(
       b.getByRole("heading", { name: "Browser QA quotation" }),
     ).toBeVisible();
@@ -91,6 +104,9 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     );
     await signIn(o, "seller-c");
     await expect(o.getByText("Conversation unavailable.")).toBeVisible();
+    await expect(
+      o.getByRole("button", { name: "Get private attachment" }),
+    ).toHaveCount(0);
 
     await s.getByText("Prepare quote", { exact: true }).click();
     await s.getByLabel("Currency code").fill("USD");
@@ -153,7 +169,27 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await s.getByRole("button", { name: "Confirm quoted terms" }).click();
     await b.reload();
     await b.getByText("Review and create order", { exact: true }).click();
-    await b.getByRole("button", { name: "Confirm and create order" }).click();
+    const createOrder = b.getByRole("button", { name: "Confirm and create order" });
+    const orderRpc = "**/rest/v1/rpc/journey_action";
+    let savedOrderId: string | undefined;
+    await b.route(orderRpc, async (route) => {
+      if (route.request().postDataJSON()?.command !== "create_order")
+        return route.fallback();
+      const response = await route.fetch();
+      expect(response.ok()).toBe(true);
+      savedOrderId = await response.json();
+      // The database committed the order, but the browser never got the reply.
+      await route.abort("connectionreset");
+    });
+    await createOrder.click();
+    await expect(b.getByRole("alert")).not.toBeEmpty();
+    expect(savedOrderId).toMatch(/^[0-9a-f-]{36}$/);
+    await b.unroute(orderRpc);
+    await createOrder.click();
+    await expect(
+      b.getByRole("heading", { name: "Order " + savedOrderId!.slice(0, 8), exact: true }),
+    ).toBeVisible();
+    await expect(b.getByRole("heading", { name: /^Order / })).toHaveCount(1);
     await expect(b.getByText(/Payment status unrecorded/)).toBeVisible();
     await b.getByRole("link", { name: "My Buying Journey" }).click();
     await b.getByLabel("Activity type").selectOption("Orders");
