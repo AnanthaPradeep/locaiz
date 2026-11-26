@@ -86,7 +86,6 @@ export function Home() {
         ))}
       </section>
       <HomeCampaignSection />
-      <RegionalCraftSection />
       <section className="home-section">
         <div className="section-heading">
           <div>
@@ -103,6 +102,7 @@ export function Home() {
           ))}
         </div>
       </section>
+      <RegionalCraftSection />
       <section className="home-section">
         <div className="section-heading">
           <h2>{t("Shop by category")}</h2>
