@@ -9,6 +9,7 @@ import { marketClient } from "./market-foundation";
 import { Page } from "./page";
 import { readRequests } from "./stock/client";
 import { useDemo } from "./store";
+import { deleteRfqDraft, readRfqDrafts } from "./rfq-drafts";
 
 type Entry = {
   id: string;
@@ -192,6 +193,38 @@ async function connectedEntries(user: string) {
   return { entries, activeQuotes };
 }
 
+function RfqDraftList({ user }: { user: string }) {
+  const [drafts, setDrafts] = useState(() => readRfqDrafts(user));
+  const [feedback, setFeedback] = useState("");
+  return (
+    <section className="record market-stack" aria-label="RFQ drafts">
+      <h2>Drafts</h2>
+      {drafts.length === 0 && <p>No saved RFQ drafts on this browser.</p>}
+      {drafts.map((draft) => (
+        <article className="record market-stack" key={draft.id}>
+          <h3>{draft.fields.title?.trim() || "Untitled RFQ"}</h3>
+          <time dateTime={new Date(draft.edited).toISOString()}>
+            Last edited {new Date(draft.edited).toLocaleString()}
+          </time>
+          <div className="actions">
+            <Link className="button" to={"/account/journey?draft=" + draft.id}>Resume</Link>
+            <button className="outline" onClick={() => {
+              try {
+                deleteRfqDraft(user, draft.id);
+                setDrafts(readRfqDrafts(user));
+                setFeedback("Draft deleted.");
+              } catch {
+                setFeedback("Draft could not be deleted on this browser.");
+              }
+            }}>Delete</button>
+          </div>
+        </article>
+      ))}
+      {feedback && <p role="status">{feedback}</p>}
+    </section>
+  );
+}
+
 export default function BuyingTimeline() {
   const {t}=useLocale();
   const session = useMarketSession();
@@ -245,6 +278,7 @@ export default function BuyingTimeline() {
           </>
         )}
       </nav>
+      {user && <RfqDraftList key={user} user={user} />}
       {!!connected.data?.activeQuotes.length && (
         <section
           aria-label="Shortlisted and selected quotes"
