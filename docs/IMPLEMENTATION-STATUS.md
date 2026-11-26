@@ -69,3 +69,7 @@ Home includes three curated campaigns with responsive ImageGen artwork, theme-aw
 Header and Footer share theme-aware original SVG branding. First load uses a branded overlay with saved-theme bootstrap and recovery states. See [App loading screen](APP-LOADING-SCREEN.md).
 
 The repository includes an optional connected Marketplace Foundation build. Public GitHub Pages remains Demo Mode. See [setup and verification](MARKETPLACE-FOUNDATION.md).
+
+## Phase 5 production readiness
+
+See [Phase 5 readiness](PHASE5-PRODUCTION-READINESS.md) and the [baseline audit](PHASE5-9-BASELINE-AUDIT.md). Hosted verification and pilot activation are pending.

@@ -20,6 +20,19 @@ do $$begin
  if exists(select 1 from public.journey_events where thread_id=current_setting('journey_test.thread')::uuid)
   then raise exception 'Buyer read seller notifications'; end if;
 end $$;
+do $$
+declare
+ attachment_prefix text := current_setting('journey_test.thread') || '/' || auth.uid() || '/';
+begin
+ insert into storage.objects(bucket_id,name) values
+  ('journey-private',attachment_prefix || '40000000-0000-4000-8000-000000000003.pdf');
+ begin
+  insert into storage.objects(bucket_id,name) values
+   ('journey-private',attachment_prefix || 'nested/document.pdf');
+  raise exception 'Storage accepted an invalid attachment path';
+ exception when insufficient_privilege then null;
+ end;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-b@stock.example.com'),true);
 set local role authenticated;

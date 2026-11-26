@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { parsePriceTiers, validateUpload } from "./market-foundation";
+import { parsePriceTiers, validateUpload, verifyFileHeader } from "./market-foundation";
 it("keeps tier amounts in integer minor units", () => {
   expect(parsePriceTiers("10:5500\n50:5000")).toEqual([
     { quantity: 10, minor: 5500 },
@@ -29,4 +29,11 @@ it("rejects unsupported, oversized and empty marketplace files", () => {
       true,
     ),
   ).toBe("pdf");
+});
+
+it("rejects a mislabeled RFQ attachment and accepts matching content", async () => {
+  const fake = new File(["plain text"], "receipt.pdf", { type: "application/pdf" });
+  await expect(verifyFileHeader(fake, validateUpload(fake, true))).rejects.toThrow("file content");
+  const pdf = new File(["%PDF-1.7"], "receipt.pdf", { type: "application/pdf" });
+  await expect(verifyFileHeader(pdf, validateUpload(pdf, true))).resolves.toBeUndefined();
 });
