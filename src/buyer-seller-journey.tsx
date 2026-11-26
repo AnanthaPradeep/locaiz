@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-query";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { MarketGate, useMarketMutation } from "./market-account";
-import { marketClient } from "./market-foundation";
+import { marketClient, validateUpload, verifyFileHeader } from "./market-foundation";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -28,16 +28,9 @@ async function action(command: string, payload: Record<string, unknown>) {
   return data as string;
 }
 
-function validateAttachment(file: File) {
-  if (
-    file.size > 5 * 1024 * 1024 ||
-    !["application/pdf", "image/png", "image/jpeg", "image/webp"].includes(
-      file.type,
-    )
-  )
-    throw new Error("Use a PDF, JPEG, PNG or WebP file up to 5 MB.");
+async function validateAttachment(file: File) {
+  await verifyFileHeader(file, validateUpload(file, true));
 }
-
 async function uploadAttachment(path: string, file: File) {
   const { error } = await marketClient!.storage
     .from("journey-private")
@@ -95,7 +88,7 @@ function Requirement({
         ? attachment
         : undefined;
     void mutation.run(async () => {
-      if (file) validateAttachment(file);
+      if (file) await validateAttachment(file);
       const id = await action("submit_rfq", {
         ...Object.fromEntries(fields),
         submission,
@@ -599,16 +592,7 @@ function ThreadDetail({
     void mutation.run(async () => {
       let path: string | undefined;
       if (file instanceof File && file.size > 0) {
-        if (
-          file.size > 5 * 1024 * 1024 ||
-          ![
-            "application/pdf",
-            "image/png",
-            "image/jpeg",
-            "image/webp",
-          ].includes(file.type)
-        )
-          throw new Error("Use a PDF, JPEG, PNG or WebP file up to 5 MB.");
+        await validateAttachment(file);
         if (
           attachment?.file.name === file.name &&
           attachment.file.size === file.size &&

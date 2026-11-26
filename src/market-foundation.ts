@@ -63,7 +63,7 @@ export function validateUpload(file: File, evidence = false) {
   return extension;
 }
 
-async function verifyFileHeader(file: File, extension: string) {
+export async function verifyFileHeader(file: File, extension: string) {
   const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
   const text = new TextDecoder("ascii").decode(bytes);
   const valid = extension === "png"

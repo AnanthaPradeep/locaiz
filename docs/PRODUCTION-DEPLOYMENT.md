@@ -1,0 +1,5 @@
+# Production deployment
+
+Keep the GitHub Pages workflow approved for the disconnected demo. Adopt a dedicated production HTTPS frontend and an independent Supabase project only after sign-off. Evaluate frontend candidates for HTTPS, custom domains, preview isolation, build environment scope, rollback, security headers, logs and spend controls. Evaluate Supabase plan capabilities against point-in-time recovery, Storage recovery, log retention, mail throughput and expected pilot usage.
+
+Release from a reviewed immutable revision with green CI, signed-off staging evidence and an available recovery point. Preview migrations against the explicitly selected production project, record approved changes and apply in migration order. Configure exact Auth redirects and production public environment variables. Verify approved account sign-in, private Storage, an authorized pilot smoke test, monitoring and separate demo and production origins. Record revision, migration versions, owners and rollback target.
