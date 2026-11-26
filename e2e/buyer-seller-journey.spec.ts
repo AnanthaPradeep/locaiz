@@ -45,6 +45,16 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await b.getByLabel("Quantity", { exact: true }).fill("12");
     await b.getByLabel("Destination", { exact: true }).fill("Chennai");
     await b.getByLabel("Journey Browser Supplier").check();
+    await b.getByRole("button", { name: "Save draft" }).click();
+    await expect(b.getByText("Draft saved on this browser.")).toBeVisible();
+    await b.reload();
+    await b.getByRole("link", { name: "My Buying Journey" }).click();
+    const draftList = b.getByRole("region", { name: "RFQ drafts" });
+    await expect(draftList.getByRole("heading", { name: "Browser QA quotation" })).toBeVisible();
+    await draftList.getByRole("link", { name: "Resume" }).click();
+    await expect(b.getByLabel("Requirement title")).toHaveValue("Browser QA quotation");
+    await expect(b.getByLabel("Quantity", { exact: true })).toHaveValue("12");
+    await expect(b.getByLabel("Journey Browser Supplier")).toBeChecked();
     const sendRfq = b.getByRole("button", { name: "Send RFQ" });
     await b.getByLabel("Private requirement attachment").setInputFiles({
       name: "invalid.png",
@@ -58,6 +68,8 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await expect(b.getByLabel("Requirement title")).toHaveValue(
       "Browser QA quotation",
     );
+    await b.getByRole("link", { name: "My Buying Journey" }).click();
+    await draftList.getByRole("link", { name: "Resume" }).click();
     await b.getByLabel("Private requirement attachment").setInputFiles({
       name: "spec.png",
       mimeType: "image/png",
@@ -156,6 +168,7 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
       b.getByRole("button", { name: "Remove from shortlist" }),
     ).toBeVisible();
     await b.getByRole("link", { name: "My Buying Journey" }).click();
+    await expect(draftList.getByRole("link", { name: "Resume" })).toHaveCount(0);
     await expect(
       b.getByRole("region", { name: "Shortlisted and selected quotes" }),
     ).toContainText("Shortlisted");
@@ -233,6 +246,17 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
         .getByRole("region", { name: "Verified reviews" })
         .getByText("Responsive and clear communication during production."),
     ).toBeVisible();
+    await b.goto("/#/account/journey?new=1");
+    await b.getByLabel("Requirement title").fill("Private unfinished draft");
+    await b.getByRole("button", { name: "Save draft" }).click();
+    await expect(b.getByText("Draft saved on this browser.")).toBeVisible();
+    await b.goto("/#/account/profile");
+    await b.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(b.getByLabel("Password", { exact: true })).toBeVisible();
+    await b.goto("/#/account/journey");
+    await signIn(b, "buyer-a");
+    await b.getByRole("link", { name: "My Buying Journey" }).click();
+    await expect(draftList.getByText("No saved RFQ drafts on this browser.")).toBeVisible();
   } finally {
     await Promise.all([buyer.close(), seller.close(), other.close()]);
   }

@@ -1,3 +1,4 @@
+import { RegionalCraftSection } from "./regional-craft-section";
 import { useLocale } from "./i18n";
 import { HomeCampaignSection } from "./home-campaign-section";
 import { FindProductForm } from "./find-it";
@@ -101,6 +102,7 @@ export function Home() {
           ))}
         </div>
       </section>
+      <RegionalCraftSection />
       <section className="home-section">
         <div className="section-heading">
           <h2>{t("Shop by category")}</h2>

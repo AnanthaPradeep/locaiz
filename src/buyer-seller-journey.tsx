@@ -13,6 +13,8 @@ import {
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { MarketGate, useMarketMutation } from "./market-account";
 import { marketClient, validateUpload, verifyFileHeader } from "./market-foundation";
+import { deleteRfqDraft, readRfqDrafts, saveRfqDraft } from "./rfq-drafts";
+import { findRegionalCraft } from "./regional-crafts";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -50,6 +52,8 @@ function Requirement({
   assignment,
   startOpen,
   draft,
+  draftId,
+  regionalCraft,
   submitted,
 }: {
   user: string;
@@ -59,11 +63,28 @@ function Requirement({
   assignment: string | null;
   startOpen: boolean;
   draft?: SourcingDraft;
+  draftId: string | null;
+  regionalCraft?: ReturnType<typeof findRegionalCraft>;
   submitted: (id: string) => void;
 }) {
   const {t}=useLocale();
   const mutation = useMarketMutation();
-  const [submission, setSubmission] = useState(() => crypto.randomUUID());
+  const [saved] = useState(() => readRfqDrafts(user).find(({ id }) => id === draftId));
+  const [submission, setSubmission] = useState(() => saved?.id ?? crypto.randomUUID());
+  const [draftStatus, setDraftStatus] = useState("");
+  const context = saved ?? { product, variant, assignment };
+  const values = saved?.fields;
+  function save(form: HTMLFormElement) {
+    try {
+      saveRfqDraft(user, {
+        id: submission, edited: 0, fields: {}, suppliers: [], attachment: saved?.attachment ?? false,
+        product: context.product, variant: context.variant, assignment: context.assignment,
+      }, new FormData(form));
+      setDraftStatus("Draft saved on this browser.");
+    } catch {
+      setDraftStatus("Draft could not be saved on this browser.");
+    }
+  }
   const suppliers = useQuery({
     queryKey: ["market", "journey-suppliers"],
     queryFn: async () => {
@@ -92,9 +113,9 @@ function Requirement({
       const id = await action("submit_rfq", {
         ...Object.fromEntries(fields),
         submission,
-        product,
-        variant,
-        stockAssignment: assignment,
+        product: context.product,
+        variant: context.variant,
+        stockAssignment: context.assignment,
         budget: fields.get("budget") || null,
         businesses: fields.getAll("supplier"),
         custom: fields.has("custom"),
@@ -134,6 +155,11 @@ function Requirement({
           );
         }
       }
+      try {
+        deleteRfqDraft(user, submission);
+      } catch {
+        setDraftStatus("Requirement sent. The local draft could not be removed.");
+      }
       setSubmission(crypto.randomUUID());
       form.reset();
       submitted(id);
@@ -142,17 +168,17 @@ function Requirement({
   return (
     <details
       className="journey-panel"
-      open={supplier || startOpen ? true : undefined}
+      open={supplier || startOpen || draftId ? true : undefined}
     >
       <summary>Send a request for quotation</summary>
       <form className="journey-form" onSubmit={submit}>
         <label>
           {t("Requirement title")}
-          <input name="title" defaultValue={draft?.description} required minLength={3} maxLength={120} />
+          <input name="title" defaultValue={values?.title ?? draft?.description ?? regionalCraft?.craft} required minLength={3} maxLength={120} />
         </label>
         <label>
           {t("Specifications")}
-          <textarea name="specifications" defaultValue={draft && sourcingSpecifications(draft)} maxLength={3000} />
+          <textarea name="specifications" defaultValue={values?.specifications ?? (draft ? sourcingSpecifications(draft) : regionalCraft && `Sourcing region: ${regionalCraft.state}`)} maxLength={3000} />
         </label>
         <label>
           Private requirement attachment
@@ -160,14 +186,21 @@ function Requirement({
             type="file"
             name="attachment"
             accept="application/pdf,image/png,image/jpeg,image/webp"
+            required={saved?.attachment}
+            aria-describedby="rfq-draft-attachment-note"
           />
         </label>
+        <p id="rfq-draft-attachment-note">
+          {saved?.attachment
+            ? "Select your attachment again to send this draft."
+            : "Drafts save form details. Select your attachment again when you resume."}
+        </p>
         <div className="journey-fields">
           <label>
             {t("Quantity")}
             <input
               name="quantity"
-              defaultValue={draft?.quantity ?? undefined}
+              defaultValue={values?.quantity ?? draft?.quantity ?? undefined}
               type="number"
               min={1}
               max={1000000}
@@ -176,7 +209,7 @@ function Requirement({
           </label>
           <label>
             Unit
-            <select name="unit" defaultValue={draft?.unit || "units"}>
+            <select name="unit" defaultValue={values?.unit ?? (draft?.unit || "units")}>
               <option>units</option>
               <option>sets</option>
               <option>pairs</option>
@@ -184,28 +217,28 @@ function Requirement({
           </label>
           <label>
             {t("Destination")}
-            <input name="destination" defaultValue={draft?.destination} required minLength={2} maxLength={120} />
+            <input name="destination" defaultValue={values?.destination ?? draft?.destination} required minLength={2} maxLength={120} />
           </label>
           <label>
             Required by
-            <input name="deadline" type="date" defaultValue={draft?.deadline} />
+            <input name="deadline" type="date" defaultValue={values?.deadline ?? draft?.deadline} />
           </label>
           <label>
             Currency code
             <input
               name="currency"
-              defaultValue={draft?.currency || "INR"}
+              defaultValue={values?.currency ?? (draft?.currency || "INR")}
               required
               pattern="[A-Za-z]{3}"
             />
           </label>
           <label>
             Budget in minor units
-            <input name="budget" type="number" min={0} defaultValue={draft?.budget && draft.currency ? Math.round(draft.budget * 10 ** (new Intl.NumberFormat("en", {style:"currency",currency:draft.currency}).resolvedOptions().maximumFractionDigits ?? 2)) : undefined} />
+            <input name="budget" type="number" min={0} defaultValue={values?.budget ?? (draft?.budget && draft.currency ? Math.round(draft.budget * 10 ** (new Intl.NumberFormat("en", {style:"currency",currency:draft.currency}).resolvedOptions().maximumFractionDigits ?? 2)) : undefined)} />
           </label>
         </div>
         <label>
-          <input type="checkbox" name="custom" defaultChecked={Boolean(draft?.customisation)} /> Custom production required
+          <input type="checkbox" name="custom" defaultChecked={saved ? values?.custom === "on" : Boolean(draft?.customisation)} /> Custom production required
         </label>
         <fieldset>
           <legend>Invite up to five suppliers</legend>
@@ -215,25 +248,30 @@ function Requirement({
             <p>No verified suppliers are accepting requests yet.</p>
           )}
           {suppliers.data
-            ?.filter((item) => !assignment || item.id === supplier)
+            ?.filter((item) => !context.assignment || (saved ? saved.suppliers.includes(item.id) : item.id === supplier))
             .map((item) => (
               <label className="journey-choice" key={item.id}>
                 <input
                   type="checkbox"
                   name="supplier"
                   value={item.id}
-                  defaultChecked={item.id === supplier}
+                  defaultChecked={saved ? saved.suppliers.includes(item.id) : item.id === supplier}
                 />{" "}
                 {item.name}
               </label>
             ))}
         </fieldset>
-        <button
-          className="button"
-          disabled={mutation.pending || !suppliers.data?.length}
-        >
-          Send RFQ
-        </button>
+        <div className="actions">
+          <button className="outline" type="button" disabled={mutation.pending || suppliers.isPending} onClick={(event) => {
+            if (event.currentTarget.form) save(event.currentTarget.form);
+          }}>
+            Save draft
+          </button>
+          <button className="button" disabled={mutation.pending || !suppliers.data?.length}>
+            Send RFQ
+          </button>
+        </div>
+        {draftStatus && <p role="status">{draftStatus}</p>}
         {mutation.feedback}
       </form>
     </details>
@@ -1122,6 +1160,9 @@ function Journey({ user, side }: { user: string; side: Side }) {
             params.get("variant"),
             params.get("assignment"),
             params.get("new"),
+            params.get("draft"),
+            params.get("region"),
+            params.get("craft"),
           ].join(":")}
           user={user}
           supplier={params.get("supplier")}
@@ -1130,6 +1171,8 @@ function Journey({ user, side }: { user: string; side: Side }) {
           assignment={params.get("assignment")}
           startOpen={params.has("new")}
           draft={handoff.success ? handoff.data : undefined}
+          draftId={params.get("draft")}
+          regionalCraft={findRegionalCraft(params.get("region"), params.get("craft"))}
           submitted={(id) => {
             setPage(0);
             setSearch("");

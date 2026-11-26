@@ -73,3 +73,11 @@ The repository includes an optional connected Marketplace Foundation build. Publ
 ## Phase 5 production readiness
 
 See [Phase 5 readiness](PHASE5-PRODUCTION-READINESS.md) and the [baseline audit](PHASE5-9-BASELINE-AUDIT.md). Hosted verification and pilot activation are pending.
+
+## RFQ drafts and regional crafts
+
+The signed-in Buyer workspace can save an unfinished RFQ to this browser. My Buying Journey lists drafts for the current account, including the last edit time and Resume and Delete actions. Drafts contain form text and supplier IDs. Attachment files stay out of browser storage and must be selected again. Successful submission removes the draft. Drafts are browser-local and the browser profile owner can access its stored data.
+
+Home includes curated Tamil Nadu and Kerala craft examples with ImageGen collection and craft illustrations. A craft opens a prefilled requirement in the public demo or an RFQ in a connected build. These examples are sourcing prompts with illustrative images. Seller availability and provenance depend on the actual supplier offer.
+
+Craft references: [Tamil Nadu Handicrafts Development Corporation](https://tnhdc.poompuhar.com/welcome/handicraftmap) and [Kerala Tourism](https://www.keralatourism.org/souvenirs).
