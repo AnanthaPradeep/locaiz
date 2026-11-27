@@ -10,13 +10,14 @@ import { Page } from "./page";
 import { readRequests } from "./stock/client";
 import { useDemo } from "./store";
 import { deleteRfqDraft, readRfqDrafts } from "./rfq-drafts";
+import { sampleStatus, type JourneySample } from "./sample-handoff";
 
 type Entry = {
   id: string;
   title: string;
   date: string;
   href: string;
-  kind: "Searches" | "Requirements" | "Stock & pickup" | "Orders" | "Messages";
+  kind: "Searches" | "Requirements" | "Stock & pickup" | "Orders" | "Messages" | "Samples";
 };
 const links = [
   ["Saved Searches", "/account/saved-searches"],
@@ -37,6 +38,7 @@ async function connectedEntries(user: string) {
     shortlists,
     quotes,
     pickupAudit,
+    samples,
   ] = await Promise.all([
     marketClient!
       .from("journey_rfqs")
@@ -86,6 +88,19 @@ async function connectedEntries(user: string) {
       .neq("status", "requested")
       .order("id", { ascending: false })
       .limit(50),
+    marketClient!
+      .from("journey_samples")
+      .select("id,thread_id,status,updated_at,journey_threads!inner(journey_rfqs!inner(buyer_id,title))")
+      .eq("journey_threads.journey_rfqs.buyer_id", user)
+      .order("updated_at", { ascending: false })
+      .limit(50)
+      .overrideTypes<{
+        id: string;
+        thread_id: string;
+        status: JourneySample["status"];
+        updated_at: string;
+        journey_threads: { journey_rfqs: { title: string } };
+      }[], { merge: false }>(),
   ]);
   for (const result of [
     rfqs,
@@ -95,6 +110,7 @@ async function connectedEntries(user: string) {
     shortlists,
     quotes,
     pickupAudit,
+    samples,
   ])
     if (result.error) throw result.error;
   const rows = reservations.data as unknown as {
@@ -133,7 +149,7 @@ async function connectedEntries(user: string) {
       kind: "Requirements",
     })),
     ...events
-      .data!.filter((row) => row.kind !== "Order confirmed")
+      .data!.filter((row) => row.kind !== "Order confirmed" && !row.kind.startsWith("Sample "))
       .map((row): Entry => ({
         id: "event-" + row.id,
         title: row.kind,
@@ -147,6 +163,13 @@ async function connectedEntries(user: string) {
       date: row.created_at,
       href: "/account/journey?thread=" + row.thread_id,
       kind: "Orders",
+    })),
+    ...samples.data!.map((row): Entry => ({
+      id: "sample-" + row.id,
+      title: `Sample ${sampleStatus[row.status].toLowerCase()} · ${row.journey_threads.journey_rfqs.title}`,
+      date: row.updated_at,
+      href: "/account/journey?thread=" + row.thread_id,
+      kind: "Samples",
     })),
     ...rows.map((row): Entry => ({
       id: "reservation-" + row.id,
@@ -324,6 +347,7 @@ export default function BuyingTimeline() {
               "Requirements",
               "Stock & pickup",
               "Orders",
+              ...(marketClient ? ["Samples"] : []),
               "Messages",
             ].map((label) => (
               <option key={label}>{label}</option>

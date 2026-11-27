@@ -17,6 +17,7 @@ import { deleteRfqDraft, readRfqDrafts, saveRfqDraft } from "./rfq-drafts";
 import { findRegionalCraft } from "./regional-crafts";
 import { CraftBriefFields } from "./craft-brief-fields";
 import { craftBriefLines, fieldsForCraft, requestedSample, sampleQuoteTerms, splitSampleQuote } from "./craft-brief";
+import { SampleDetails, SampleHandoff, type JourneySample } from "./sample-handoff";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -680,14 +681,20 @@ function ThreadDetail({
           .select("thread_id")
           .eq("thread_id", id)
           .maybeSingle(),
+        marketClient!
+          .from("journey_samples")
+          .select("id,quote_revision,quantity,cost_minor,currency,lead_days,delivery,status,feedback")
+          .eq("thread_id", id)
+          .order("quote_revision", { ascending: false }),
       ]);
       for (const { error } of responses) if (error) throw error;
-      const [quotes, draft, order, shortlist] = responses;
+      const [quotes, draft, order, shortlist, samples] = responses;
       return {
         quotes: quotes.data as Quote[],
         draft: draft.data?.terms as Terms | undefined,
         order: order.data,
         shortlisted: Boolean(shortlist.data),
+        samples: samples.data as JourneySample[],
       };
     },
     refetchInterval: 15000,
@@ -707,6 +714,13 @@ function ThreadDetail({
   const order = details.data?.order;
   const actionable =
     latest && new Date(latest.expires_at).getTime() > Date.now() && !order;
+  const sample = details.data?.samples[0];
+  const sampleQuantity = requestedSample(requirement.specifications);
+  const sampleTerms = splitSampleQuote(latest?.custom_terms);
+  const sampleOffer = actionable && latest && sampleQuantity && sampleTerms.cost &&
+      thread.invite_state === "accepted" && !["withdrawn", "declined"].includes(thread.quote_state)
+    ? { ...sampleTerms, id: latest.id, revision: latest.revision, currency: latest.currency, quantity: sampleQuantity }
+    : undefined;
   function run(
     command: string,
     payload: Record<string, unknown> = {},
@@ -956,10 +970,11 @@ function ThreadDetail({
                 draft={details.data.draft}
                 current={latest}
                 currency={requirement.currency}
-                sampleQuantity={requestedSample(requirement.specifications)}
+                sampleQuantity={sampleQuantity}
                 customRequested={requirement.custom}
               />
             )}
+          <SampleHandoff thread={id} side={side} samples={details.data.samples} offer={sampleOffer} />
           {latest && (
             <div className="journey-panel">
               <h3>Quote revisions</h3>
@@ -1045,7 +1060,12 @@ function ThreadDetail({
               </div>
               {side === "buyer" &&
                 actionable &&
-                thread.quote_state === "confirmed" && (
+                thread.quote_state === "confirmed" && sample && sample.status !== "approved" && (
+                  <p>Approve the current sample before creating the bulk order.</p>
+                )}
+              {side === "buyer" &&
+                actionable &&
+                thread.quote_state === "confirmed" && (!sample || sample.status === "approved") && (
                   <details>
                     <summary>Review and create order</summary>
                     <p>
@@ -1053,6 +1073,12 @@ function ThreadDetail({
                       {requirement.unit} using revision {latest.revision}.
                       Payment is handled separately.
                     </p>
+                    {sample && (
+                      <section aria-label="Approved sample">
+                        <h4>Approved sample</h4>
+                        <SampleDetails sample={sample} />
+                      </section>
+                    )}
                     {agreedUnit !== undefined && (
                       <p>
                         Agreed total{" "}
@@ -1076,6 +1102,12 @@ function ThreadDetail({
           {order && (
             <div className="journey-panel">
               <h3>Order {order.id.slice(0, 8)}</h3>
+              {order.terms.approvedSample && (
+                <section aria-label="Approved sample on order">
+                  <h4>Approved sample</h4>
+                  <SampleDetails sample={order.terms.approvedSample as JourneySample} />
+                </section>
+              )}
               <p>
                 {order.status} · {order.terms.quote.method} ·{" "}
                 {price(order.terms.totalMinor, order.terms.quote.currency)}
