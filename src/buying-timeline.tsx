@@ -13,6 +13,7 @@ import { deleteRfqDraft, readRfqDrafts } from "./rfq-drafts";
 import { sampleStatus, type JourneySample } from "./sample-handoff";
 import { productionStages, type ProductionUpdate } from "./production-tracker";
 import type { OrderHandoff } from "./order-delivery";
+import type { Replacement } from "./shortage-resolution";
 
 type Entry = {
   id: string;
@@ -115,12 +116,13 @@ async function connectedEntries(user: string) {
       .overrideTypes<(Omit<ProductionUpdate, "note" | "revision"> & { journey_orders: { thread_id: string } })[], { merge: false }>(),
     marketClient!
       .from("journey_order_handoffs")
-      .select("order_id,method,ordered_quantity,estimated_delivery,pickup_location,created_at,received_quantity,received_at,journey_orders!inner(thread_id,buyer_id)")
+      .select("order_id,method,ordered_quantity,estimated_delivery,pickup_location,created_at,received_quantity,received_at,journey_orders!inner(thread_id,buyer_id),journey_order_replacements(id,quantity,method,expected_date,proposed_at,accepted_at,received_at,received_quantity)")
       .eq("journey_orders.buyer_id", user)
       .order("created_at", { ascending: false })
       .limit(50)
       .overrideTypes<(Pick<OrderHandoff, "method" | "ordered_quantity" | "estimated_delivery" | "pickup_location" |
-        "created_at" | "received_quantity" | "received_at"> & { order_id: string; journey_orders: { thread_id: string } })[], { merge: false }>(),
+        "created_at" | "received_quantity" | "received_at"> & { order_id: string; journey_orders: { thread_id: string };
+          journey_order_replacements: Omit<Replacement, "instructions">[] })[], { merge: false }>(),
   ]);
   for (const result of [
     rfqs,
@@ -172,7 +174,7 @@ async function connectedEntries(user: string) {
       kind: "Requirements",
     })),
     ...events
-      .data!.filter((row) => row.kind !== "Order confirmed" && !/^(Sample|Production) /.test(row.kind) &&
+      .data!.filter((row) => row.kind !== "Order confirmed" && !/^(Sample|Production|Replacement) /.test(row.kind) &&
         !(trackedHandoffs.has(row.thread_id) && ["Order status: ready", "Order status: dispatched"].includes(row.kind)))
       .map((row): Entry => ({
         id: "event-" + row.id,
@@ -217,6 +219,27 @@ async function connectedEntries(user: string) {
       };
       if (row.received_quantity === null || !row.received_at) return [dispatch];
       const missing = row.ordered_quantity - row.received_quantity;
+      const entries = row.journey_order_replacements.flatMap((item): Entry[] => {
+        const proposal: Entry = {
+          id: "replacement-proposed-" + item.id,
+          title: "Replacement proposed",
+          description: `${item.quantity} units · ${item.method === "shipping" ? "Shipping" : "Pickup"} · Expected ${item.expected_date}`,
+          date: item.proposed_at,
+          href,
+          kind: "Delivery",
+        };
+        if (!item.accepted_at) return [proposal];
+        const accepted: Entry = { ...proposal, id: "replacement-accepted-" + item.id,
+          title: "Replacement accepted", date: item.accepted_at };
+        if (item.received_quantity === null || !item.received_at) return [proposal, accepted];
+        return [proposal, accepted, {
+          ...proposal,
+          id: "replacement-received-" + item.id,
+          title: "Replacement received",
+          description: `Received ${item.received_quantity} of ${item.quantity} replacement units`,
+          date: item.received_at,
+        }];
+      });
       return [dispatch, {
         id: "receipt-" + row.order_id,
         title: missing ? "Order shortage reported" : "Receipt confirmed",
@@ -224,7 +247,7 @@ async function connectedEntries(user: string) {
         date: row.received_at,
         href,
         kind: "Delivery",
-      }];
+      }, ...entries];
     }),
     ...rows.map((row): Entry => ({
       id: "reservation-" + row.id,

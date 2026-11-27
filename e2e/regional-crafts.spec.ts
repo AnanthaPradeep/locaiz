@@ -201,6 +201,32 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await seller.reload();
     await expect(pickup).toContainText("Three paintings missing on collection.");
 
+    const sellerShortage = seller.getByRole("region", { name: "Shortage resolution" });
+    const buyerShortage = page.getByRole("region", { name: "Shortage resolution" });
+    await expect(sellerShortage).toContainText("Outstanding shortage: 3");
+    for (const round of [{ proposed: 3, received: 2 }, { proposed: 1, received: 1 }]) {
+      await sellerShortage.getByText("Propose replacement", { exact: true }).click();
+      await sellerShortage.getByLabel("Replacement quantity", { exact: true }).fill(String(round.proposed));
+      await sellerShortage.getByLabel("Expected replacement date").fill(revised);
+      await sellerShortage.getByLabel("Replacement instructions").fill("Collect the remaining paintings at the front desk.");
+      await sellerShortage.getByRole("button", { name: "Send replacement proposal" }).click();
+      await expect(sellerShortage.getByRole("heading", { name: "Replacement proposal" })).toBeVisible();
+      await page.reload();
+      if (round.proposed === 3) {
+        await buyerShortage.getByRole("button", { name: "Ask about replacement" }).click();
+        await expect(page.getByLabel("Message", { exact: true })).toBeFocused();
+      }
+      await buyerShortage.getByRole("button", { name: "Accept replacement" }).click();
+      await buyerShortage.getByLabel("Replacement quantity received").fill(String(round.received));
+      await buyerShortage.getByRole("button", { name: "Confirm replacement receipt" }).click();
+      await expect(buyerShortage).toContainText(round.proposed === 3
+        ? "Outstanding shortage: 1" : "Shortage resolved");
+      await seller.reload();
+    }
+    await expect(buyerShortage).toContainText("Total received 50 of 50");
+    await expect(page.getByText(/completed · pickup/)).toBeVisible();
+    await expect(receipt).toContainText("Received 47 of 50 · Missing 3");
+
     await page.getByRole("link", { name: "My Buying Journey" }).click();
     await page.getByLabel("Activity type").selectOption("Production");
     const delay = page.getByRole("listitem").filter({ hasText: "Frame material arrived late." });
@@ -209,6 +235,9 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await page.getByLabel("Activity type").selectOption("Delivery");
     await expect(page.getByRole("link", { name: "Ready for pickup", exact: true })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: "Order shortage reported" })).toContainText("Missing 3");
+    await expect(page.getByRole("link", { name: "Replacement proposed", exact: true })).toHaveCount(2);
+    await expect(page.getByRole("link", { name: "Replacement accepted", exact: true })).toHaveCount(2);
+    await expect(page.getByRole("link", { name: "Replacement received", exact: true })).toHaveCount(2);
     await page.getByLabel("Activity type").selectOption("Samples");
     await expect(page.getByRole("link", { name: /Sample approved.*Tanjore painting/ })).toBeVisible();
   } finally {

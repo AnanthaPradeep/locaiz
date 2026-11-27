@@ -107,3 +107,9 @@ Once tracking starts, the order must be fully packed before the existing dispatc
 The maker records shipping details (carrier, tracking number and estimated delivery) or pickup details (location, time window and collection instructions) from the order conversation. The agreed quote determines the method. Tracked orders must be packed first. The buyer then records received quantity. Full receipt completes the order, while a shortage records the missing quantity and puts the order in dispute. Both participants can review the record, and buyers can find dispatch, pickup readiness and receipts under Delivery in My Buying Journey.
 
 This development flow uses maker-entered tracking details. Previously handed-off orders without a delivery record keep their legacy completion action. Structured handoff and receipt checks run in disposable connected CI. Public Pages remains in Demo Mode.
+
+## Shortage resolution and replacement
+
+For an order with a recorded shortage, the maker can propose a shipping or pickup replacement with a quantity and expected date. The buyer can accept or jump to the private conversation for clarification. Once accepted, the buyer records the actual replacement quantity received. Partial receipts leave the remaining shortage open for another proposal. The order completes once total original and replacement receipts match the agreed quantity. The original receipt stays in history, and proposal, acceptance and receipt events appear under Delivery in My Buying Journey.
+
+Connected tests cover partial replacement, quantity limits, buyer and maker permissions, and retry handling. This development flow records fulfilment only.
