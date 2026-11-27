@@ -119,3 +119,9 @@ Connected tests cover partial replacement, quantity limits, buyer and maker perm
 A completed order offers Reorder this design in the buyer conversation. The new RFQ starts with the original specifications, quantity, destination and maker if still verified. Buyers can edit the quantity, destination, required date and specifications, review what changed, save a browser draft or send a fresh RFQ. Previous sample quantities stay out of the new request. An approved sample and the original order are available as references to participants who can already access the original order. An alternate verified maker gets the new brief, with original-order content protected by the existing order policy.
 
 Reorder submission validates completed order ownership and links the fresh RFQ to its source. Current price, minimum quantity, lead time and delivery terms are confirmed through a new supplier quote. Catalogue-based reorder remains available through Bulk Buying.
+
+## Saved Designs and repeat buying
+
+A signed-in buyer can save a named design from a completed order and find it under My Buying Journey → Saved Designs. Search matches terms in the design name and specifications. Save as new design creates a separate copy with editable specifications while preserving the original.
+
+Start RFQ uses the selected design's specifications and the original order's maker and approved sample context. Buyers can change quantity, destination and deadline, choose another verified maker and save or send a fresh RFQ. Saved designs are private to the buyer's connected account. Drafts remain browser-local. The workflow is verified with disposable Supabase in CI.

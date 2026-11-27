@@ -22,7 +22,7 @@ export type ReorderSource = {
 
 export const reorderHref = (id: string) => "/account/journey?reorder=" + id;
 
-export function reorderSpecifications(source?: ReorderSource | null) {
+export function reorderSpecifications(source?: Pick<ReorderSource, "terms"> | null) {
   return (source?.terms.requirement?.specifications ?? "")
     .replace(/^Sample quantity: [1-9]\d*\r?\n?/gm, "").trim();
 }

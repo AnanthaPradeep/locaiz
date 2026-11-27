@@ -3,8 +3,8 @@ import { listings } from "./catalog";
 import { searchUrl } from "./saved-search";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { useMarketSession } from "./market-account";
+import { Link, useSearchParams } from "react-router-dom";
+import { AccountForm, useMarketSession } from "./market-account";
 import { marketClient } from "./market-foundation";
 import { Page } from "./page";
 import { readRequests } from "./stock/client";
@@ -14,6 +14,8 @@ import { sampleStatus, type JourneySample } from "./sample-handoff";
 import { productionStages, type ProductionUpdate } from "./production-tracker";
 import type { OrderHandoff } from "./order-delivery";
 import type { Replacement } from "./shortage-resolution";
+import { SavedDesignLibrary } from "./saved-design-library";
+import { savedDesignsHref } from "./saved-designs";
 
 type Entry = {
   id: string;
@@ -329,6 +331,8 @@ function RfqDraftList({ user }: { user: string }) {
 export default function BuyingTimeline() {
   const {t}=useLocale();
   const session = useMarketSession();
+  const [params] = useSearchParams();
+  const showDesigns = params.get("view") === "designs";
   const [kind, setKind] = useState("");
   const [count, setCount] = useState(20);
   const saved = useDemo((state) => state.savedSearches);
@@ -336,10 +340,21 @@ export default function BuyingTimeline() {
   const user = session?.user.id;
   const connected = useQuery({
     queryKey: ["market", "buying-timeline", user],
-    enabled: Boolean(user),
+    enabled: Boolean(user) && !showDesigns,
     queryFn: () => connectedEntries(user!),
     refetchInterval: 15000,
   });
+  if (showDesigns) {
+    return (
+      <Page title="Saved Designs" intro="Reuse a saved design in a fresh request for quotation.">
+        <Link to="/account/buying-journey">Back to My Buying Journey</Link>
+        {user && <SavedDesignLibrary key={user} user={user} />}
+        {!marketClient && <p>Saved Designs is available in the connected buyer workspace.</p>}
+        {marketClient && session === undefined && <p role="status">Loading your account</p>}
+        {marketClient && session === null && <AccountForm />}
+      </Page>
+    );
+  }
   const rows: Entry[] = [
     ...saved.map((row): Entry => ({
       id: "search-" + row.id,
@@ -376,6 +391,7 @@ export default function BuyingTimeline() {
           <>
             <Link to="/account/journey">Live buyer workspace</Link>
             <Link to="/account/bulk-buying">Bulk buying</Link>
+            <Link to={savedDesignsHref}>Saved Designs</Link>
           </>
         )}
       </nav>

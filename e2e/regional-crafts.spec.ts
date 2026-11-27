@@ -275,6 +275,48 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await seller.goto("/#/business/journey?thread=" + reorderThread);
     await expect(seller.getByRole("region", { name: "Reorder reference" })).toContainText("Previously approved sample");
     await expect(seller.getByText(/Use a lighter frame finish/)).toBeVisible();
+
+    await page.goto("/#/account/journey?thread=" + threadId);
+    await page.getByText("Save to Saved Designs", { exact: true }).click();
+    await page.getByLabel("Design name").fill("Tanjore original teak");
+    await expect(page.getByLabel("Design specifications")).toHaveValue(/Frame: Teak frame/);
+    await page.getByRole("button", { name: "Save design", exact: true }).click();
+    await page.getByRole("link", { name: "Open Saved Designs" }).click();
+    const library = page.getByRole("region", { name: "Saved design library" });
+    const search = library.getByRole("searchbox", { name: "Search by design name or craft" });
+    await search.fill("painting");
+    const originalDesign = library.getByRole("article").filter({ has: page.getByRole("heading", { name: "Tanjore original teak" }) });
+    await expect(originalDesign).toBeVisible();
+    await originalDesign.getByText("Save as new design", { exact: true }).click();
+    await originalDesign.getByLabel("Design name").fill("Tanjore lighter variant");
+    const variantSpecs = originalDesign.getByLabel("Design specifications");
+    await variantSpecs.fill((await variantSpecs.inputValue()).replace("Frame: Teak frame", "Frame: Light oak frame"));
+    await originalDesign.getByRole("button", { name: "Save as new design" }).click();
+    const variant = library.getByRole("article").filter({ has: page.getByRole("heading", { name: "Tanjore lighter variant" }) });
+    await expect(variant).toContainText("Design variant");
+    await expect(originalDesign).toBeVisible();
+    await search.fill("lighter");
+    await expect(originalDesign).toHaveCount(0);
+    const privateDesign = await variant.getByRole("link", { name: "Start RFQ" }).getAttribute("href");
+    expect(privateDesign).toBeTruthy();
+    await seller.goto("/" + privateDesign);
+    await expect(seller.getByText("This saved design is unavailable.")).toBeVisible();
+    await variant.getByRole("link", { name: "Start RFQ" }).click();
+    await expect(page.getByLabel("Requirement title")).toHaveValue("Tanjore lighter variant");
+    await expect(specifications).toHaveValue(/Frame: Light oak frame/);
+    await expect(source).toContainText("Previously approved sample");
+    await expect(page.getByLabel("Regional Browser Maker")).toBeChecked();
+    await page.getByLabel("Quantity", { exact: true }).fill("75");
+    await page.getByRole("button", { name: "Save draft" }).click();
+    await expect(page.getByText("Draft saved on this browser.")).toBeVisible();
+    await page.getByRole("link", { name: "My Buying Journey" }).click();
+    await page.getByRole("region", { name: "RFQ drafts" }).getByRole("link", { name: "Resume" }).click();
+    await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("75");
+    await page.getByRole("button", { name: "Review RFQ" }).click();
+    await expect(reorderReview).toContainText("Specifications unchanged");
+    await page.getByRole("button", { name: "Send RFQ" }).click();
+    await page.getByRole("link", { name: /Tanjore lighter variant/ }).click();
+    await expect(page.getByRole("region", { name: "Reorder reference" })).toContainText("Previously approved sample");
   } finally {
     await seller.close();
   }
