@@ -160,8 +160,33 @@ begin
   and p.previous_ready_date=original_date and p.date_reason='Weaving delayed')
  then raise exception 'Production estimate history was not preserved'; end if;
 end $$;
-select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','dispatched'));
-select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','completed'));
+do $$
+declare
+ thread_key uuid := current_setting('journey_test.thread')::uuid;
+ payload jsonb := jsonb_build_object('thread',thread_key,'requestKey',gen_random_uuid(),
+  'carrier','Test carrier','tracking','QA-100','estimatedDelivery',current_date+4);
+ order_key uuid;
+begin
+ begin
+  perform public.journey_action('fulfil',jsonb_build_object('id',thread_key,'state','dispatched'));
+  raise exception 'Tracked order dispatched without shipping details';
+ exception when raise_exception then
+  if sqlerrm <> 'Record delivery or pickup details before handing off the tracked order' then raise; end if;
+ end;
+ order_key := public.journey_order_delivery('handoff',payload);
+ if public.journey_order_delivery('handoff',payload) <> order_key
+ then raise exception 'Handoff retry changed order'; end if;
+ begin
+  perform public.journey_action('fulfil',jsonb_build_object('id',thread_key,'state','completed'));
+  raise exception 'Maker completed the order without buyer receipt';
+ exception when raise_exception then
+  if sqlerrm <> 'Buyer confirmation of the full quantity is required' then raise; end if;
+ end;
+ begin
+  perform public.journey_order_delivery('receipt',payload || jsonb_build_object('quantity',10));
+  raise exception 'Maker can confirm receipt';
+ exception when insufficient_privilege then null; end;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='buyer-a@stock.example.com'),true);
 set local role authenticated;
@@ -174,6 +199,25 @@ do $$begin
   raise exception 'Buyer can record maker progress';
  exception when insufficient_privilege then null; end;
 end $$;
+do $$
+declare
+ thread_key uuid := current_setting('journey_test.thread')::uuid;
+ payload jsonb := jsonb_build_object('thread',thread_key,'requestKey',gen_random_uuid(),'quantity',10);
+ order_key uuid;
+begin
+ begin
+  perform public.journey_order_delivery('receipt',payload || jsonb_build_object('quantity',11));
+  raise exception 'Accepted quantity over the agreed amount';
+ exception when raise_exception then
+  if sqlerrm <> 'Received quantity must be between zero and the agreed quantity' then raise; end if;
+ end;
+ order_key := public.journey_order_delivery('receipt',payload);
+ if public.journey_order_delivery('receipt',payload) <> order_key then raise exception 'Receipt retry changed order'; end if;
+ if not exists(select 1 from public.journey_order_handoffs h
+  join public.journey_orders o on o.id=h.order_id where o.id=order_key
+  and o.status='completed' and h.received_quantity=10 and h.tracking_number='QA-100')
+ then raise exception 'Delivery confirmation did not complete the order'; end if;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-b@stock.example.com'),true);
 set local role authenticated;
@@ -182,6 +226,12 @@ do $$begin
  then raise exception 'Cross-business sample visibility'; end if;
  if exists(select 1 from public.journey_production_updates)
  then raise exception 'Cross-business production visibility'; end if;
+ if exists(select 1 from public.journey_order_handoffs)
+ then raise exception 'Cross-business delivery visibility'; end if;
+ begin
+  perform public.journey_order_delivery('handoff',jsonb_build_object('thread',current_setting('journey_test.thread'),'requestKey',gen_random_uuid()));
+  raise exception 'Cross-business delivery mutation';
+ exception when insufficient_privilege then null; end;
  begin
   perform public.journey_record_production(jsonb_build_object('thread',current_setting('journey_test.thread')));
   raise exception 'Cross-business production mutation';

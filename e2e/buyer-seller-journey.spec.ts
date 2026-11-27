@@ -216,10 +216,24 @@ test("@journey a buyer and supplier exchange private files, revise a quote, and 
     await s.reload();
     await s.getByRole("button", { name: "Mark preparing" }).click();
     await expect(s.getByText(/preparing · shipping/)).toBeVisible();
-    await s.getByRole("button", { name: "Mark dispatched" }).click();
-    await s.getByRole("button", { name: "Mark completed" }).click();
-    await expect(s.getByText(/completed · shipping/)).toBeVisible();
+    const shipping = s.getByRole("region", { name: "Delivery and receipt" });
+    await shipping.getByText("Enter shipping details").click();
+    await shipping.getByLabel("Carrier").fill("QA Parcel Service");
+    await shipping.getByLabel("Tracking number").fill("QA-ORDER-012");
+    await shipping.getByLabel("Estimated delivery").fill(new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10));
+    await shipping.getByRole("button", { name: "Confirm dispatch" }).click();
+    await expect(s.getByText(/dispatched · shipping/)).toBeVisible();
+    await expect(s.getByRole("button", { name: "Mark completed" })).toHaveCount(0);
     await b.reload();
+    const receipt = b.getByRole("region", { name: "Delivery and receipt" });
+    await expect(receipt).toContainText("QA-ORDER-012");
+    await receipt.getByLabel("Received quantity").fill("12");
+    await receipt.getByRole("button", { name: "Confirm receipt" }).click();
+    await expect(b.getByText(/completed · shipping/)).toBeVisible();
+    await b.getByRole("link", { name: "My Buying Journey" }).click();
+    await b.getByLabel("Activity type").selectOption("Delivery");
+    await expect(b.getByRole("link", { name: "Order dispatched", exact: true })).toBeVisible();
+    await b.getByRole("link", { name: "Receipt confirmed", exact: true }).click();
     await b
       .getByText("Review this completed purchase", { exact: true })
       .click();

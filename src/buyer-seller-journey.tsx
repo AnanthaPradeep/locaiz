@@ -19,6 +19,7 @@ import { CraftBriefFields } from "./craft-brief-fields";
 import { craftBriefLines, fieldsForCraft, requestedSample, sampleQuoteTerms, splitSampleQuote } from "./craft-brief";
 import { SampleDetails, SampleHandoff, type JourneySample } from "./sample-handoff";
 import { ProductionTracker, type ProductionUpdate } from "./production-tracker";
+import { OrderDelivery, type OrderHandoff } from "./order-delivery";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -674,7 +675,7 @@ function ThreadDetail({
           .maybeSingle(),
         marketClient!
           .from("journey_orders")
-          .select("id,status,terms,original_ready_date,journey_production_updates(id,revision,stage,completed_quantity,ready_date,previous_ready_date,date_reason,note,created_at)")
+          .select("id,status,terms,original_ready_date,journey_production_updates(id,revision,stage,completed_quantity,ready_date,previous_ready_date,date_reason,note,created_at),journey_order_handoffs(method,ordered_quantity,carrier,tracking_number,estimated_delivery,pickup_location,pickup_start,pickup_end,instructions,created_at,received_quantity,received_at,receipt_note)")
           .eq("thread_id", id)
           .order("revision", { referencedTable: "journey_production_updates", ascending: false })
           .maybeSingle(),
@@ -714,6 +715,7 @@ function ThreadDetail({
       undefined,
     )?.minor ?? latest?.unit_minor;
   const order = details.data?.order;
+  const handoff = order?.journey_order_handoffs as OrderHandoff | null | undefined;
   const production = (order?.journey_production_updates ?? []) as ProductionUpdate[];
   const trackedQuantity = Number(order?.terms.requirement?.quantity);
   const actionable =
@@ -786,18 +788,11 @@ function ThreadDetail({
       {label}
     </button>
   );
-  const nextOrder =
-    side === "seller" && order && (!production.length || production[0].stage === "packed" || order.status !== "preparing")
-      ? (
-          {
-            confirmed: "preparing",
-            preparing:
-              order.terms.quote.method === "pickup" ? "ready" : "dispatched",
-            ready: "completed",
-            dispatched: "completed",
-          } as Record<string, string>
-        )[order.status]
-      : undefined;
+  const nextOrder = side === "seller" && order
+    ? order.status === "confirmed" ? "preparing"
+      : !handoff && ["ready", "dispatched"].includes(order.status) ? "completed"
+      : undefined
+    : undefined;
   return (
     <section className="journey-panel">
       <h2>{requirement.title}</h2>
@@ -1127,6 +1122,17 @@ function ThreadDetail({
                 updates={production}
                 editable={side === "seller" && Number.isInteger(trackedQuantity) && trackedQuantity > 0 &&
                   ["confirmed", "preparing"].includes(order.status)}
+              />
+              <OrderDelivery
+                key={order.id}
+                thread={id}
+                side={side}
+                method={order.terms.quote.method}
+                status={order.status}
+                handoff={handoff}
+                canHandoff={side === "seller" && !handoff && order.status === "preparing" &&
+                  Number.isInteger(trackedQuantity) && trackedQuantity > 0 &&
+                  (!production.length || production[0].stage === "packed")}
               />
               {side === "buyer" && order.status === "completed" && <ReviewPurchase order={order.id} product={Boolean(requirement.product_id)} />}
               {side === "buyer" && order.status === "completed" && <Link className="outline" to={"/account/bulk-buying?order=" + order.id}>Start reorder draft</Link>}
