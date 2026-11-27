@@ -118,6 +118,7 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await expect(sellerSample).toContainText("Please use a thinner frame.");
     await seller.getByText("Revise quote", { exact: true }).click();
     await seller.getByLabel("Sample delivery option").selectOption("Shipping");
+    await seller.getByLabel("Fulfillment", { exact: true }).selectOption("pickup");
     await seller.getByRole("button", { name: "Send revision" }).click();
     await expect(seller.getByText(/Revision 2 ·/)).toBeVisible();
 
@@ -157,7 +158,7 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await sellerProduction.getByLabel("Completed quantity").fill("30");
     await sellerProduction.getByRole("button", { name: "Save production update" }).click();
     await expect(sellerProduction.getByText("Making · 30 of 50 completed")).toBeVisible();
-    await expect(seller.getByRole("button", { name: "Mark dispatched" })).toHaveCount(0);
+    await expect(seller.getByText("Enter pickup details", { exact: true })).toHaveCount(0);
     await dateInput.fill(revised);
     await sellerProduction.getByLabel("Reason for ready-date change").fill("Frame material arrived late.");
     await sellerProduction.getByLabel("Progress note").fill("Remaining frames in progress.");
@@ -178,14 +179,36 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await sellerProduction.getByLabel("Production stage").selectOption("packed");
     await sellerProduction.getByRole("button", { name: "Save production update" }).click();
     await expect(sellerProduction.getByText("Packed · 50 of 50 completed")).toBeVisible();
-    await seller.getByRole("button", { name: "Mark dispatched" }).click();
-    await expect(seller.getByText(/dispatched · shipping/)).toBeVisible();
+    const pickup = seller.getByRole("region", { name: "Delivery and receipt" });
+    await pickup.getByText("Enter pickup details").click();
+    await pickup.getByLabel("Pickup location").fill("Thanjavur QA studio");
+    const start = Date.now() + 86400000;
+    await pickup.getByLabel("Pickup starts (local time)").fill(new Date(start).toISOString().slice(0, 16));
+    await pickup.getByLabel("Pickup ends (local time)").fill(new Date(start + 3600000).toISOString().slice(0, 16));
+    await pickup.getByLabel("Collection instructions").fill("Collect from the front desk.");
+    await pickup.getByRole("button", { name: "Confirm ready for pickup" }).click();
+    await expect(seller.getByText(/ready · pickup/)).toBeVisible();
+
+    await page.reload();
+    const receipt = page.getByRole("region", { name: "Delivery and receipt" });
+    await expect(receipt).toContainText("Collect from the front desk.");
+    await expect(receipt).toContainText("Thanjavur QA studio");
+    await receipt.getByLabel("Received quantity").fill("47");
+    await receipt.getByLabel("Receipt notes").fill("Three paintings missing on collection.");
+    await receipt.getByRole("button", { name: "Report a shortage" }).click();
+    await expect(receipt).toContainText("Received 47 of 50 · Missing 3");
+    await expect(page.getByText(/disputed · pickup/)).toBeVisible();
+    await seller.reload();
+    await expect(pickup).toContainText("Three paintings missing on collection.");
 
     await page.getByRole("link", { name: "My Buying Journey" }).click();
     await page.getByLabel("Activity type").selectOption("Production");
     const delay = page.getByRole("listitem").filter({ hasText: "Frame material arrived late." });
     await expect(delay.getByRole("link", { name: "Production delayed" })).toBeVisible();
     await expect(delay).toContainText(revised);
+    await page.getByLabel("Activity type").selectOption("Delivery");
+    await expect(page.getByRole("link", { name: "Ready for pickup", exact: true })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "Order shortage reported" })).toContainText("Missing 3");
     await page.getByLabel("Activity type").selectOption("Samples");
     await expect(page.getByRole("link", { name: /Sample approved.*Tanjore painting/ })).toBeVisible();
   } finally {

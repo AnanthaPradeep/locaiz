@@ -12,6 +12,7 @@ import { useDemo } from "./store";
 import { deleteRfqDraft, readRfqDrafts } from "./rfq-drafts";
 import { sampleStatus, type JourneySample } from "./sample-handoff";
 import { productionStages, type ProductionUpdate } from "./production-tracker";
+import type { OrderHandoff } from "./order-delivery";
 
 type Entry = {
   id: string;
@@ -19,7 +20,7 @@ type Entry = {
   date: string;
   href: string;
   description?: string;
-  kind: "Searches" | "Requirements" | "Stock & pickup" | "Orders" | "Messages" | "Samples" | "Production";
+  kind: "Searches" | "Requirements" | "Stock & pickup" | "Orders" | "Messages" | "Samples" | "Production" | "Delivery";
 };
 const links = [
   ["Saved Searches", "/account/saved-searches"],
@@ -42,6 +43,7 @@ async function connectedEntries(user: string) {
     pickupAudit,
     samples,
     production,
+    handoffs,
   ] = await Promise.all([
     marketClient!
       .from("journey_rfqs")
@@ -111,6 +113,14 @@ async function connectedEntries(user: string) {
       .order("created_at", { ascending: false })
       .limit(50)
       .overrideTypes<(Omit<ProductionUpdate, "note" | "revision"> & { journey_orders: { thread_id: string } })[], { merge: false }>(),
+    marketClient!
+      .from("journey_order_handoffs")
+      .select("order_id,method,ordered_quantity,estimated_delivery,pickup_location,created_at,received_quantity,received_at,journey_orders!inner(thread_id,buyer_id)")
+      .eq("journey_orders.buyer_id", user)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .overrideTypes<(Pick<OrderHandoff, "method" | "ordered_quantity" | "estimated_delivery" | "pickup_location" |
+        "created_at" | "received_quantity" | "received_at"> & { order_id: string; journey_orders: { thread_id: string } })[], { merge: false }>(),
   ]);
   for (const result of [
     rfqs,
@@ -122,6 +132,7 @@ async function connectedEntries(user: string) {
     pickupAudit,
     samples,
     production,
+    handoffs,
   ])
     if (result.error) throw result.error;
   const rows = reservations.data as unknown as {
@@ -151,6 +162,7 @@ async function connectedEntries(user: string) {
     created_at: string;
     stock_reservations: { stock_request_shops: { request_id: string } };
   }[];
+  const trackedHandoffs = new Set(handoffs.data!.map((row) => row.journey_orders.thread_id));
   const entries: Entry[] = [
     ...rfqs.data!.map((row): Entry => ({
       id: "rfq-" + row.id,
@@ -160,7 +172,8 @@ async function connectedEntries(user: string) {
       kind: "Requirements",
     })),
     ...events
-      .data!.filter((row) => row.kind !== "Order confirmed" && !/^(Sample|Production) /.test(row.kind))
+      .data!.filter((row) => row.kind !== "Order confirmed" && !/^(Sample|Production) /.test(row.kind) &&
+        !(trackedHandoffs.has(row.thread_id) && ["Order status: ready", "Order status: dispatched"].includes(row.kind)))
       .map((row): Entry => ({
         id: "event-" + row.id,
         title: row.kind,
@@ -192,6 +205,27 @@ async function connectedEntries(user: string) {
       href: "/account/journey?thread=" + row.journey_orders.thread_id,
       kind: "Production",
     })),
+    ...handoffs.data!.flatMap((row): Entry[] => {
+      const href = "/account/journey?thread=" + row.journey_orders.thread_id;
+      const dispatch: Entry = {
+        id: "handoff-" + row.order_id,
+        title: row.method === "shipping" ? "Order dispatched" : "Ready for pickup",
+        description: row.method === "shipping" ? "Estimated delivery " + row.estimated_delivery : row.pickup_location ?? undefined,
+        date: row.created_at,
+        href,
+        kind: "Delivery",
+      };
+      if (row.received_quantity === null || !row.received_at) return [dispatch];
+      const missing = row.ordered_quantity - row.received_quantity;
+      return [dispatch, {
+        id: "receipt-" + row.order_id,
+        title: missing ? "Order shortage reported" : "Receipt confirmed",
+        description: `Received ${row.received_quantity} of ${row.ordered_quantity}${missing ? " · Missing " + missing : ""}`,
+        date: row.received_at,
+        href,
+        kind: "Delivery",
+      }];
+    }),
     ...rows.map((row): Entry => ({
       id: "reservation-" + row.id,
       title: "Pickup reservation",
@@ -368,7 +402,7 @@ export default function BuyingTimeline() {
               "Requirements",
               "Stock & pickup",
               "Orders",
-              ...(marketClient ? ["Samples", "Production"] : []),
+              ...(marketClient ? ["Samples", "Production", "Delivery"] : []),
               "Messages",
             ].map((label) => (
               <option key={label}>{label}</option>

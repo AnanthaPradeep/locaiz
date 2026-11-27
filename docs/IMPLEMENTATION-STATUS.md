@@ -101,3 +101,9 @@ A sample request is optional until accepted by the buyer. Once requested, the la
 Makers can start production tracking on a confirmed bulk order and record making, quality check and packed updates. The buyer sees the approved sample reference on the order, agreed quantity, original estimated ready date and update history. Date changes require a reason and appear under Production in My Buying Journey. The original estimate is calculated from the order confirmation date in UTC and the agreed production days. Older orders without recorded production days show an unrecorded original estimate.
 
 Once tracking starts, the order must be fully packed before the existing dispatch or ready-for-pickup action can proceed. Orders that have no production updates can continue through their existing fulfilment flow. Hosted marketplace activation remains outside the development release.
+
+## Delivery and pickup confirmation
+
+The maker records shipping details (carrier, tracking number and estimated delivery) or pickup details (location, time window and collection instructions) from the order conversation. The agreed quote determines the method. Tracked orders must be packed first. The buyer then records received quantity. Full receipt completes the order, while a shortage records the missing quantity and puts the order in dispute. Both participants can review the record, and buyers can find dispatch, pickup readiness and receipts under Delivery in My Buying Journey.
+
+This development flow uses maker-entered tracking details. Previously handed-off orders without a delivery record keep their legacy completion action. Structured handoff and receipt checks run in disposable connected CI. Public Pages remains in Demo Mode.
