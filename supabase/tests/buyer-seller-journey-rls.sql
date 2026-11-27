@@ -5,6 +5,10 @@ insert into public.sourcing_businesses(id,name,base_id,roles,trust_state,publish
  values('30000000-0000-4000-8000-000000000001','Journey test supplier','journey-test-place',array['Artisan'],'verified',true);
 insert into sourcing_private.members(business_id,user_id,member_role)
  select '30000000-0000-4000-8000-000000000001',id,'owner' from auth.users where email='seller-a@stock.example.com';
+insert into public.sourcing_businesses(id,name,base_id,roles,trust_state,published)
+ values('30000000-0000-4000-8000-000000000002','Alternate test maker','journey-test-place',array['Artisan'],'verified',true);
+insert into sourcing_private.members(business_id,user_id,member_role)
+ select '30000000-0000-4000-8000-000000000002',id,'owner' from auth.users where email='seller-b@stock.example.com';
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='buyer-a@stock.example.com'),true);
 set local role authenticated;
 select set_config('journey_test.rfq',public.journey_action('submit_rfq',
@@ -265,10 +269,38 @@ begin
   where r.id=replacement and o.status='completed' and h.received_quantity=7 and r.received_quantity=3)
  then raise exception 'Replacement did not complete order with original receipt preserved'; end if;
 end $$;
+do $$
+declare
+ source_key uuid;
+ request_id uuid;
+ payload jsonb;
+begin
+ select id into source_key from public.journey_orders where thread_id=current_setting('journey_test.thread')::uuid;
+ perform set_config('journey_test.source',source_key::text,true);
+ payload := jsonb_build_object('sourceOrder',source_key,'submission',gen_random_uuid(),
+  'title','Saved design reorder','specifications','Same handle and weave','quantity',100,'unit','units',
+  'destination','Coimbatore','currency','INR','deadline',current_date+10,
+  'businesses',jsonb_build_array('30000000-0000-4000-8000-000000000002'));
+ request_id := public.journey_submit_reorder(payload);
+ perform set_config('journey_test.reorder',request_id::text,true);
+ if public.journey_submit_reorder(payload) <> request_id then raise exception 'Reorder retry duplicated the RFQ'; end if;
+ if not exists(select 1 from public.journey_rfqs where id=request_id and source_order_id=source_key
+  and quantity=100 and destination='Coimbatore' and specifications='Same handle and weave')
+ then raise exception 'Reorder source or editable terms were lost'; end if;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-b@stock.example.com'),true);
 set local role authenticated;
 do $$begin
+ if not exists(select 1 from public.journey_rfqs where id=current_setting('journey_test.reorder')::uuid
+   and specifications='Same handle and weave')
+ then raise exception 'Alternate maker cannot read shared reorder specifications'; end if;
+ if exists(select 1 from public.journey_orders where id=current_setting('journey_test.source')::uuid)
+ then raise exception 'Alternate maker can read the original order'; end if;
+ begin
+  perform public.journey_submit_reorder(jsonb_build_object('sourceOrder',current_setting('journey_test.source'),'submission',gen_random_uuid()));
+  raise exception 'Non-owner could reorder the source order';
+ exception when insufficient_privilege then null; end;
  if exists(select 1 from public.journey_samples where thread_id=current_setting('journey_test.thread')::uuid)
  then raise exception 'Cross-business sample visibility'; end if;
  if exists(select 1 from public.journey_production_updates)

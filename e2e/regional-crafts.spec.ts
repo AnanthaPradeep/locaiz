@@ -240,6 +240,41 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await expect(page.getByRole("link", { name: "Replacement received", exact: true })).toHaveCount(2);
     await page.getByLabel("Activity type").selectOption("Samples");
     await expect(page.getByRole("link", { name: /Sample approved.*Tanjore painting/ })).toBeVisible();
+
+    await page.goto("/#/account/journey?thread=" + threadId);
+    await page.getByRole("link", { name: "Reorder this design" }).click();
+    const source = page.getByRole("region", { name: "Previous order" });
+    await expect(source).toContainText("Previously approved sample");
+    const specifications = page.locator('textarea[name="specifications"]');
+    await expect(specifications).toHaveValue(/Painting dimensions: 30 x 40 cm/);
+    await expect(specifications).not.toHaveValue(/Sample quantity:/);
+    await expect(page.getByLabel("Regional Browser Maker")).toBeChecked();
+    await page.getByLabel("Requirement title").fill("Tanjore painting reorder");
+    await page.getByLabel("Quantity", { exact: true }).fill("100");
+    await page.getByLabel("Destination", { exact: true }).fill("Coimbatore");
+    const deadline = new Date(Date.now() + 35 * 86400000).toISOString().slice(0, 10);
+    await page.getByLabel("Required by").fill(deadline);
+    await page.getByRole("button", { name: "Save draft" }).click();
+    await expect(page.getByText("Draft saved on this browser.")).toBeVisible();
+    await page.getByRole("link", { name: "My Buying Journey" }).click();
+    await page.getByRole("region", { name: "RFQ drafts" }).getByRole("link", { name: "Resume" }).click();
+    await expect(source).toContainText("Previously approved sample");
+    await page.getByRole("button", { name: "Review RFQ" }).click();
+    const reorderReview = page.getByRole("region", { name: "Reorder RFQ review" });
+    await expect(reorderReview).toContainText("Specifications unchanged");
+    await expect(reorderReview).toContainText("Planned bulk quantity: 100 units");
+    await expect(reorderReview).toContainText("Delivery: Coimbatore");
+    await expect(reorderReview).toContainText("Required by: " + deadline);
+    await specifications.fill((await specifications.inputValue()) + "\nUse a lighter frame finish.");
+    await page.getByRole("button", { name: "Review RFQ" }).click();
+    await expect(reorderReview).toContainText("Specifications updated");
+    await page.getByRole("button", { name: "Send RFQ" }).click();
+    await page.getByRole("link", { name: /Tanjore painting reorder/ }).click();
+    const reorderThread = new URLSearchParams(new URL(page.url()).hash.split("?")[1]).get("thread");
+    await expect(page.getByRole("region", { name: "Reorder reference" })).toContainText("Previously approved sample");
+    await seller.goto("/#/business/journey?thread=" + reorderThread);
+    await expect(seller.getByRole("region", { name: "Reorder reference" })).toContainText("Previously approved sample");
+    await expect(seller.getByText(/Use a lighter frame finish/)).toBeVisible();
   } finally {
     await seller.close();
   }

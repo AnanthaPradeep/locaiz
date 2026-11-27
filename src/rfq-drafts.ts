@@ -10,6 +10,7 @@ const draftSchema = z.object({
   product: z.string().nullable(),
   variant: z.string().nullable(),
   assignment: z.string().nullable(),
+  sourceOrder: z.uuid().optional(),
 });
 
 export type RfqDraft = z.infer<typeof draftSchema>;

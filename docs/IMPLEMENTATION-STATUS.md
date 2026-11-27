@@ -113,3 +113,9 @@ This development flow uses maker-entered tracking details. Previously handed-off
 For an order with a recorded shortage, the maker can propose a shipping or pickup replacement with a quantity and expected date. The buyer can accept or jump to the private conversation for clarification. Once accepted, the buyer records the actual replacement quantity received. Partial receipts leave the remaining shortage open for another proposal. The order completes once total original and replacement receipts match the agreed quantity. The original receipt stays in history, and proposal, acceptance and receipt events appear under Delivery in My Buying Journey.
 
 Connected tests cover partial replacement, quantity limits, buyer and maker permissions, and retry handling. This development flow records fulfilment only.
+
+## Reorder with saved specifications
+
+A completed order offers Reorder this design in the buyer conversation. The new RFQ starts with the original specifications, quantity, destination and maker if still verified. Buyers can edit the quantity, destination, required date and specifications, review what changed, save a browser draft or send a fresh RFQ. Previous sample quantities stay out of the new request. An approved sample and the original order are available as references to participants who can already access the original order. An alternate verified maker gets the new brief, with original-order content protected by the existing order policy.
+
+Reorder submission validates completed order ownership and links the fresh RFQ to its source. Current price, minimum quantity, lead time and delivery terms are confirmed through a new supplier quote. Catalogue-based reorder remains available through Bulk Buying.

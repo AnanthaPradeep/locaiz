@@ -21,6 +21,7 @@ import { SampleDetails, SampleHandoff, type JourneySample } from "./sample-hando
 import { ProductionTracker, type ProductionUpdate } from "./production-tracker";
 import { OrderDelivery, type OrderHandoff } from "./order-delivery";
 import { ShortageResolution, type Replacement } from "./shortage-resolution";
+import { readReorderSource, reorderHref, reorderSpecifications } from "./reorder-source";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -60,6 +61,7 @@ function Requirement({
   draft,
   draftId,
   regionalCraft,
+  sourceOrder,
   submitted,
 }: {
   user: string;
@@ -71,6 +73,7 @@ function Requirement({
   draft?: SourcingDraft;
   draftId: string | null;
   regionalCraft?: ReturnType<typeof findRegionalCraft>;
+  sourceOrder: string | null;
   submitted: (id: string) => void;
 }) {
   const {t}=useLocale();
@@ -82,13 +85,24 @@ function Requirement({
   const [reviewError, setReviewError] = useState("");
   const context = saved ?? { product, variant, assignment };
   const values = saved?.fields;
+  const reorderId = saved?.sourceOrder ?? sourceOrder;
+  const validReorder = Boolean(reorderId && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(reorderId));
+  const reorder = useQuery({
+    queryKey: ["market", "reorder-source", user, reorderId],
+    enabled: validReorder,
+    queryFn: () => readReorderSource(reorderId!, user),
+  });
+  const original = reorder.data?.terms.requirement;
+  const originalSpecifications = reorderSpecifications(reorder.data);
+  const preferredSupplier = reorder.data?.business_id ?? supplier;
   const craft = values?.regionalCraft ?? regionalCraft?.craft;
-  const hasCraftBrief = Boolean(fieldsForCraft(craft));
+  const hasCraftBrief = !reorderId && Boolean(fieldsForCraft(craft));
   function save(form: HTMLFormElement) {
     try {
       saveRfqDraft(user, {
         id: submission, edited: 0, fields: {}, suppliers: [], attachment: saved?.attachment ?? false,
         product: context.product, variant: context.variant, assignment: context.assignment,
+        sourceOrder: reorderId ?? undefined,
       }, new FormData(form));
       setDraftStatus("Draft saved on this browser.");
     } catch {
@@ -113,11 +127,11 @@ function Requirement({
     const form = event.currentTarget;
     const fields = new FormData(form);
     let specifications = String(fields.get("specifications") ?? "");
-    if (craft && hasCraftBrief) {
+    if (reorderId || (craft && hasCraftBrief)) {
       try {
-        const brief = craftBriefLines(craft, fields);
+        const brief = craft && hasCraftBrief ? craftBriefLines(craft, fields) : [];
         const notes = specifications.trim();
-        specifications = [...brief, ...(notes ? ["", notes] : [])].join("\n");
+        specifications = [...brief, ...(notes ? [...(brief.length ? [""] : []), notes] : [])].join("\n");
         if (specifications.length > 3000) throw new Error("Shorten the specifications to fit the craft brief.");
         if (!review) {
           const selected = fields.getAll("supplier");
@@ -130,6 +144,7 @@ function Requirement({
               "Planned bulk quantity: " + fields.get("quantity") + " " + fields.get("unit"),
               "Delivery: " + fields.get("destination"),
               ...(fields.get("deadline") ? ["Required by: " + fields.get("deadline")] : []),
+              ...(reorderId ? [notes === originalSpecifications ? "Specifications unchanged" : "Specifications updated"] : []),
               ...brief,
               ...(notes ? ["Notes: " + notes] : []),
             ],
@@ -150,7 +165,7 @@ function Requirement({
         : undefined;
     void mutation.run(async () => {
       if (file) await validateAttachment(file);
-      const id = await action("submit_rfq", {
+      const payload = {
         ...Object.fromEntries(fields),
         specifications,
         submission,
@@ -160,7 +175,17 @@ function Requirement({
         budget: fields.get("budget") || null,
         businesses: fields.getAll("supplier"),
         custom: fields.has("custom"),
-      });
+      };
+      let id: string;
+      if (reorderId) {
+        const { data, error } = await marketClient!.rpc("journey_submit_reorder", {
+          payload: { ...payload, sourceOrder: reorderId },
+        });
+        if (error) throw error;
+        id = data as string;
+      } else {
+        id = await action("submit_rfq", payload);
+      }
       if (file) {
         const { data, error } = await marketClient!
           .from("journey_threads")
@@ -207,24 +232,50 @@ function Requirement({
       submitted(id);
     }, "Requirement sent.");
   }
+  if (reorderId && !reorder.data) {
+    return (
+      <section className="journey-panel" aria-label="Reorder this design">
+        {validReorder && reorder.isPending
+          ? <p role="status">Loading completed order</p>
+          : <p role="alert">This completed order is unavailable for reorder.</p>}
+        {reorder.isError && <button className="outline" onClick={() => void reorder.refetch()}>Retry order</button>}
+        <Link to="/account/buying-journey">Back to buying activity</Link>
+      </section>
+    );
+  }
   return (
     <details
       className="journey-panel"
-      open={supplier || startOpen || draftId ? true : undefined}
+      open={supplier || startOpen || draftId || reorderId ? true : undefined}
     >
-      <summary>Send a request for quotation</summary>
+      <summary>{reorderId ? "Reorder this design" : "Send a request for quotation"}</summary>
+      {reorder.data && (
+        <section className="record journey-stack" aria-label="Previous order">
+          <Link to={"/account/journey?thread=" + reorder.data.thread_id}>Original order {reorder.data.id.slice(0, 8)}</Link>
+          <p>Previous quantity: {original?.quantity ?? "Unrecorded"}. Request a current price, minimum quantity and lead time.</p>
+          {reorder.data.terms.approvedSample && (
+            <>
+              <h3>Previously approved sample</h3>
+              <SampleDetails sample={reorder.data.terms.approvedSample} />
+            </>
+          )}
+          {suppliers.isSuccess && !suppliers.data.some(({ id }) => id === preferredSupplier) && (
+            <p>The previous maker is unavailable for new RFQs. Choose another verified maker when ready to send.</p>
+          )}
+        </section>
+      )}
       <form className="journey-form" onSubmit={submit} onChange={() => {
         if (review) setReview(undefined);
         if (reviewError) setReviewError("");
       }}>
         <label>
           {t("Requirement title")}
-          <input name="title" defaultValue={values?.title ?? draft?.description ?? regionalCraft?.craft} required minLength={3} maxLength={120} />
+          <input name="title" defaultValue={values?.title ?? original?.title ?? draft?.description ?? regionalCraft?.craft} required minLength={3} maxLength={120} />
         </label>
-        {craft && <CraftBriefFields craft={craft} values={values} />}
+        {craft && hasCraftBrief && <CraftBriefFields craft={craft} values={values} />}
         <label>
           {t("Specifications")}
-          <textarea name="specifications" defaultValue={values?.specifications ?? (draft ? sourcingSpecifications(draft) : regionalCraft && `Sourcing region: ${regionalCraft.state}`)} maxLength={3000} />
+          <textarea name="specifications" defaultValue={values?.specifications ?? (reorderId ? originalSpecifications : draft ? sourcingSpecifications(draft) : regionalCraft && `Sourcing region: ${regionalCraft.state}`)} maxLength={3000} />
         </label>
         <label>
           Private requirement attachment
@@ -246,7 +297,7 @@ function Requirement({
             {hasCraftBrief ? "Planned bulk quantity" : t("Quantity")}
             <input
               name="quantity"
-              defaultValue={values?.quantity ?? draft?.quantity ?? undefined}
+              defaultValue={values?.quantity ?? original?.quantity ?? draft?.quantity ?? undefined}
               type="number"
               min={1}
               max={1000000}
@@ -255,7 +306,7 @@ function Requirement({
           </label>
           <label>
             Unit
-            <select name="unit" defaultValue={values?.unit ?? (draft?.unit || "units")}>
+            <select name="unit" defaultValue={values?.unit ?? original?.unit ?? (draft?.unit || "units")}>
               <option>units</option>
               <option>sets</option>
               <option>pairs</option>
@@ -263,7 +314,7 @@ function Requirement({
           </label>
           <label>
             {t("Destination")}
-            <input name="destination" defaultValue={values?.destination ?? draft?.destination} required minLength={2} maxLength={120} />
+            <input name="destination" defaultValue={values?.destination ?? original?.destination ?? draft?.destination} required minLength={2} maxLength={120} />
           </label>
           <label>
             Required by
@@ -273,7 +324,7 @@ function Requirement({
             Currency code
             <input
               name="currency"
-              defaultValue={values?.currency ?? (draft?.currency || "INR")}
+              defaultValue={values?.currency ?? reorder.data?.terms.quote?.currency ?? original?.currency ?? (draft?.currency || "INR")}
               required
               pattern="[A-Za-z]{3}"
             />
@@ -284,7 +335,7 @@ function Requirement({
           </label>
         </div>
         <label>
-          <input type="checkbox" name="custom" defaultChecked={saved ? values?.custom === "on" : Boolean(draft?.customisation)} /> Custom production required
+          <input type="checkbox" name="custom" defaultChecked={saved ? values?.custom === "on" : Boolean(original?.custom ?? draft?.customisation)} /> Custom production required
         </label>
         <fieldset>
           <legend>Invite up to five suppliers</legend>
@@ -301,16 +352,16 @@ function Requirement({
                   type="checkbox"
                   name="supplier"
                   value={item.id}
-                  defaultChecked={saved ? saved.suppliers.includes(item.id) : item.id === supplier}
+                  defaultChecked={saved ? saved.suppliers.includes(item.id) : item.id === preferredSupplier}
                 />{" "}
                 {item.name}
               </label>
             ))}
         </fieldset>
         {review && (
-          <section className="record market-stack" aria-label="Craft RFQ review">
+          <section className="record market-stack" aria-label={reorderId ? "Reorder RFQ review" : "Craft RFQ review"}>
             <h3>Review {review.title}</h3>
-            <ul>{review.lines.map((line) => <li key={line}>{line}</li>)}</ul>
+            <ul>{review.lines.map((line) => <li className="journey-message" key={line}>{line}</li>)}</ul>
           </section>
         )}
         {reviewError && <p role="alert">{reviewError}</p>}
@@ -321,7 +372,7 @@ function Requirement({
             Save draft
           </button>
           <button className="button" disabled={mutation.pending || !suppliers.data?.length}>
-            {hasCraftBrief && !review ? "Review RFQ" : "Send RFQ"}
+            {(hasCraftBrief || reorderId) && !review ? "Review RFQ" : "Send RFQ"}
           </button>
         </div>
         {draftStatus && <p role="status">{draftStatus}</p>}
@@ -578,6 +629,7 @@ type Thread = {
   journey_rfqs: {
     title: string;
     specifications: string;
+    source_order_id: string | null;
     custom: boolean;
     budget_minor: number | null;
     product_id: string | null;
@@ -634,6 +686,11 @@ function ThreadDetail({
 }) {
   const { id, journey_rfqs: requirement } = thread;
   const mutation = useMarketMutation();
+  const originalOrder = useQuery({
+    queryKey: ["market", "reorder-reference", user, requirement.source_order_id],
+    enabled: Boolean(requirement.source_order_id),
+    queryFn: () => readReorderSource(requirement.source_order_id!),
+  });
   const [attachment, setAttachment] = useState<{
     key: string;
     path: string;
@@ -820,6 +877,24 @@ function ThreadDetail({
       )}
       {requirement.custom && <p>Custom production requested</p>}
       {requirement.deadline && <p>Required by {requirement.deadline}</p>}
+      {requirement.source_order_id && (
+        <section className="record journey-stack" aria-label="Reorder reference">
+          <h3>Reorder from saved specifications</h3>
+          {originalOrder.data && (
+            <>
+              <Link to={(side === "buyer" ? "/account/journey" : "/business/journey") + "?thread=" + originalOrder.data.thread_id}>
+                Original order {originalOrder.data.id.slice(0, 8)}
+              </Link>
+              {originalOrder.data.terms.approvedSample && (
+                <>
+                  <h4>Previously approved sample</h4>
+                  <SampleDetails sample={originalOrder.data.terms.approvedSample} />
+                </>
+              )}
+            </>
+          )}
+        </section>
+      )}
       {requirement.specifications && (
         <p className="journey-message">{requirement.specifications}</p>
       )}
@@ -1140,7 +1215,14 @@ function ThreadDetail({
               />
               <ShortageResolution thread={id} side={side} status={order.status} handoff={handoff} replacements={replacements} />
               {side === "buyer" && order.status === "completed" && <ReviewPurchase order={order.id} product={Boolean(requirement.product_id)} />}
-              {side === "buyer" && order.status === "completed" && <Link className="outline" to={"/account/bulk-buying?order=" + order.id}>Start reorder draft</Link>}
+              {side === "buyer" && order.status === "completed" && (
+                <div className="actions">
+                  <Link className="outline" to={reorderHref(order.id)}>Reorder this design</Link>
+                  {order.terms.requirement?.product_id && (
+                    <Link to={"/account/bulk-buying?order=" + order.id}>Compare current catalogue offers</Link>
+                  )}
+                </div>
+              )}
               <div className="journey-actions">
                 {nextOrder && (
                   <button
@@ -1241,7 +1323,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
       let query = marketClient!
         .from("journey_threads")
         .select(
-          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,custom,budget_minor,product_id,variant_id,quantity,unit,destination,deadline,currency,buyer_id)",
+          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,source_order_id,custom,budget_minor,product_id,variant_id,quantity,unit,destination,deadline,currency,buyer_id)",
         )
         .order("updated_at", { ascending: false })
         .order("id")
@@ -1292,7 +1374,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
       let query = marketClient!
         .from("journey_threads")
         .select(
-          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,custom,budget_minor,product_id,variant_id,quantity,unit,destination,deadline,currency,buyer_id)",
+          "id,rfq_id,invite_state,quote_state,latest_quote,sourcing_businesses(name),journey_rfqs!inner(title,specifications,source_order_id,custom,budget_minor,product_id,variant_id,quantity,unit,destination,deadline,currency,buyer_id)",
         )
         .eq("id", chosen);
       query =
@@ -1320,6 +1402,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
             params.get("draft"),
             params.get("region"),
             params.get("craft"),
+            params.get("reorder"),
           ].join(":")}
           user={user}
           supplier={params.get("supplier")}
@@ -1330,6 +1413,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
           draft={handoff.success ? handoff.data : undefined}
           draftId={params.get("draft")}
           regionalCraft={findRegionalCraft(params.get("region"), params.get("craft"))}
+          sourceOrder={params.get("reorder")}
           submitted={(id) => {
             setPage(0);
             setSearch("");
