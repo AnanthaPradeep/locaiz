@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { craftDraftFields } from "./craft-brief";
 
 const draftSchema = z.object({
   id: z.uuid(),
@@ -17,6 +18,7 @@ const draftKey = (user: string) => "locaiz-rfq-drafts:" + user;
 const fieldNames = [
   "title", "specifications", "quantity", "unit", "destination",
   "deadline", "currency", "budget", "custom",
+  ...craftDraftFields,
 ];
 
 export function readRfqDrafts(user: string): RfqDraft[] {

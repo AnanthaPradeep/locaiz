@@ -1,5 +1,7 @@
 import { useLocale } from "./i18n";
 import { findRegionalCraft } from "./regional-crafts";
+import { CraftBriefFields } from "./craft-brief-fields";
+import { craftBriefLines, fieldsForCraft } from "./craft-brief";
 import { marketClient } from "./market-foundation";
 import { parseIntent } from "./buyer-intent";
 import { BasketComparisonDemo, QuoteComparison } from "./quote-comparison";
@@ -42,6 +44,7 @@ export function RequirementForm() {
   const guided = params.get("find") === "1";
   const intent = parseIntent(params);
   const regional = findRegionalCraft(params.get("region"), intent.query);
+  const customCraft = regional && fieldsForCraft(regional.craft) ? regional.craft : undefined;
   const [review, setReview] = useState("");
   const demo = useDemo();
   const navigate = useNavigate();
@@ -215,7 +218,15 @@ export function RequirementForm() {
         const specifics = sourcing
           ? ` · Preferred supplier ${intendedSupplier?.name} · Delivery ${destination} · Specifications ${form?.get("specifications") || "Not supplied"}${sourcing.custom ? " · Custom order" : ""}${form?.get("sample") ? " · Sample requested" : ""}`
           : "";
-        const specifications = String(form?.get("specifications") ?? "").trim();
+        let specifications = String(form?.get("specifications") ?? "").trim();
+        if (customCraft && form) {
+          try {
+            specifications = [...craftBriefLines(customCraft, form), specifications].filter(Boolean).join("\n");
+          } catch (reason) {
+            setError((reason as Error).message);
+            return;
+          }
+        }
         const unit = guided ? intent.unit : "units";
         const custom = form?.get("custom") === "on";
         const details = [
@@ -278,9 +289,10 @@ export function RequirementForm() {
             />{" "}
             Customisation needed
           </label>
-          <label>
+          {customCraft && <CraftBriefFields craft={customCraft} />}
+          {!customCraft && <label>
             <input type="checkbox" name="sample" /> Request a sample
-          </label>
+          </label>}
         </>
       )}
       <label>
@@ -317,7 +329,7 @@ export function RequirementForm() {
         />
       </label>
       <label>
-        {t("Quantity")}
+        {customCraft ? "Planned bulk quantity" : t("Quantity")}
         <input
           required
           type="number"

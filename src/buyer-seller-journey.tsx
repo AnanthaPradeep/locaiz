@@ -15,6 +15,8 @@ import { MarketGate, useMarketMutation } from "./market-account";
 import { marketClient, validateUpload, verifyFileHeader } from "./market-foundation";
 import { deleteRfqDraft, readRfqDrafts, saveRfqDraft } from "./rfq-drafts";
 import { findRegionalCraft } from "./regional-crafts";
+import { CraftBriefFields } from "./craft-brief-fields";
+import { craftBriefLines, fieldsForCraft, requestedSample, sampleQuoteTerms, splitSampleQuote } from "./craft-brief";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -72,8 +74,12 @@ function Requirement({
   const [saved] = useState(() => readRfqDrafts(user).find(({ id }) => id === draftId));
   const [submission, setSubmission] = useState(() => saved?.id ?? crypto.randomUUID());
   const [draftStatus, setDraftStatus] = useState("");
+  const [review, setReview] = useState<{ title: string; lines: string[] }>();
+  const [reviewError, setReviewError] = useState("");
   const context = saved ?? { product, variant, assignment };
   const values = saved?.fields;
+  const craft = values?.regionalCraft ?? regionalCraft?.craft;
+  const hasCraftBrief = Boolean(fieldsForCraft(craft));
   function save(form: HTMLFormElement) {
     try {
       saveRfqDraft(user, {
@@ -102,6 +108,36 @@ function Requirement({
     event.preventDefault();
     const form = event.currentTarget;
     const fields = new FormData(form);
+    let specifications = String(fields.get("specifications") ?? "");
+    if (craft && hasCraftBrief) {
+      try {
+        const brief = craftBriefLines(craft, fields);
+        const notes = specifications.trim();
+        specifications = [...brief, ...(notes ? ["", notes] : [])].join("\n");
+        if (specifications.length > 3000) throw new Error("Shorten the specifications to fit the craft brief.");
+        if (!review) {
+          const selected = fields.getAll("supplier");
+          if (!selected.length || selected.length > 5) throw new Error("Choose one to five suppliers.");
+          const names = suppliers.data?.filter(({ id }) => selected.includes(id)).map(({ name }) => name);
+          setReview({
+            title: String(fields.get("title")),
+            lines: [
+              "Makers: " + (names?.join(", ") ?? ""),
+              "Planned bulk quantity: " + fields.get("quantity") + " " + fields.get("unit"),
+              "Delivery: " + fields.get("destination"),
+              ...(fields.get("deadline") ? ["Required by: " + fields.get("deadline")] : []),
+              ...brief,
+              ...(notes ? ["Notes: " + notes] : []),
+            ],
+          });
+          setReviewError("");
+          return;
+        }
+      } catch (error) {
+        setReviewError((error as Error).message);
+        return;
+      }
+    }
     const attachment = fields.get("attachment");
     fields.delete("attachment");
     const file =
@@ -112,6 +148,7 @@ function Requirement({
       if (file) await validateAttachment(file);
       const id = await action("submit_rfq", {
         ...Object.fromEntries(fields),
+        specifications,
         submission,
         product: context.product,
         variant: context.variant,
@@ -161,6 +198,7 @@ function Requirement({
         setDraftStatus("Requirement sent. The local draft could not be removed.");
       }
       setSubmission(crypto.randomUUID());
+      setReview(undefined);
       form.reset();
       submitted(id);
     }, "Requirement sent.");
@@ -171,11 +209,15 @@ function Requirement({
       open={supplier || startOpen || draftId ? true : undefined}
     >
       <summary>Send a request for quotation</summary>
-      <form className="journey-form" onSubmit={submit}>
+      <form className="journey-form" onSubmit={submit} onChange={() => {
+        if (review) setReview(undefined);
+        if (reviewError) setReviewError("");
+      }}>
         <label>
           {t("Requirement title")}
           <input name="title" defaultValue={values?.title ?? draft?.description ?? regionalCraft?.craft} required minLength={3} maxLength={120} />
         </label>
+        {craft && <CraftBriefFields craft={craft} values={values} />}
         <label>
           {t("Specifications")}
           <textarea name="specifications" defaultValue={values?.specifications ?? (draft ? sourcingSpecifications(draft) : regionalCraft && `Sourcing region: ${regionalCraft.state}`)} maxLength={3000} />
@@ -197,7 +239,7 @@ function Requirement({
         </p>
         <div className="journey-fields">
           <label>
-            {t("Quantity")}
+            {hasCraftBrief ? "Planned bulk quantity" : t("Quantity")}
             <input
               name="quantity"
               defaultValue={values?.quantity ?? draft?.quantity ?? undefined}
@@ -261,6 +303,13 @@ function Requirement({
               </label>
             ))}
         </fieldset>
+        {review && (
+          <section className="record market-stack" aria-label="Craft RFQ review">
+            <h3>Review {review.title}</h3>
+            <ul>{review.lines.map((line) => <li key={line}>{line}</li>)}</ul>
+          </section>
+        )}
+        {reviewError && <p role="alert">{reviewError}</p>}
         <div className="actions">
           <button className="outline" type="button" disabled={mutation.pending || suppliers.isPending} onClick={(event) => {
             if (event.currentTarget.form) save(event.currentTarget.form);
@@ -268,7 +317,7 @@ function Requirement({
             Save draft
           </button>
           <button className="button" disabled={mutation.pending || !suppliers.data?.length}>
-            Send RFQ
+            {hasCraftBrief && !review ? "Review RFQ" : "Send RFQ"}
           </button>
         </div>
         {draftStatus && <p role="status">{draftStatus}</p>}
@@ -301,11 +350,15 @@ function QuoteEditor({
   draft,
   current,
   currency,
+  sampleQuantity,
+  customRequested,
 }: {
   id: string;
   draft?: Terms;
   current?: Quote;
   currency: string;
+  sampleQuantity?: string;
+  customRequested: boolean;
 }) {
   const mutation = useMarketMutation();
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -332,6 +385,13 @@ function QuoteEditor({
           });
         const terms: Terms = {};
         for (const [key, value] of fields) terms[key] = String(value) || null;
+        if (sampleQuantity && button.value === "submit_quote") {
+          const notes = String(terms.customTerms ?? "").trim();
+          const quoteTerms = sampleQuoteTerms(fields, notes);
+          if (customRequested && !notes && quoteTerms)
+            throw new Error("Include custom bulk terms separately from the sample quote.");
+          terms.customTerms = quoteTerms;
+        }
         terms.expires = terms.expires
           ? new Date(String(terms.expires)).toISOString()
           : null;
@@ -347,6 +407,7 @@ function QuoteEditor({
   }
   const value = (name: string, fallback?: string | number | null) =>
     String(draft && name in draft ? (draft[name] ?? "") : (fallback ?? ""));
+  const sample = splitSampleQuote(current?.custom_terms);
   const expires = value("expires", current?.expires_at);
   const localExpiry = expires
     ? new Date(
@@ -440,12 +501,35 @@ function QuoteEditor({
             )}
           />
         </label>
+        {sampleQuantity && (
+          <fieldset className="journey-fields">
+            <legend>Sample quote</legend>
+            <p>Buyer requested {sampleQuantity} for sampling. These terms are separate from the bulk quote and order total.</p>
+            <label>
+              Sample cost (minor units)
+              <input name="sampleCost" type="number" min={0} max={1000000000000} step={1} defaultValue={value("sampleCost", sample.cost)} />
+            </label>
+            <label>
+              Sample lead time (days)
+              <input name="sampleLead" type="number" min={0} max={3650} step={1} defaultValue={value("sampleLead", sample.lead)} />
+            </label>
+            <label>
+              Sample delivery option
+              <select name="sampleDelivery" defaultValue={value("sampleDelivery", sample.delivery)}>
+                <option value="">Choose an option</option>
+                <option>Shipping</option>
+                <option>Pickup</option>
+                <option>Shipping or pickup</option>
+              </select>
+            </label>
+          </fieldset>
+        )}
         <label>
           Custom terms
           <textarea
             name="customTerms"
             maxLength={2000}
-            defaultValue={value("customTerms", current?.custom_terms)}
+            defaultValue={value("customTerms", sampleQuantity ? sample.notes : current?.custom_terms)}
           />
         </label>
         <label>
@@ -516,6 +600,22 @@ const price = (amount: number | null, currency: string) =>
   amount === null
     ? "Pending"
     : formatMinor(amount, currency as Parameters<typeof formatMinor>[1]);
+
+function QuoteCustomTerms({ quote }: { quote: Quote }) {
+  const sample = splitSampleQuote(quote.custom_terms);
+  return (
+    <>
+      {sample.cost && (
+        <section className="record market-stack" aria-label="Sample quote">
+          <h4>Sample quote</h4>
+          <p>Sample cost {price(Number(sample.cost), quote.currency)} · Lead time {sample.lead} days · {sample.delivery}</p>
+          <p>Separate from the bulk order total.</p>
+        </section>
+      )}
+      {sample.notes && <p className="journey-message">{sample.notes}</p>}
+    </>
+  );
+}
 
 function ThreadDetail({
   thread,
@@ -856,6 +956,8 @@ function ThreadDetail({
                 draft={details.data.draft}
                 current={latest}
                 currency={requirement.currency}
+                sampleQuantity={requestedSample(requirement.specifications)}
+                customRequested={requirement.custom}
               />
             )}
           {latest && (
@@ -897,7 +999,7 @@ function ThreadDetail({
                     </p>
                   ))}
                   {quote.custom_terms && (
-                    <p className="journey-message">{quote.custom_terms}</p>
+                    <QuoteCustomTerms quote={quote} />
                   )}
                 </details>
               ))}

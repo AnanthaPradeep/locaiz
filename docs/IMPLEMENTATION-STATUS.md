@@ -85,3 +85,7 @@ Craft references: [Tamil Nadu Handicrafts Development Corporation](https://tnhdc
 ## Regional Maker Discovery
 
 Home craft cards and Global Atlas open the regional maker directory. State, craft and locality filters use shareable hash routes. Demo mode provides labelled sample makers and local sourcing requests. Connected results use published, current offers from verified maker businesses based in the selected region. Maker profiles carry the craft and preferred supplier into the signed-in RFQ. A general sourcing request is available when a craft has no maker match.
+
+## Custom craft briefs and sample quotes
+
+Regional basket, painting and textile sourcing forms offer craft-specific fields and an optional sample quantity alongside the planned bulk quantity. Connected buyers can review the selected makers and delivery details, save a draft, or send the RFQ. Sellers see the readable brief in the conversation and may provide sample cost, lead time, and a delivery option in their quote. Sample terms are informational and excluded from bulk order totals. The public demo reviews and saves a local requirement. The signed-in workflow runs in the disposable CI backend.
