@@ -202,7 +202,7 @@ end $$;
 do $$
 declare
  thread_key uuid := current_setting('journey_test.thread')::uuid;
- payload jsonb := jsonb_build_object('thread',thread_key,'requestKey',gen_random_uuid(),'quantity',10);
+ payload jsonb := jsonb_build_object('thread',thread_key,'requestKey',gen_random_uuid(),'quantity',7);
  order_key uuid;
 begin
  begin
@@ -215,8 +215,55 @@ begin
  if public.journey_order_delivery('receipt',payload) <> order_key then raise exception 'Receipt retry changed order'; end if;
  if not exists(select 1 from public.journey_order_handoffs h
   join public.journey_orders o on o.id=h.order_id where o.id=order_key
-  and o.status='completed' and h.received_quantity=10 and h.tracking_number='QA-100')
- then raise exception 'Delivery confirmation did not complete the order'; end if;
+  and o.status='disputed' and h.received_quantity=7 and h.tracking_number='QA-100')
+ then raise exception 'Shortage receipt did not put the order in dispute'; end if;
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-a@stock.example.com'),true);
+set local role authenticated;
+do $$
+declare
+ payload jsonb := jsonb_build_object('thread',current_setting('journey_test.thread'),'requestKey',gen_random_uuid(),
+  'quantity',3,'method','pickup','expectedDate',current_date+1);
+ replacement uuid;
+begin
+ begin
+  perform public.journey_order_replacement('propose',payload || jsonb_build_object('quantity',4));
+  raise exception 'Accepted a proposal larger than the shortage';
+ exception when raise_exception then
+  if sqlerrm <> 'Replacement quantity must be within the outstanding shortage' then raise; end if;
+ end;
+ replacement := public.journey_order_replacement('propose',payload);
+ perform set_config('journey_test.replacement',replacement::text,true);
+ if public.journey_order_replacement('propose',payload) <> replacement then raise exception 'Duplicate proposal'; end if;
+ begin
+  perform public.journey_order_replacement('accept',payload || jsonb_build_object('replacement',replacement));
+  raise exception 'Maker accepted a replacement on behalf of buyer';
+ exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='buyer-a@stock.example.com'),true);
+set local role authenticated;
+do $$
+declare
+ replacement uuid := current_setting('journey_test.replacement')::uuid;
+ payload jsonb := jsonb_build_object('thread',current_setting('journey_test.thread'),'requestKey',gen_random_uuid(),
+  'replacement',replacement,'quantity',3);
+begin
+ begin
+  perform public.journey_order_replacement('receive',payload);
+  raise exception 'Buyer recorded a receipt before accepting replacement';
+ exception when raise_exception then
+  if sqlerrm <> 'An accepted replacement awaiting receipt is required' then raise; end if;
+ end;
+ perform public.journey_order_replacement('accept',payload);
+ perform public.journey_order_replacement('receive',payload);
+ if public.journey_order_replacement('receive',payload) <> replacement then raise exception 'Receipt retry changed the replacement'; end if;
+ if not exists(select 1 from public.journey_orders o
+  join public.journey_order_handoffs h on o.id=h.order_id
+  join public.journey_order_replacements r on h.order_id=r.order_id
+  where r.id=replacement and o.status='completed' and h.received_quantity=7 and r.received_quantity=3)
+ then raise exception 'Replacement did not complete order with original receipt preserved'; end if;
 end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-b@stock.example.com'),true);
@@ -228,6 +275,12 @@ do $$begin
  then raise exception 'Cross-business production visibility'; end if;
  if exists(select 1 from public.journey_order_handoffs)
  then raise exception 'Cross-business delivery visibility'; end if;
+ if exists(select 1 from public.journey_order_replacements)
+ then raise exception 'Cross-business replacement visibility'; end if;
+ begin
+  perform public.journey_order_replacement('propose',jsonb_build_object('thread',current_setting('journey_test.thread'),'requestKey',gen_random_uuid()));
+  raise exception 'Cross-business replacement mutation';
+ exception when insufficient_privilege then null; end;
  begin
   perform public.journey_order_delivery('handoff',jsonb_build_object('thread',current_setting('journey_test.thread'),'requestKey',gen_random_uuid()));
   raise exception 'Cross-business delivery mutation';

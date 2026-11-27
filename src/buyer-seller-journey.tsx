@@ -20,6 +20,7 @@ import { craftBriefLines, fieldsForCraft, requestedSample, sampleQuoteTerms, spl
 import { SampleDetails, SampleHandoff, type JourneySample } from "./sample-handoff";
 import { ProductionTracker, type ProductionUpdate } from "./production-tracker";
 import { OrderDelivery, type OrderHandoff } from "./order-delivery";
+import { ShortageResolution, type Replacement } from "./shortage-resolution";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -675,7 +676,7 @@ function ThreadDetail({
           .maybeSingle(),
         marketClient!
           .from("journey_orders")
-          .select("id,status,terms,original_ready_date,journey_production_updates(id,revision,stage,completed_quantity,ready_date,previous_ready_date,date_reason,note,created_at),journey_order_handoffs(method,ordered_quantity,carrier,tracking_number,estimated_delivery,pickup_location,pickup_start,pickup_end,instructions,created_at,received_quantity,received_at,receipt_note)")
+          .select("id,status,terms,original_ready_date,journey_production_updates(id,revision,stage,completed_quantity,ready_date,previous_ready_date,date_reason,note,created_at),journey_order_handoffs(method,ordered_quantity,carrier,tracking_number,estimated_delivery,pickup_location,pickup_start,pickup_end,instructions,created_at,received_quantity,received_at,receipt_note,journey_order_replacements(id,quantity,method,expected_date,instructions,accepted_at,proposed_at,received_at,received_quantity))")
           .eq("thread_id", id)
           .order("revision", { referencedTable: "journey_production_updates", ascending: false })
           .maybeSingle(),
@@ -715,7 +716,10 @@ function ThreadDetail({
       undefined,
     )?.minor ?? latest?.unit_minor;
   const order = details.data?.order;
-  const handoff = order?.journey_order_handoffs as OrderHandoff | null | undefined;
+  const handoff = order?.journey_order_handoffs as
+    (OrderHandoff & { journey_order_replacements: Replacement[] }) | null | undefined;
+  const replacements = [...(handoff?.journey_order_replacements ?? [])]
+    .sort((a, b) => a.proposed_at.localeCompare(b.proposed_at));
   const production = (order?.journey_production_updates ?? []) as ProductionUpdate[];
   const trackedQuantity = Number(order?.terms.requirement?.quantity);
   const actionable =
@@ -935,7 +939,7 @@ function ThreadDetail({
           <form className="journey-form" onSubmit={send}>
             <label>
               Message
-              <textarea name="body" maxLength={3000} />
+              <textarea id="journey-message-body" name="body" maxLength={3000} />
             </label>
             <label>
               Private attachment
@@ -1134,6 +1138,7 @@ function ThreadDetail({
                   Number.isInteger(trackedQuantity) && trackedQuantity > 0 &&
                   (!production.length || production[0].stage === "packed")}
               />
+              <ShortageResolution thread={id} side={side} status={order.status} handoff={handoff} replacements={replacements} />
               {side === "buyer" && order.status === "completed" && <ReviewPurchase order={order.id} product={Boolean(requirement.product_id)} />}
               {side === "buyer" && order.status === "completed" && <Link className="outline" to={"/account/bulk-buying?order=" + order.id}>Start reorder draft</Link>}
               <div className="journey-actions">
