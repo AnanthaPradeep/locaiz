@@ -95,3 +95,9 @@ Regional basket, painting and textile sourcing forms offer craft-specific fields
 Connected RFQ conversations can confirm and track quoted samples separately from bulk orders. The buyer chooses an offered delivery method, confirms receipt and approves or requests changes with feedback. The maker marks preparation and shipment or pickup readiness. A changes request requires a newer sample quote for the next round. Earlier rounds and feedback remain visible in the conversation. My Buying Journey includes a Samples activity filter.
 
 A sample request is optional until accepted by the buyer. Once requested, the latest round must be approved before a bulk order can be created for that conversation. The approved sample is snapshotted alongside the bulk quote on explicit order confirmation. Sample charges do not enter bulk totals. Public Demo Mode continues to show sample terms and draft requirements. Connected lifecycle verification uses disposable Supabase only.
+
+## Bulk production tracker
+
+Makers can start production tracking on a confirmed bulk order and record making, quality check and packed updates. The buyer sees the approved sample reference on the order, agreed quantity, original estimated ready date and update history. Date changes require a reason and appear under Production in My Buying Journey. The original estimate is calculated from the order confirmation date in UTC and the agreed production days. Older orders without recorded production days show an unrecorded original estimate.
+
+Once tracking starts, the order must be fully packed before the existing dispatch or ready-for-pickup action can proceed. Orders that have no production updates can continue through their existing fulfilment flow. Hosted marketplace activation remains outside the development release.

@@ -32,7 +32,7 @@ test("a craft without samples can still start a sourcing request", async ({ page
 test("@journey craft sample revisions and approval hand off to a separately confirmed bulk order", async ({ page, browser, baseURL }) => {
   const password = process.env.LOCAIZ_PILOT_PASSWORD;
   test.skip(!password || process.env.VITE_MARKETPLACE_FOUNDATION !== "1", "Requires disposable Supabase");
-  test.setTimeout(150000);
+  test.setTimeout(180000);
   await page.goto("/#/sourcing/regional?region=tamil-nadu&craft=Tanjore+painting");
   await page.getByLabel("Maker location").selectOption("regional-browser-thanjavur");
   const maker = page.getByRole("article").filter({ hasText: "Regional Browser Maker" });
@@ -147,7 +147,45 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await expect(page.getByRole("region", { name: "Approved sample", exact: true })).toContainText("Frame looks good.");
     await page.getByRole("button", { name: "Confirm and create order" }).click();
     await expect(page.getByRole("region", { name: "Approved sample on order" })).toContainText("Quote revision 2");
+    await seller.reload();
+    const sellerProduction = seller.getByRole("region", { name: "Bulk production tracker" });
+    await sellerProduction.getByText("Start production tracking", { exact: true }).click();
+    const dateInput = sellerProduction.getByLabel("Estimated ready date");
+    const original = await dateInput.inputValue();
+    expect(original).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const revised = new Date(Date.parse(original) + 2 * 86400000).toISOString().slice(0, 10);
+    await sellerProduction.getByLabel("Completed quantity").fill("30");
+    await sellerProduction.getByRole("button", { name: "Save production update" }).click();
+    await expect(sellerProduction.getByText("Making · 30 of 50 completed")).toBeVisible();
+    await expect(seller.getByRole("button", { name: "Mark dispatched" })).toHaveCount(0);
+    await dateInput.fill(revised);
+    await sellerProduction.getByLabel("Reason for ready-date change").fill("Frame material arrived late.");
+    await sellerProduction.getByLabel("Progress note").fill("Remaining frames in progress.");
+    await sellerProduction.getByRole("button", { name: "Save production update" }).click();
+    await expect(sellerProduction.getByText("Date change reason: Frame material arrived late.")).toBeVisible();
+    await page.reload();
+    const buyerProduction = page.getByRole("region", { name: "Bulk production tracker" });
+    await expect(buyerProduction).toContainText("Original estimated ready date: " + original);
+    await expect(buyerProduction).toContainText("Estimated ready " + revised);
+    await expect(buyerProduction.getByRole("button", { name: "Save production update" })).toHaveCount(0);
+    await buyerProduction.getByText("Production update history", { exact: true }).click();
+    await expect(buyerProduction.getByText("Estimated ready " + original, { exact: true })).toBeVisible();
+
+    await sellerProduction.getByLabel("Completed quantity").fill("50");
+    await sellerProduction.getByLabel("Production stage").selectOption("quality_check");
+    await sellerProduction.getByRole("button", { name: "Save production update" }).click();
+    await expect(sellerProduction.getByText("Quality check · 50 of 50 completed")).toBeVisible();
+    await sellerProduction.getByLabel("Production stage").selectOption("packed");
+    await sellerProduction.getByRole("button", { name: "Save production update" }).click();
+    await expect(sellerProduction.getByText("Packed · 50 of 50 completed")).toBeVisible();
+    await seller.getByRole("button", { name: "Mark dispatched" }).click();
+    await expect(seller.getByText(/dispatched · shipping/)).toBeVisible();
+
     await page.getByRole("link", { name: "My Buying Journey" }).click();
+    await page.getByLabel("Activity type").selectOption("Production");
+    const delay = page.getByRole("listitem").filter({ hasText: "Frame material arrived late." });
+    await expect(delay.getByRole("link", { name: "Production delayed" })).toBeVisible();
+    await expect(delay).toContainText(revised);
     await page.getByLabel("Activity type").selectOption("Samples");
     await expect(page.getByRole("link", { name: /Sample approved.*Tanjore painting/ })).toBeVisible();
   } finally {

@@ -18,6 +18,7 @@ import { findRegionalCraft } from "./regional-crafts";
 import { CraftBriefFields } from "./craft-brief-fields";
 import { craftBriefLines, fieldsForCraft, requestedSample, sampleQuoteTerms, splitSampleQuote } from "./craft-brief";
 import { SampleDetails, SampleHandoff, type JourneySample } from "./sample-handoff";
+import { ProductionTracker, type ProductionUpdate } from "./production-tracker";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -673,8 +674,9 @@ function ThreadDetail({
           .maybeSingle(),
         marketClient!
           .from("journey_orders")
-          .select("id,status,terms")
+          .select("id,status,terms,original_ready_date,journey_production_updates(id,revision,stage,completed_quantity,ready_date,previous_ready_date,date_reason,note,created_at)")
           .eq("thread_id", id)
+          .order("revision", { referencedTable: "journey_production_updates", ascending: false })
           .maybeSingle(),
         marketClient!
           .from("journey_shortlists")
@@ -712,6 +714,8 @@ function ThreadDetail({
       undefined,
     )?.minor ?? latest?.unit_minor;
   const order = details.data?.order;
+  const production = (order?.journey_production_updates ?? []) as ProductionUpdate[];
+  const trackedQuantity = Number(order?.terms.requirement?.quantity);
   const actionable =
     latest && new Date(latest.expires_at).getTime() > Date.now() && !order;
   const sample = details.data?.samples[0];
@@ -783,7 +787,7 @@ function ThreadDetail({
     </button>
   );
   const nextOrder =
-    side === "seller" && order
+    side === "seller" && order && (!production.length || production[0].stage === "packed" || order.status !== "preparing")
       ? (
           {
             confirmed: "preparing",
@@ -1116,6 +1120,14 @@ function ThreadDetail({
                 Expected by {order.terms.estimatedDate} · Payment status
                 unrecorded
               </p>
+              <ProductionTracker
+                thread={id}
+                quantity={Number.isInteger(trackedQuantity) && trackedQuantity > 0 ? trackedQuantity : requirement.quantity}
+                original={order.original_ready_date}
+                updates={production}
+                editable={side === "seller" && Number.isInteger(trackedQuantity) && trackedQuantity > 0 &&
+                  ["confirmed", "preparing"].includes(order.status)}
+              />
               {side === "buyer" && order.status === "completed" && <ReviewPurchase order={order.id} product={Boolean(requirement.product_id)} />}
               {side === "buyer" && order.status === "completed" && <Link className="outline" to={"/account/bulk-buying?order=" + order.id}>Start reorder draft</Link>}
               <div className="journey-actions">
