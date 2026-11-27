@@ -5,6 +5,7 @@ import { MarketGate, useMarketMutation } from "./market-account";
 import { marketClient } from "./market-foundation";
 import { formatMinor } from "./sourcing/catalog";
 import { publishedCatalogue } from "./sourcing/repository";
+import { reorderHref } from "./reorder-source";
 
 type DraftLine = {
   product: string;
@@ -106,6 +107,7 @@ function BulkDraft({ user }: { user: string }) {
         {order && current.isError && (
           <p role="alert">Unable to load the previous order.</p>
         )}
+        {order && current.data && <Link className="outline" to={reorderHref(order)}>Reorder this design</Link>}
         {order &&
           current.isSuccess &&
           (previous?.product_id ? (
