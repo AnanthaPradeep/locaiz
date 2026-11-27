@@ -5,6 +5,8 @@ export type PublishedOfferQuery = {
   categoryNames?: string[];
   keyword?: string;
   businessId?: string;
+  businessBaseIds?: string[];
+  makerOnly?: boolean;
   marketplaceOnly?: boolean;
   productId?: string;
   variantId?: string;
@@ -41,7 +43,7 @@ type PublishedOffer = {
   sourcing_price_tiers?: { quantity: number; unit_price_minor: number }[];
   lead_days: number | null;
   sourcing_variants: { sourcing_products: { name: string; category_id: string; sourcing_categories?: {name:string} } };
-  sourcing_businesses: { id: string; name: string; verification: string };
+  sourcing_businesses: { id: string; name: string; verification: string; base_id: string };
 };
 
 export function publishedCatalogue(client: SupabaseClient) {
@@ -52,7 +54,7 @@ export function publishedCatalogue(client: SupabaseClient) {
         : 1;
       const start = (page - 1) * publishedPageSize;
       let query = client.from("sourcing_offers").select(
-        "id,product_id,variant_id,method,currency,unit_price_minor,minimum_quantity,pickup_id,lead_days,custom_order,shipping_countries,sourcing_variants!inner(sourcing_products!inner(name,category_id,sourcing_categories!inner(name))),sourcing_businesses!inner(id,name,verification)" + (filters.includeTiers ? ",sourcing_price_tiers(quantity,unit_price_minor)" : ""),
+        "id,product_id,variant_id,method,currency,unit_price_minor,minimum_quantity,pickup_id,lead_days,custom_order,shipping_countries,sourcing_variants!inner(sourcing_products!inner(name,category_id,sourcing_categories!inner(name))),sourcing_businesses!inner(id,name,verification,base_id)" + (filters.includeTiers ? ",sourcing_price_tiers(quantity,unit_price_minor)" : ""),
         { count: "exact" },
       ).eq("published", true).eq("sourcing_businesses.published", true)
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
@@ -61,6 +63,8 @@ export function publishedCatalogue(client: SupabaseClient) {
       if (filters.categoryNames?.length) query = query.in("sourcing_variants.sourcing_products.sourcing_categories.name",filters.categoryNames);
       if (filters.keyword) query = query.ilike("sourcing_variants.sourcing_products.name","%"+filters.keyword.replace(/[%_]/g, "")+"%");
       if (filters.businessId) query = query.eq("business_id",filters.businessId);
+      if (filters.businessBaseIds) query = query.in("sourcing_businesses.base_id", filters.businessBaseIds);
+      if (filters.makerOnly) query = query.overlaps("sourcing_businesses.roles", ["Artisan", "Home-based producer", "Cottage industry", "Workshop", "Small manufacturer"]);
       if (filters.productId) query = query.eq("product_id", filters.productId);
       if (filters.variantId) query = query.eq("variant_id", filters.variantId);
       if (filters.method) query = query.eq("method", filters.method);

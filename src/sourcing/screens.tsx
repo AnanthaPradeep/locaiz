@@ -13,6 +13,9 @@ import { MapPin, Package, Search, SlidersHorizontal } from "lucide-react";
 import { stockEnabled, stockPath } from "../stock/config";
 import { useDemo } from "../store";
 import { PublishedSourcing } from "./published";
+import { RegionalMakers } from "./regional";
+import { sampleRegionalMakers } from "./regional-data";
+import { regionalDirectoryHref, regionalRequestHref } from "../regional-crafts";
 import {
   ancestry,
   categories,
@@ -46,17 +49,34 @@ export default function Sourcing() {
   const sample = useDemo((state) => state.includeAlertSample);
   const catalogueOffers = sample ? [...offers, alertSampleOffer] : offers;
   const { kind, id } = useParams();
+  const [params] = useSearchParams();
+  if (kind === "regional") return <RegionalMakers />;
   if (kind === "published") return <PublishedSourcing />;
   if (kind === "supplier" && id) {
     const supplier = suppliers.find((item) => item.id === id);
-    if (!supplier) return <Missing />;
+    const sampleMaker = sampleRegionalMakers.find((maker) => maker.id === id);
+    const regional = sampleMaker && (params.get("craft") === sampleMaker.craft || !supplier);
+    if (!supplier && !sampleMaker) return <Missing />;
     const selection = catalogueOffers.filter((offer) => offer.supplierId === id);
     return (
       <Page
-        title={supplier.name}
+        title={supplier?.name ?? sampleMaker!.name}
         label="ILLUSTRATIVE SUPPLIER"
-        intro={supplier.roles.join(" · ")}
+        intro={supplier?.roles.join(" · ") ?? "Artisan workshop sample profile"}
       >
+        {regional && (
+          <section className="record market-stack" aria-label="Regional craft">
+            <Link to={regionalDirectoryHref(sampleMaker.region, sampleMaker.craft)}>Back to regional makers</Link>
+            <h2>{sampleMaker.craft}</h2>
+            <p>{sampleMaker.locality} · Illustrative maker and order terms</p>
+            <p>Minimum order {sampleMaker.minimum}
+              {sampleMaker.custom && " · Custom orders accepted"}
+              {sampleMaker.pickup && " · Pickup offered"}
+            </p>
+            <Link className="button" to={regionalRequestHref(sampleMaker.region, sampleMaker.craft, false, sampleMaker)}>Start a sourcing request</Link>
+          </section>
+        )}
+        {supplier && <>
         <Link to={linkFor("place", supplier.base)}>
           {ancestry(supplier.base)
             .map((place) => place.name)
@@ -82,6 +102,7 @@ export default function Sourcing() {
             <OfferCard key={offer.id} offer={offer} />
           ))}
         </div>
+        </>}
       </Page>
     );
   }
@@ -212,6 +233,7 @@ function Explore() {
         className="actions sourcing-shortcuts"
         aria-label="Sourcing shortcuts"
       >
+        <Link className="outline" to="/sourcing/regional">Regional makers</Link>
         <Link className="outline" to={linkFor("role", "Artisan")}>
           Village artisans
         </Link>

@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { asset } from "./catalog";
-import { marketClient } from "./market-foundation";
-import { regionalCrafts } from "./regional-crafts";
+import { regionalCrafts, regionalDirectoryHref } from "./regional-crafts";
 
 export function RegionalCraftSection() {
   return (
@@ -9,7 +8,7 @@ export function RegionalCraftSection() {
       <div className="section-heading">
         <div>
           <h2 id="regional-crafts-title">Handmade &amp; art by state</h2>
-          <p>Explore regional crafts and start a sourcing request. Images are illustrative.</p>
+          <p>Explore regional crafts, find makers and start a sourcing request. Images are illustrative.</p>
         </div>
       </div>
       <div className="regional-crafts">
@@ -21,9 +20,7 @@ export function RegionalCraftSection() {
               <ul aria-label={state + " crafts"}>
                 {crafts.map((craft) => (
                   <li key={craft}>
-                    <Link to={marketClient
-                      ? "/account/journey?" + new URLSearchParams({ new: "1", region: id, craft })
-                      : "/connect?" + new URLSearchParams({ product: craft, region: id })}>
+                    <Link to={regionalDirectoryHref(id, craft)}>
                       <img src={asset("images/regional/" + id + "/" + craft.toLowerCase().replaceAll(" ", "-") + ".webp")} alt="" width="320" height="320" loading="lazy" />
                       {craft}
                     </Link>
