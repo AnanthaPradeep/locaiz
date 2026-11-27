@@ -32,3 +32,16 @@ insert into public.journey_orders(id,thread_id,quote_id,buyer_id,business_id,ter
  select '33000000-0000-4000-8000-000000000005','33000000-0000-4000-8000-000000000003','33000000-0000-4000-8000-000000000004',id,
  '30000000-0000-4000-8000-000000000010','{"requirement":{"product_id":"market-bulk-browser","variant_id":"BOX-01","quantity":5},"quote":{"currency":"INR","method":"shipping"},"appliedUnitMinor":65000,"totalMinor":325000,"estimatedDate":"2026-11-26"}','completed'
  from auth.users where email='buyer-a@stock.example.com';
+
+insert into public.sourcing_places(id,parent_id,name,kind,country_code) values
+ ('regional-browser-india',null,'India','Country','IN'),
+ ('regional-browser-tn','regional-browser-india','Tamil Nadu','State','IN'),
+ ('regional-browser-thanjavur','regional-browser-tn','Thanjavur','City','IN');
+insert into public.sourcing_businesses(id,name,base_id,roles,trust_state,published)
+ values('30000000-0000-4000-8000-000000000020','Regional Browser Maker','regional-browser-thanjavur',array['Artisan'],'verified',true);
+insert into public.sourcing_products(id,name,category_id,owner_business_id,publication_state)
+ values('market-regional-browser','Tanjore painting sample','market-handmade','30000000-0000-4000-8000-000000000020','published');
+insert into public.sourcing_variants(product_id,id,name)
+ values('market-regional-browser','ART-01','Framed painting');
+insert into public.sourcing_offers(id,product_id,variant_id,business_id,method,currency,minimum_quantity,custom_order,published)
+ values('33000000-0000-4000-8000-000000000020','market-regional-browser','ART-01','30000000-0000-4000-8000-000000000020','Maker-direct','INR',3,true,true);

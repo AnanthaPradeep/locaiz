@@ -81,3 +81,7 @@ The signed-in Buyer workspace can save an unfinished RFQ to this browser. My Buy
 Home includes curated Tamil Nadu and Kerala craft examples with ImageGen collection and craft illustrations. A craft opens a prefilled requirement in the public demo or an RFQ in a connected build. These examples are sourcing prompts with illustrative images. Seller availability and provenance depend on the actual supplier offer.
 
 Craft references: [Tamil Nadu Handicrafts Development Corporation](https://tnhdc.poompuhar.com/welcome/handicraftmap) and [Kerala Tourism](https://www.keralatourism.org/souvenirs).
+
+## Regional Maker Discovery
+
+Home craft cards and Global Atlas open the regional maker directory. State, craft and locality filters use shareable hash routes. Demo mode provides labelled sample makers and local sourcing requests. Connected results use published, current offers from verified maker businesses based in the selected region. Maker profiles carry the craft and preferred supplier into the signed-in RFQ. A general sourcing request is available when a craft has no maker match.

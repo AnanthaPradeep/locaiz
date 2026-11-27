@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { FulfilmentDetails } from "./fulfilment-details";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { findRegionalCraft, regionalDirectoryHref, regionalRequestHref } from "./regional-crafts";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "./page";
 import { useMarketMutation, useMarketSession } from "./market-account";
@@ -252,6 +253,9 @@ type Supplier = {
 };
 export default function SupplierPassport() {
   const { id = "" } = useParams();
+  const [params] = useSearchParams();
+  const region = params.get("region");
+  const craft = findRegionalCraft(region, params.get("craft"));
   const mutation = useMarketMutation();
   const session = useMarketSession();
   const business = useQuery({
@@ -328,7 +332,15 @@ export default function SupplierPassport() {
       <div className="market-stack">
         <StorefrontStory id={supplier.id} name={supplier.name} verified={supplier.trust_state === "verified"} />
         <section className="record">
-          {supplier.trust_state === "verified" && <Link className="outline" to={"/account/journey?" + new URLSearchParams({supplier:supplier.id})}>Request a quote</Link>}
+          {craft && region && (
+            <p>
+              <Link to={regionalDirectoryHref(region, craft.craft)}>Back to regional makers</Link>
+              {" · "}{craft.craft}
+            </p>
+          )}
+          {supplier.trust_state === "verified" && <Link className="outline" to={craft && region
+            ? regionalRequestHref(region, craft.craft, true, supplier)
+            : "/account/journey?" + new URLSearchParams({ supplier: supplier.id })}>Request a quote</Link>}
           <h2>{trustLabels[supplier.trust_state] ?? "Unverified"}</h2>
           <p>
             {supplier.roles.join(", ")} /{" "}

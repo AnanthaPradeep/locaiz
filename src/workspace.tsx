@@ -1,4 +1,5 @@
 import { useLocale } from "./i18n";
+import { findRegionalCraft } from "./regional-crafts";
 import { marketClient } from "./market-foundation";
 import { parseIntent } from "./buyer-intent";
 import { BasketComparisonDemo, QuoteComparison } from "./quote-comparison";
@@ -40,6 +41,7 @@ export function RequirementForm() {
   const [params] = useSearchParams();
   const guided = params.get("find") === "1";
   const intent = parseIntent(params);
+  const regional = findRegionalCraft(params.get("region"), intent.query);
   const [review, setReview] = useState("");
   const demo = useDemo();
   const navigate = useNavigate();
@@ -58,7 +60,7 @@ export function RequirementForm() {
   >({
     defaultValues: {
       kind:
-        (guided && intent.notes) ? "Manufacturing" :
+        (guided && intent.notes && !regional) ? "Manufacturing" :
         params.get("kind") === "Repair"
           ? "Repair"
           : sourcingOffer?.custom
@@ -272,7 +274,7 @@ export function RequirementForm() {
             <input
               type="checkbox"
               name="custom"
-              defaultChecked={guided ? Boolean(intent.notes) : Boolean(sourcingOffer?.custom)}
+              defaultChecked={guided ? Boolean(intent.notes && !regional) : Boolean(sourcingOffer?.custom)}
             />{" "}
             Customisation needed
           </label>
