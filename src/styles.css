@@ -1227,6 +1227,15 @@ progress {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   gap: 1rem;
 }
+fieldset.journey-fields {
+  min-width: 0;
+  border: 1px solid var(--line);
+  padding: 0.875rem;
+}
+.journey-fields > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
 .journey-form label input:not([type="checkbox"]),
 .journey-form label select,
 .journey-form textarea,

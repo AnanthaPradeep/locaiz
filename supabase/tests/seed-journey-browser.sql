@@ -39,6 +39,8 @@ insert into public.sourcing_places(id,parent_id,name,kind,country_code) values
  ('regional-browser-thanjavur','regional-browser-tn','Thanjavur','City','IN');
 insert into public.sourcing_businesses(id,name,base_id,roles,trust_state,published)
  values('30000000-0000-4000-8000-000000000020','Regional Browser Maker','regional-browser-thanjavur',array['Artisan'],'verified',true);
+insert into sourcing_private.members(business_id,user_id,member_role)
+ select '30000000-0000-4000-8000-000000000020',id,'owner' from auth.users where email='seller-b@stock.example.com';
 insert into public.sourcing_products(id,name,category_id,owner_business_id,publication_state)
  values('market-regional-browser','Tanjore painting sample','market-handmade','30000000-0000-4000-8000-000000000020','published');
 insert into public.sourcing_variants(product_id,id,name)
