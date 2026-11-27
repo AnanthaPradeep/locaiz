@@ -245,7 +245,7 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await page.getByRole("link", { name: "Reorder this design" }).click();
     const source = page.getByRole("region", { name: "Previous order" });
     await expect(source).toContainText("Previously approved sample");
-    const specifications = page.getByLabel("Specifications", { exact: true });
+    const specifications = page.locator('textarea[name="specifications"]');
     await expect(specifications).toHaveValue(/Painting dimensions: 30 x 40 cm/);
     await expect(specifications).not.toHaveValue(/Sample quantity:/);
     await expect(page.getByLabel("Regional Browser Maker")).toBeChecked();
