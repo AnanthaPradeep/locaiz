@@ -11,13 +11,15 @@ import { readRequests } from "./stock/client";
 import { useDemo } from "./store";
 import { deleteRfqDraft, readRfqDrafts } from "./rfq-drafts";
 import { sampleStatus, type JourneySample } from "./sample-handoff";
+import { productionStages, type ProductionUpdate } from "./production-tracker";
 
 type Entry = {
   id: string;
   title: string;
   date: string;
   href: string;
-  kind: "Searches" | "Requirements" | "Stock & pickup" | "Orders" | "Messages" | "Samples";
+  description?: string;
+  kind: "Searches" | "Requirements" | "Stock & pickup" | "Orders" | "Messages" | "Samples" | "Production";
 };
 const links = [
   ["Saved Searches", "/account/saved-searches"],
@@ -39,6 +41,7 @@ async function connectedEntries(user: string) {
     quotes,
     pickupAudit,
     samples,
+    production,
   ] = await Promise.all([
     marketClient!
       .from("journey_rfqs")
@@ -101,6 +104,13 @@ async function connectedEntries(user: string) {
         updated_at: string;
         journey_threads: { journey_rfqs: { title: string } };
       }[], { merge: false }>(),
+    marketClient!
+      .from("journey_production_updates")
+      .select("id,stage,completed_quantity,ready_date,previous_ready_date,date_reason,created_at,journey_orders!inner(thread_id,buyer_id)")
+      .eq("journey_orders.buyer_id", user)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .overrideTypes<(Omit<ProductionUpdate, "note" | "revision"> & { journey_orders: { thread_id: string } })[], { merge: false }>(),
   ]);
   for (const result of [
     rfqs,
@@ -111,6 +121,7 @@ async function connectedEntries(user: string) {
     quotes,
     pickupAudit,
     samples,
+    production,
   ])
     if (result.error) throw result.error;
   const rows = reservations.data as unknown as {
@@ -149,7 +160,7 @@ async function connectedEntries(user: string) {
       kind: "Requirements",
     })),
     ...events
-      .data!.filter((row) => row.kind !== "Order confirmed" && !row.kind.startsWith("Sample "))
+      .data!.filter((row) => row.kind !== "Order confirmed" && !/^(Sample|Production) /.test(row.kind))
       .map((row): Entry => ({
         id: "event-" + row.id,
         title: row.kind,
@@ -170,6 +181,16 @@ async function connectedEntries(user: string) {
       date: row.updated_at,
       href: "/account/journey?thread=" + row.thread_id,
       kind: "Samples",
+    })),
+    ...production.data!.map((row): Entry => ({
+      id: "production-" + row.id,
+      title: row.date_reason
+        ? row.previous_ready_date && row.ready_date > row.previous_ready_date ? "Production delayed" : "Production ready date revised"
+        : "Production update · " + productionStages[row.stage],
+      description: `Estimated ready ${row.ready_date}${row.date_reason ? " · " + row.date_reason : ""}`,
+      date: row.created_at,
+      href: "/account/journey?thread=" + row.journey_orders.thread_id,
+      kind: "Production",
     })),
     ...rows.map((row): Entry => ({
       id: "reservation-" + row.id,
@@ -347,7 +368,7 @@ export default function BuyingTimeline() {
               "Requirements",
               "Stock & pickup",
               "Orders",
-              ...(marketClient ? ["Samples"] : []),
+              ...(marketClient ? ["Samples", "Production"] : []),
               "Messages",
             ].map((label) => (
               <option key={label}>{label}</option>
@@ -388,6 +409,7 @@ export default function BuyingTimeline() {
                   {new Date(row.date).toLocaleString(commerceLocale())}
                 </time>{" "}
                 · {row.kind}
+                {row.description && <p>{row.description}</p>}
               </li>
             ))}
           </ol>

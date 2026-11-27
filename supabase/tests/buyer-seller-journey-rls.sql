@@ -117,15 +117,75 @@ end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-a@stock.example.com'),true);
 set local role authenticated;
-select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','preparing'));
+do $$
+declare
+ thread_key uuid := current_setting('journey_test.thread')::uuid;
+ original_date date;
+ payload jsonb;
+ first_update uuid;
+begin
+ select original_ready_date into original_date from public.journey_orders where thread_id = thread_key;
+ payload := jsonb_build_object('thread',thread_key,'stage','making','completed',4,
+  'readyDate',original_date,'expectedRevision',0,'requestKey',gen_random_uuid());
+ first_update := public.journey_record_production(payload);
+ if public.journey_record_production(payload) <> first_update then raise exception 'Production retry duplicated an update'; end if;
+ begin
+  perform public.journey_record_production(payload || jsonb_build_object(
+   'requestKey',gen_random_uuid(),'completed',11,'expectedRevision',1));
+  raise exception 'Exceeded ordered quantity';
+ exception when raise_exception then
+  if sqlerrm <> 'Completed quantity cannot decrease or exceed the agreed order quantity' then raise; end if;
+ end;
+ begin
+  perform public.journey_record_production(payload || jsonb_build_object(
+   'requestKey',gen_random_uuid(),'readyDate',original_date+2,'expectedRevision',1));
+  raise exception 'Accepted a delayed date without a reason';
+ exception when raise_exception then
+  if sqlerrm <> 'Add a reason for changing the ready date' then raise; end if;
+ end;
+ begin
+  perform public.journey_action('fulfil',jsonb_build_object('id',thread_key,'state','dispatched'));
+  raise exception 'Dispatched before packing';
+ exception when raise_exception then
+  if sqlerrm <> 'Pack the tracked order before handing it off for fulfilment' then raise; end if;
+ end;
+ payload := payload || jsonb_build_object('readyDate',original_date+2,'completed',10);
+ perform public.journey_record_production(payload || jsonb_build_object(
+  'requestKey',gen_random_uuid(),'stage','quality_check','expectedRevision',1,'dateReason','Weaving delayed'));
+ perform public.journey_record_production(payload || jsonb_build_object(
+  'requestKey',gen_random_uuid(),'stage','packed','expectedRevision',2));
+ if not exists(select 1 from public.journey_orders o
+  join public.journey_production_updates p on p.order_id=o.id where o.thread_id=thread_key
+  and o.original_ready_date=original_date and p.revision=2 and p.ready_date=original_date+2
+  and p.previous_ready_date=original_date and p.date_reason='Weaving delayed')
+ then raise exception 'Production estimate history was not preserved'; end if;
+end $$;
 select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','dispatched'));
 select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','completed'));
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='buyer-a@stock.example.com'),true);
+set local role authenticated;
+do $$begin
+ if (select count(*) from public.journey_production_updates p join public.journey_orders o on o.id=p.order_id
+   where o.thread_id=current_setting('journey_test.thread')::uuid) <> 3
+ then raise exception 'Buyer cannot read the production history'; end if;
+ begin
+  perform public.journey_record_production(jsonb_build_object('thread',current_setting('journey_test.thread')));
+  raise exception 'Buyer can record maker progress';
+ exception when insufficient_privilege then null; end;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-b@stock.example.com'),true);
 set local role authenticated;
 do $$begin
  if exists(select 1 from public.journey_samples where thread_id=current_setting('journey_test.thread')::uuid)
  then raise exception 'Cross-business sample visibility'; end if;
+ if exists(select 1 from public.journey_production_updates)
+ then raise exception 'Cross-business production visibility'; end if;
+ begin
+  perform public.journey_record_production(jsonb_build_object('thread',current_setting('journey_test.thread')));
+  raise exception 'Cross-business production mutation';
+ exception when insufficient_privilege then null; end;
  begin
   perform public.journey_sample_action('preparing',jsonb_build_object('thread',current_setting('journey_test.thread'),'sample',current_setting('journey_test.sample')));
   raise exception 'Cross-business sample mutation';
