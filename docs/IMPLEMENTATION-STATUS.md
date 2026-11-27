@@ -89,3 +89,9 @@ Home craft cards and Global Atlas open the regional maker directory. State, craf
 ## Custom craft briefs and sample quotes
 
 Regional basket, painting and textile sourcing forms offer craft-specific fields and an optional sample quantity alongside the planned bulk quantity. Connected buyers can review the selected makers and delivery details, save a draft, or send the RFQ. Sellers see the readable brief in the conversation and may provide sample cost, lead time, and a delivery option in their quote. Sample terms are informational and excluded from bulk order totals. The public demo reviews and saves a local requirement. The signed-in workflow runs in the disposable CI backend.
+
+## Sample approval and bulk order handoff
+
+Connected RFQ conversations can confirm and track quoted samples separately from bulk orders. The buyer chooses an offered delivery method, confirms receipt and approves or requests changes with feedback. The maker marks preparation and shipment or pickup readiness. A changes request requires a newer sample quote for the next round. Earlier rounds and feedback remain visible in the conversation. My Buying Journey includes a Samples activity filter.
+
+A sample request is optional until accepted by the buyer. Once requested, the latest round must be approved before a bulk order can be created for that conversation. The approved sample is snapshotted alongside the bulk quote on explicit order confirmation. Sample charges do not enter bulk totals. Public Demo Mode continues to show sample terms and draft requirements. Connected lifecycle verification uses disposable Supabase only.

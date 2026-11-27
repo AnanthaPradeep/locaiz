@@ -29,10 +29,10 @@ test("a craft without samples can still start a sourcing request", async ({ page
   await expect(page.getByLabel("Requirement", { exact: true })).toHaveValue("Kasavu handloom");
 });
 
-test("@journey a buyer resumes a craft brief and receives separate sample quote terms", async ({ page, browser, baseURL }) => {
+test("@journey craft sample revisions and approval hand off to a separately confirmed bulk order", async ({ page, browser, baseURL }) => {
   const password = process.env.LOCAIZ_PILOT_PASSWORD;
   test.skip(!password || process.env.VITE_MARKETPLACE_FOUNDATION !== "1", "Requires disposable Supabase");
-  test.setTimeout(120000);
+  test.setTimeout(150000);
   await page.goto("/#/sourcing/regional?region=tamil-nadu&craft=Tanjore+painting");
   await page.getByLabel("Maker location").selectOption("regional-browser-thanjavur");
   const maker = page.getByRole("article").filter({ hasText: "Regional Browser Maker" });
@@ -82,6 +82,11 @@ test("@journey a buyer resumes a craft brief and receives separate sample quote 
     await seller.getByLabel("Unit price (minor units)").fill("20000");
     await seller.getByLabel("Minimum order quantity").fill("3");
     await seller.getByLabel("Production days").fill("12");
+    await seller.getByLabel("Transit days").fill("3");
+    for (const label of ["Shipping", "Tax", "Duties", "Other fees"]) {
+      await seller.getByLabel(label + " (minor units)", { exact: true }).fill("0");
+    }
+    await seller.getByLabel("Can fulfill at the requested destination").check();
     await seller.getByLabel("Expires").fill(new Date(Date.now() + 86400000).toISOString().slice(0, 16));
     await seller.getByLabel("Sample cost (minor units)").fill("10000");
     await seller.getByLabel("Sample lead time (days)").fill("5");
@@ -93,6 +98,58 @@ test("@journey a buyer resumes a craft brief and receives separate sample quote 
     await expect(seller.getByLabel("Sample delivery option")).toHaveValue("Pickup");
     await page.reload();
     await expect(page.getByRole("region", { name: "Sample quote" })).toContainText("Separate from the bulk order total.");
+    const sample = page.getByRole("region", { name: "Sample approval" });
+    const sellerSample = seller.getByRole("region", { name: "Sample approval" });
+    await sample.getByText("Review sample request", { exact: true }).click();
+    await sample.getByRole("button", { name: "Confirm sample request" }).click();
+    await expect(sample).toContainText("Sample status: Requested");
+
+    await seller.reload();
+    await sellerSample.getByRole("button", { name: "Mark sample preparing" }).click();
+    await sellerSample.getByRole("button", { name: "Mark sample ready for pickup" }).click();
+    await expect(sellerSample).toContainText("Sample status: Ready for pickup");
+    await page.reload();
+    await sample.getByRole("button", { name: "Mark sample received" }).click();
+    await sample.getByLabel("Sample feedback").fill("Please use a thinner frame.");
+    await sample.getByRole("button", { name: "Request sample changes" }).click();
+    await expect(sample).toContainText("Sample status: Changes requested");
+
+    await seller.reload();
+    await expect(sellerSample).toContainText("Please use a thinner frame.");
+    await seller.getByText("Revise quote", { exact: true }).click();
+    await seller.getByLabel("Sample delivery option").selectOption("Shipping");
+    await seller.getByRole("button", { name: "Send revision" }).click();
+    await expect(seller.getByText(/Revision 2 ·/)).toBeVisible();
+
+    await page.reload();
+    await sample.getByText("Review revised sample terms").click();
+    await sample.getByRole("button", { name: "Confirm sample request" }).click();
+    await expect(sample).toContainText("Sample status: Requested");
+    await sample.getByText("Previous samples and feedback").click();
+    await expect(sample.getByText(/Please use a thinner frame/)).toBeVisible();
+    await seller.reload();
+    await sellerSample.getByRole("button", { name: "Mark sample preparing" }).click();
+    await sellerSample.getByRole("button", { name: "Mark sample shipped" }).click();
+    await expect(sellerSample).toContainText("Sample status: Shipped");
+
+    await page.reload();
+    await page.getByRole("button", { name: "Select quote", exact: true }).click();
+    await seller.reload();
+    await seller.getByRole("button", { name: "Confirm quoted terms" }).click();
+    await expect(seller.getByText(/Quote confirmed/)).toBeVisible();
+    await page.reload();
+    await expect(page.getByText("Approve the current sample before creating the bulk order.")).toBeVisible();
+    await sample.getByRole("button", { name: "Mark sample received" }).click();
+    await sample.getByLabel("Sample feedback").fill("Frame looks good.");
+    await sample.getByRole("button", { name: "Approve sample", exact: true }).click();
+    await expect(sample).toContainText("Sample status: Approved");
+    await page.getByText("Review and create order", { exact: true }).click();
+    await expect(page.getByRole("region", { name: "Approved sample", exact: true })).toContainText("Frame looks good.");
+    await page.getByRole("button", { name: "Confirm and create order" }).click();
+    await expect(page.getByRole("region", { name: "Approved sample on order" })).toContainText("Quote revision 2");
+    await page.getByRole("link", { name: "My Buying Journey" }).click();
+    await page.getByLabel("Activity type").selectOption("Samples");
+    await expect(page.getByRole("link", { name: /Sample approved.*Tanjore painting/ })).toBeVisible();
   } finally {
     await seller.close();
   }

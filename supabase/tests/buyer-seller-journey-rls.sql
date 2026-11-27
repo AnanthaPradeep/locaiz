@@ -8,7 +8,7 @@ insert into sourcing_private.members(business_id,user_id,member_role)
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='buyer-a@stock.example.com'),true);
 set local role authenticated;
 select set_config('journey_test.rfq',public.journey_action('submit_rfq',
- '{"submission":"40000000-0000-4000-8000-000000000001","title":"Handmade QA basket","quantity":10,"unit":"units","destination":"Chennai","currency":"INR","businesses":["30000000-0000-4000-8000-000000000001"]}')::text,true);
+ '{"submission":"40000000-0000-4000-8000-000000000001","title":"Handmade QA basket","specifications":"Craft: Chettinad baskets\nSample quantity: 2","quantity":10,"unit":"units","destination":"Chennai","currency":"INR","businesses":["30000000-0000-4000-8000-000000000001"]}')::text,true);
 select set_config('journey_test.thread',(select id::text from public.journey_threads where rfq_id=current_setting('journey_test.rfq')::uuid),true);
 select public.journey_action('message',jsonb_build_object('id',current_setting('journey_test.thread'),
  'requestKey','40000000-0000-4000-8000-000000000002','body','Could you confirm a price?'));
@@ -53,6 +53,7 @@ select public.journey_action('submit_quote',jsonb_build_object('id',current_sett
  'moq',5,'production',2,'supported',true,'method','shipping','expires',now()+interval '7 days'));
 select public.journey_action('submit_quote',jsonb_build_object('id',current_setting('journey_test.thread'),'currency','INR','unitMinor',5000,
  'moq',5,'production',2,'transit',1,'shipping',1000,'tax',0,'duties',0,'other',0,
+ 'customTerms',E'Sample quote (separate from bulk)\nSample cost (minor units): 2500\nSample lead time (days): 5\nSample delivery: Shipping or pickup',
  'tiers','[{"quantity":10,"minor":4500}]'::jsonb,'supported',true,'method','shipping','expires',now()+interval '7 days'));
 select set_config('journey_test.quote',(select latest_quote::text from public.journey_threads where id=current_setting('journey_test.thread')::uuid),true);
 do $$begin
@@ -62,6 +63,18 @@ end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='buyer-a@stock.example.com'),true);
 set local role authenticated;
+select set_config('journey_test.sample',public.journey_sample_action('request',jsonb_build_object(
+ 'thread',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote'),'delivery','shipping'))::text,true);
+do $$
+declare payload jsonb := jsonb_build_object('thread',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote'),'delivery','shipping');
+begin
+ if public.journey_sample_action('request', payload)::text <> current_setting('journey_test.sample')
+ then raise exception 'Duplicate sample request changed the ID'; end if;
+ begin
+  perform public.journey_sample_action('preparing',jsonb_build_object('thread',current_setting('journey_test.thread'),'sample',current_setting('journey_test.sample')));
+  raise exception 'Buyer moved seller status';
+ exception when insufficient_privilege then null; end;
+end $$;
 select public.journey_action('select_quote',jsonb_build_object('id',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote')));
 do $$begin
  if not exists(select 1 from public.journey_events where thread_id=current_setting('journey_test.thread')::uuid and kind='Quote selected')
@@ -79,13 +92,26 @@ reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-a@stock.example.com'),true);
 set local role authenticated;
 select public.journey_action('confirm_terms',jsonb_build_object('id',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote')));
+select public.journey_sample_action('preparing',jsonb_build_object('thread',current_setting('journey_test.thread'),'sample',current_setting('journey_test.sample')));
+select public.journey_sample_action('dispatched',jsonb_build_object('thread',current_setting('journey_test.thread'),'sample',current_setting('journey_test.sample')));
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='buyer-a@stock.example.com'),true);
 set local role authenticated;
+do $$begin
+ begin
+  perform public.journey_action('create_order',jsonb_build_object('id',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote')));
+  raise exception 'Bulk order created before sample approval';
+ exception when raise_exception then
+  if sqlerrm <> 'Approve the current sample before creating the bulk order' then raise; end if;
+ end;
+end $$;
+select public.journey_sample_action('received',jsonb_build_object('thread',current_setting('journey_test.thread'),'sample',current_setting('journey_test.sample')));
+select public.journey_sample_action('approved',jsonb_build_object('thread',current_setting('journey_test.thread'),'sample',current_setting('journey_test.sample'),'feedback','Handle size approved'));
 select public.journey_action('create_order',jsonb_build_object('id',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote')));
 select public.journey_action('create_order',jsonb_build_object('id',current_setting('journey_test.thread'),'quote',current_setting('journey_test.quote')));
 do $$begin
- if (select count(*) from public.journey_orders where thread_id=current_setting('journey_test.thread')::uuid and terms->>'totalMinor'='46000')<>1
+ if (select count(*) from public.journey_orders where thread_id=current_setting('journey_test.thread')::uuid and terms->>'totalMinor'='46000'
+  and terms#>>'{approvedSample,feedback}'='Handle size approved')<>1
   then raise exception 'Order is missing, duplicated, or incorrectly priced'; end if;
 end $$;
 reset role;
@@ -94,6 +120,17 @@ set local role authenticated;
 select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','preparing'));
 select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','dispatched'));
 select public.journey_action('fulfil',jsonb_build_object('id',current_setting('journey_test.thread'),'state','completed'));
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-b@stock.example.com'),true);
+set local role authenticated;
+do $$begin
+ if exists(select 1 from public.journey_samples where thread_id=current_setting('journey_test.thread')::uuid)
+ then raise exception 'Cross-business sample visibility'; end if;
+ begin
+  perform public.journey_sample_action('preparing',jsonb_build_object('thread',current_setting('journey_test.thread'),'sample',current_setting('journey_test.sample')));
+  raise exception 'Cross-business sample mutation';
+ exception when insufficient_privilege then null; end;
+end $$;
 reset role;
 set local role anon;
 do $$begin
