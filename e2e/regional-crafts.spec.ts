@@ -118,7 +118,7 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await expect(sellerSample).toContainText("Please use a thinner frame.");
     await seller.getByText("Revise quote", { exact: true }).click();
     await seller.getByLabel("Sample delivery option").selectOption("Shipping");
-    await seller.getByLabel("Fulfillment", { exact: true }).selectOption("pickup");
+    await seller.getByRole("combobox", { name: /^Fulfillment/ }).selectOption("pickup");
     await seller.getByRole("button", { name: "Send revision" }).click();
     await expect(seller.getByText(/Revision 2 ·/)).toBeVisible();
 
