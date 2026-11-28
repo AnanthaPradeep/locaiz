@@ -1365,7 +1365,11 @@ fieldset.journey-fields {
 
 .marketplace-campaigns {
   margin-block: clamp(1.25rem, 3vw, 2.75rem);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.marketplace-campaigns[data-collections="0"] { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) {
+  .marketplace-campaigns[data-collections="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .marketplace-campaigns .home-campaign-copy h2 {
   margin: 0;
@@ -1380,7 +1384,7 @@ fieldset.journey-fields {
   grid-template-rows: auto auto 1fr auto;
   align-content: stretch;
 }
-.marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 16 / 10; max-height: 360px; }
+.marketplace-campaigns .home-campaign--featured picture { width: 100%; height: clamp(230px, 28vw, 360px); aspect-ratio: auto; }
 .marketplace-campaigns .home-campaign--featured picture img { object-position: center; }
 .card-media:has(.card-illustrative) { position: relative; }
 .card-illustrative {
@@ -1394,7 +1398,8 @@ fieldset.journey-fields {
 }
 .discovery-target { scroll-margin-top: 8rem; }
 @media (max-width: 650px) {
-  .marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 5 / 3; }
+  .marketplace-campaigns { grid-template-columns: minmax(0, 1fr); }
+  .marketplace-campaigns .home-campaign--featured picture { height: auto; aspect-ratio: 5 / 3; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card-media:has(.card-illustrative) img { transition: none; }
@@ -1405,5 +1410,5 @@ fieldset.journey-fields {
   grid-column: 1 / -1;
   margin-block: 0.35rem;
 }
-.marketplace-campaigns-inline .home-campaign--featured picture { aspect-ratio: 3 / 1; }
+.marketplace-campaigns-inline .home-campaign--featured picture { height: clamp(130px, 17vw, 245px); }
 .marketplace-campaigns-inline .home-campaign-copy h3 { font-size: clamp(1.35rem, 2.5vw, 2rem); }

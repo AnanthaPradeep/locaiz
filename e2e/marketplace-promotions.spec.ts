@@ -27,6 +27,17 @@ for (const width of [360, 390, 768, 1024, 1440, 1920]) {
       const banner = campaign.locator(".home-campaign--featured img");
       const src = await banner.evaluate((node) => (node as HTMLImageElement).currentSrc);
       expect(src).toMatch(width <= 650 ? /-mobile\.webp$/ : /-desktop\.webp$/);
+      if (width >= 1024) {
+        const hero = campaign.locator(".home-campaign--featured");
+        const frame = await hero.boundingBox();
+        const picture = await banner.boundingBox();
+        expect(Math.abs(frame!.x + frame!.width - picture!.x - picture!.width)).toBeLessThanOrEqual(2);
+        const cards = campaign.locator(".home-campaign--collection");
+        if (await cards.count()) {
+          const right = await cards.last().boundingBox();
+          expect(Math.abs(frame!.x + frame!.width - right!.x - right!.width)).toBeLessThanOrEqual(2);
+        }
+      }
       await expect(campaign.getByText("Sponsored", { exact: true })).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
