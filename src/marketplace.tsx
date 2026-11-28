@@ -390,6 +390,7 @@ export default function Marketplace() {
           Retry search
         </button>
       )}
+      {!search && section === "global" && !map && filtered.length > 0 && <MarketplaceCampaignSection page="atlas-overview" />}
       {!search && (section === "nearby" || section === "care") && (
         <>
           {filtered.length > 0 && <MarketplaceCampaignSection page={section} />}
