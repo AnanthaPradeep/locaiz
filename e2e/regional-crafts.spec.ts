@@ -1,4 +1,4 @@
-﻿import { expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test("regional craft images lead to maker profiles and demo sourcing requests", async ({ page }) => {
   test.skip(process.env.VITE_MARKETPLACE_FOUNDATION === "1", "Demo build");
@@ -287,7 +287,7 @@ test("@journey craft sample revisions and approval hand off to a separately conf
     await search.fill("painting");
     const originalDesign = library.getByRole("article").filter({ has: page.getByRole("heading", { name: "Tanjore original teak" }) });
     await expect(originalDesign).toBeVisible();
-    await originalDesign.getByText("Save as new design", { exact: true }).click();
+    await originalDesign.locator("summary").filter({ hasText: "Save as new design" }).click();
     await originalDesign.getByLabel("Design name").fill("Tanjore lighter variant");
     const variantSpecs = originalDesign.getByLabel("Design specifications");
     await variantSpecs.fill((await variantSpecs.inputValue()).replace("Frame: Teak frame", "Frame: Light oak frame"));
