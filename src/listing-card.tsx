@@ -13,6 +13,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
 import { asset, money, type Listing } from "./catalog";
 import { useDemo } from "./store";
+import { resolveMarketplaceImage } from "./marketplace-images";
 import {
   availableCartUnits,
   retailVariants,
@@ -40,18 +41,20 @@ export function ListingCard({
   const url = `/listing/${item.section}/${item.id}`;
   const Icon = icons[item.section as keyof typeof icons] || Package;
   const retail = item.section === "shop";
+  const media = resolveMarketplaceImage(item);
   return (
     <article className="listing-card">
       <div className="card-media">
-        {item.image ? (
+        {media ? (
           <img
-            src={asset(`images/${item.image}.webp`)}
-            alt={item.name}
+            src={media.src}
+            alt={media.alt}
             loading="lazy"
           />
         ) : (
           <Icon size={42} strokeWidth={1.15} aria-hidden="true" />
         )}
+        {media?.illustrative && <span className="card-illustrative">Illustrative</span>}
       </div>
       <div className="card-copy">
         <small>{item.manufacturer ? "Demo manufacturer" : item.category}</small>

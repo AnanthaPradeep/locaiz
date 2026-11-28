@@ -65,3 +65,7 @@ See [Brand theming](docs/BRAND-THEMING.md) and [App loading screen](docs/APP-LOA
 [Marketplace Foundation setup](docs/MARKETPLACE-FOUNDATION.md) covers the optional connected account, Seller Studio and moderation build.
 
 [Buyer-to-seller journey and connected test setup](docs/BUYER-SELLER-JOURNEY.md)
+
+### Marketplace discovery imagery
+
+See the [marketplace visual refresh](docs/MARKETPLACE-VISUAL-REFRESH.md) for campaign placements, CTA routes and the ImageGen asset inventory.

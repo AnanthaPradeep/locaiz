@@ -1,4 +1,5 @@
 import { useLocale } from "./i18n";
+import { MarketplaceCampaignSection } from "./marketplace-campaign-section";
 import { findRegionalCraft } from "./regional-crafts";
 import { CraftBriefFields } from "./craft-brief-fields";
 import { craftBriefLines, fieldsForCraft } from "./craft-brief";
@@ -1002,7 +1003,7 @@ const businessPanels = [
   "Admin",
 ];
 
-export function Business({ panel }: { panel: string }) {
+export function Business({ panel, publicEntry = false }: { panel: string; publicEntry?: boolean }) {
   const {t}=useLocale();
   const demo = useDemo();
   const [feedback, setFeedback] = useState("");
@@ -1015,6 +1016,7 @@ export function Business({ panel }: { panel: string }) {
       label="LOCAIZ BUSINESS"
       intro="Local demo workspace · Verification unsubmitted"
     >
+      {publicEntry && <MarketplaceCampaignSection page="business" />}
       <nav className="panel-nav" aria-label="Business sections">
         {marketClient && <Link to="/business/studio">Seller Studio</Link>}
         {marketClient && <Link to="/business/journey">Seller enquiries</Link>}
