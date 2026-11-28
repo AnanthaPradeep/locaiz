@@ -95,3 +95,20 @@ test("Business promotes seller onboarding on its entry route", async ({ page }) 
   await page.goto("/#/business/inventory");
   await expect(page.getByRole("region", { name: "Marketplace promotions" })).toHaveCount(0);
 });
+
+test("@market connected promotions keep routing to existing appointments, RFQs and Seller Studio", async ({ page }) => {
+  test.skip(process.env.VITE_MARKETPLACE_FOUNDATION !== "1", "Connected build");
+  await page.goto("/#/care");
+  await page.getByRole("link", { name: "Live service appointments" }).click();
+  await expect(page).toHaveURL(/#\/care\/live/);
+  await expect(page.getByRole("region", { name: "Marketplace promotions" })).toHaveCount(0);
+
+  await page.goto("/#/connect");
+  await page.getByRole("region", { name: "Marketplace promotions" }).getByRole("link", { name: "Start a Sourcing Request" }).click();
+  await expect(page).toHaveURL(/#\/account\/journey\?new=1/);
+
+  await page.goto("/#/business");
+  await page.getByRole("region", { name: "Marketplace promotions" }).getByRole("link", { name: "Become a Seller" }).click();
+  await expect(page).toHaveURL(/#\/business\/studio/);
+  await expect(page.getByRole("region", { name: "Marketplace promotions" })).toHaveCount(0);
+});
