@@ -12,6 +12,7 @@ export function MarketplaceCampaignSection({ page, beforeNavigate, inline = fals
   if (!campaigns.length) return null;
   return (
     <section className={"marketplace-campaigns home-campaign-grid" + (inline ? " marketplace-campaigns-inline" : "")}
+      data-collections={campaigns.filter((promotion) => promotion.placement === "collection").length}
       aria-label={inline ? "Sourcing promotion" : "Marketplace promotions"}>
       {campaigns.map((promotion) => (
         <CampaignCard
