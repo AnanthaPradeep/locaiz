@@ -288,10 +288,36 @@ begin
   and quantity=100 and destination='Coimbatore' and specifications='Same handle and weave')
  then raise exception 'Reorder source or editable terms were lost'; end if;
 end $$;
+do $$
+declare
+ source_key uuid := current_setting('journey_test.source')::uuid;
+ design_key uuid := gen_random_uuid();
+ copy_key uuid := gen_random_uuid();
+ payload jsonb := jsonb_build_object('id',design_key,'sourceOrder',source_key,'name','Original basket',
+  'specifications','Craft: Chettinad baskets');
+begin
+ if public.journey_save_design(payload) <> design_key or public.journey_save_design(payload) <> design_key
+ then raise exception 'Design save retry failed'; end if;
+ perform public.journey_save_design(payload || jsonb_build_object('id',copy_key,'copiedFrom',design_key,
+  'name','Light basket','specifications','Craft: Chettinad baskets, light finish'));
+ perform set_config('journey_test.saved_design',design_key::text,true);
+ if (select count(*) from public.journey_saved_designs where source_order_id=source_key
+  and search_document @@ plainto_tsquery('simple','Chettinad')) <> 2
+ then raise exception 'Buyer cannot find both saved designs by craft'; end if;
+ if not exists(select 1 from public.journey_saved_designs where id=design_key and specifications='Craft: Chettinad baskets')
+ then raise exception 'Creating a design variant changed the original'; end if;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub',(select id::text from auth.users where email='seller-b@stock.example.com'),true);
 set local role authenticated;
 do $$begin
+ if exists(select 1 from public.journey_saved_designs where id=current_setting('journey_test.saved_design')::uuid)
+ then raise exception 'Cross-account saved design visibility'; end if;
+ begin
+  perform public.journey_save_design(jsonb_build_object('id',gen_random_uuid(),
+    'sourceOrder',current_setting('journey_test.source'),'copiedFrom',current_setting('journey_test.saved_design'),'name','Unauthorised copy'));
+  raise exception 'Non-owner copied the saved design';
+ exception when insufficient_privilege then null; end;
  if not exists(select 1 from public.journey_rfqs where id=current_setting('journey_test.reorder')::uuid
    and specifications='Same handle and weave')
  then raise exception 'Alternate maker cannot read shared reorder specifications'; end if;

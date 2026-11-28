@@ -22,6 +22,8 @@ import { ProductionTracker, type ProductionUpdate } from "./production-tracker";
 import { OrderDelivery, type OrderHandoff } from "./order-delivery";
 import { ShortageResolution, type Replacement } from "./shortage-resolution";
 import { readReorderSource, reorderHref, reorderSpecifications } from "./reorder-source";
+import { readSavedDesign, savedDesignsHref } from "./saved-designs";
+import { SaveDesignForm } from "./saved-design-library";
 
 type Side = "buyer" | "seller";
 type Terms = Record<
@@ -62,6 +64,7 @@ function Requirement({
   draftId,
   regionalCraft,
   sourceOrder,
+  designId,
   submitted,
 }: {
   user: string;
@@ -74,6 +77,7 @@ function Requirement({
   draftId: string | null;
   regionalCraft?: ReturnType<typeof findRegionalCraft>;
   sourceOrder: string | null;
+  designId: string | null;
   submitted: (id: string) => void;
 }) {
   const {t}=useLocale();
@@ -85,7 +89,14 @@ function Requirement({
   const [reviewError, setReviewError] = useState("");
   const context = saved ?? { product, variant, assignment };
   const values = saved?.fields;
-  const reorderId = saved?.sourceOrder ?? sourceOrder;
+  const selectedDesignId = saved?.designId ?? designId;
+  const validDesign = Boolean(selectedDesignId && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(selectedDesignId));
+  const design = useQuery({
+    queryKey: ["market", "saved-design", user, selectedDesignId],
+    enabled: validDesign,
+    queryFn: () => readSavedDesign(selectedDesignId!, user),
+  });
+  const reorderId = design.data?.source_order_id ?? saved?.sourceOrder ?? sourceOrder;
   const validReorder = Boolean(reorderId && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(reorderId));
   const reorder = useQuery({
     queryKey: ["market", "reorder-source", user, reorderId],
@@ -93,7 +104,7 @@ function Requirement({
     queryFn: () => readReorderSource(reorderId!, user),
   });
   const original = reorder.data?.terms.requirement;
-  const originalSpecifications = reorderSpecifications(reorder.data);
+  const originalSpecifications = design.data?.specifications ?? reorderSpecifications(reorder.data);
   const preferredSupplier = reorder.data?.business_id ?? supplier;
   const craft = values?.regionalCraft ?? regionalCraft?.craft;
   const hasCraftBrief = !reorderId && Boolean(fieldsForCraft(craft));
@@ -103,6 +114,7 @@ function Requirement({
         id: submission, edited: 0, fields: {}, suppliers: [], attachment: saved?.attachment ?? false,
         product: context.product, variant: context.variant, assignment: context.assignment,
         sourceOrder: reorderId ?? undefined,
+        designId: selectedDesignId ?? undefined,
       }, new FormData(form));
       setDraftStatus("Draft saved on this browser.");
     } catch {
@@ -232,6 +244,17 @@ function Requirement({
       submitted(id);
     }, "Requirement sent.");
   }
+  if (selectedDesignId && !design.data) {
+    return (
+      <section className="journey-panel" aria-label="Saved design">
+        {validDesign && design.isPending
+          ? <p role="status">Loading saved design</p>
+          : <p role="alert">This saved design is unavailable.</p>}
+        {design.isError && <button className="outline" onClick={() => void design.refetch()}>Retry design</button>}
+        <Link to={savedDesignsHref}>Back to Saved Designs</Link>
+      </section>
+    );
+  }
   if (reorderId && !reorder.data) {
     return (
       <section className="journey-panel" aria-label="Reorder this design">
@@ -248,7 +271,7 @@ function Requirement({
       className="journey-panel"
       open={supplier || startOpen || draftId || reorderId ? true : undefined}
     >
-      <summary>{reorderId ? "Reorder this design" : "Send a request for quotation"}</summary>
+      <summary>{design.data ? "Request a quote for " + design.data.name : reorderId ? "Reorder this design" : "Send a request for quotation"}</summary>
       {reorder.data && (
         <section className="record journey-stack" aria-label="Previous order">
           <Link to={"/account/journey?thread=" + reorder.data.thread_id}>Original order {reorder.data.id.slice(0, 8)}</Link>
@@ -270,7 +293,7 @@ function Requirement({
       }}>
         <label>
           {t("Requirement title")}
-          <input name="title" defaultValue={values?.title ?? original?.title ?? draft?.description ?? regionalCraft?.craft} required minLength={3} maxLength={120} />
+          <input name="title" defaultValue={values?.title ?? design.data?.name ?? original?.title ?? draft?.description ?? regionalCraft?.craft} required minLength={3} maxLength={120} />
         </label>
         {craft && hasCraftBrief && <CraftBriefFields craft={craft} values={values} />}
         <label>
@@ -1216,11 +1239,16 @@ function ThreadDetail({
               <ShortageResolution thread={id} side={side} status={order.status} handoff={handoff} replacements={replacements} />
               {side === "buyer" && order.status === "completed" && <ReviewPurchase order={order.id} product={Boolean(requirement.product_id)} />}
               {side === "buyer" && order.status === "completed" && (
-                <div className="actions">
-                  <Link className="outline" to={reorderHref(order.id)}>Reorder this design</Link>
-                  {order.terms.requirement?.product_id && (
-                    <Link to={"/account/bulk-buying?order=" + order.id}>Compare current catalogue offers</Link>
-                  )}
+                <div className="journey-stack">
+                  <div className="actions">
+                    <Link className="outline" to={reorderHref(order.id)}>Reorder this design</Link>
+                    {order.terms.requirement?.product_id && (
+                      <Link to={"/account/bulk-buying?order=" + order.id}>Compare current catalogue offers</Link>
+                    )}
+                  </div>
+                  <SaveDesignForm key={order.id} sourceOrder={order.id}
+                    name={order.terms.requirement?.title ?? requirement.title}
+                    specifications={reorderSpecifications(order)} />
                 </div>
               )}
               <div className="journey-actions">
@@ -1403,6 +1431,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
             params.get("region"),
             params.get("craft"),
             params.get("reorder"),
+            params.get("design"),
           ].join(":")}
           user={user}
           supplier={params.get("supplier")}
@@ -1414,6 +1443,7 @@ function Journey({ user, side }: { user: string; side: Side }) {
           draftId={params.get("draft")}
           regionalCraft={findRegionalCraft(params.get("region"), params.get("craft"))}
           sourceOrder={params.get("reorder")}
+          designId={params.get("design")}
           submitted={(id) => {
             setPage(0);
             setSearch("");
