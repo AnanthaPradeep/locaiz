@@ -1362,3 +1362,48 @@ fieldset.journey-fields {
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
+
+.marketplace-campaigns {
+  margin-block: clamp(1.25rem, 3vw, 2.75rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+}
+.marketplace-campaigns .home-campaign-copy h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 3.6vw, 3.2rem);
+  line-height: 1.12;
+}
+.marketplace-campaigns .home-campaign:not(.home-campaign--featured) .button {
+  align-self: end;
+  margin-block-start: auto;
+}
+.marketplace-campaigns .home-campaign:not(.home-campaign--featured) .home-campaign-copy {
+  grid-template-rows: auto auto 1fr auto;
+  align-content: stretch;
+}
+.marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 16 / 10; }
+.marketplace-campaigns .home-campaign--featured picture img { object-position: center; }
+.card-media:has(.card-illustrative) { position: relative; }
+.card-illustrative {
+  position: absolute;
+  inset: auto auto 0.55rem 0.55rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.77rem;
+}
+.discovery-target { scroll-margin-top: 8rem; }
+@media (max-width: 650px) {
+  .marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 5 / 4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-media:has(.card-illustrative) img { transition: none; }
+  .listing-card:has(.card-product-link:hover) .card-media:has(.card-illustrative) img { transform: none; }
+}
+
+.marketplace-campaigns-inline {
+  grid-column: 1 / -1;
+  margin-block: 0.35rem;
+}
+.marketplace-campaigns-inline .home-campaign--featured picture { aspect-ratio: 3 / 1; }
+.marketplace-campaigns-inline .home-campaign-copy h3 { font-size: clamp(1.35rem, 2.5vw, 2rem); }

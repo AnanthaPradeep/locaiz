@@ -125,3 +125,7 @@ Reorder submission validates completed order ownership and links the fresh RFQ t
 A signed-in buyer can save a named design from a completed order and find it under My Buying Journey → Saved Designs. Search matches terms in the design name and specifications. Save as new design creates a separate copy with editable specifications while preserving the original.
 
 Start RFQ uses the selected design's specifications and the original order's maker and approved sample context. Buyers can change quantity, destination and deadline, choose another verified maker and save or send a fresh RFQ. Saved designs are private to the buyer's connected account. Drafts remain browser-local. The workflow is verified with disposable Supabase in CI.
+
+## Marketplace visual refresh
+
+Nearby, Global Atlas, Care, Connect and public Business use shared campaigns and original illustrative discovery media. See [placements and verification](MARKETPLACE-VISUAL-REFRESH.md), [campaign configuration](MARKETPLACE-CAMPAIGNS.md) and [asset manifest](MARKETPLACE-IMAGE-ASSETS.md).

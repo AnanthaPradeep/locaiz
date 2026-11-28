@@ -33,6 +33,7 @@ import { suppliers, placeName, formatMinor } from "./sourcing/catalog";
 
 import { catalogueFilters, nonnegative } from "./catalogue-filters";
 import { SavedSearchButton } from "./saved-search-ui";
+import { MarketplaceCampaignSection } from "./marketplace-campaign-section";
 
 const ConnectedNearby = lazy(() => import("./connected-nearby").then(module => ({default:module.ConnectedNearby})));
 const MarketMap = lazy(() => import("./market-map"));
@@ -71,6 +72,7 @@ export default function Marketplace() {
   const {t}=useLocale();
   const { section, id } = useParams();
   const [params, setParams] = useSearchParams();
+  const editedRequirement = useRef<string | undefined>(undefined);
   const [map, setMap] = useState(false);
   const city = useDemo((state) => state.city);
   const includeAlertSample = useDemo((state) => state.includeAlertSample);
@@ -106,13 +108,23 @@ export default function Marketplace() {
         label="LOCAIZ CONNECT"
         intro={descriptions.connect}
       >
+        <MarketplaceCampaignSection page="connect" beforeNavigate={(event) => {
+          if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey &&
+            editedRequirement.current === params.toString() &&
+            !window.confirm("Leave this page and discard your unsaved requirement changes?")) {
+            event.preventDefault();
+          }
+        }} />
         {marketClient && <Link className="button" to="/account/journey?new=1">Send a live RFQ</Link>}
         <Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link>
-        <RequirementForm key={params.toString()} />
+        <section id="connect-requirement" className="discovery-target" aria-label="Sourcing request form" tabIndex={-1}
+          onInputCapture={() => { editedRequirement.current = params.toString(); }}>
+          <RequirementForm key={params.toString()} />
+        </section>
       </Page>
     );
   if (search && params.get("find") === "1") return <Page translateTitle title="Find It Your Way" label="LOCAIZ MARKETPLACE" intro="Compare ways to buy or source your product. Demo catalogue."><Link className="outline" to="/sourcing-assistant">Build a sourcing brief</Link><FindBuyingOptions params={params} /></Page>;
-  if (section === "business") return <Business panel="dashboard" />;
+  if (section === "business") return <Business panel="dashboard" publicEntry />;
   const items = search
     ? (query.data ?? [])
     : findListings(section === "shop" ? term : "", section as Section,
@@ -377,6 +389,13 @@ export default function Marketplace() {
         <button className="outline" onClick={() => void query.refetch()}>
           Retry search
         </button>
+      )}
+      {!search && (section === "nearby" || section === "care") && (
+        <>
+          {filtered.length > 0 && <MarketplaceCampaignSection page={section} />}
+          <div id={section + "-discovery-results"} className="discovery-target" tabIndex={-1} role="region"
+            aria-label={section === "nearby" ? "Nearby shop results" : "Care service results"} />
+        </>
       )}
       {map && canMap && filtered.length > 0 && (
         <Suspense fallback={<p>Loading map…</p>}>

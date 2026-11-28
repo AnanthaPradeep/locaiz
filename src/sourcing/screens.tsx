@@ -1,5 +1,5 @@
 import { SavedSearchButton } from "../saved-search-ui";
-import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
+import { Fragment, lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import {
   Link,
   useNavigate,
@@ -13,6 +13,7 @@ import { MapPin, Package, Search, SlidersHorizontal } from "lucide-react";
 import { stockEnabled, stockPath } from "../stock/config";
 import { useDemo } from "../store";
 import { PublishedSourcing } from "./published";
+import { MarketplaceCampaignSection } from "../marketplace-campaign-section";
 import { RegionalMakers } from "./regional";
 import { sampleRegionalMakers } from "./regional-data";
 import { regionalDirectoryHref, regionalRequestHref } from "../regional-crafts";
@@ -250,6 +251,7 @@ function Explore() {
           Industrial sourcing
         </Link>
       </nav>
+      {results.length > 0 && <MarketplaceCampaignSection page="global-atlas" />}
       <div className="sourcing-controls">
         <div className="sourcing-filters">
           <label className="sourcing-search">
@@ -464,8 +466,11 @@ function Explore() {
       >
         {results
           .slice((page - 1) * pageSize, page * pageSize)
-          .map(({ offer }) => (
-            <OfferPreview key={offer.id} offer={offer} />
+          .map(({ offer }, index, batch) => (
+            <Fragment key={offer.id}>
+              <OfferPreview offer={offer} />
+              {view !== "map" && page === 1 && index === 3 && batch.length > 4 && <MarketplaceCampaignSection page="global-atlas" inline />}
+            </Fragment>
           ))}
       </div>
       {results.length > pageSize && (
