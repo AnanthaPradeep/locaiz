@@ -36,3 +36,22 @@ The renderer uses base-aware lazy images and CSS aspect ratios. The listing reso
 | `nearby-pickup.webp` | 29338 |
 
 [Visual contact sheet](screenshots/marketplace-campaign-contact.jpg)
+
+### Global Atlas city overview additions
+
+These category illustrations were generated with ImageGen and are labelled on the listing cards.
+
+| Asset | Bytes |
+| --- | ---: |
+| `atlas-bangkok.webp` | 44014 |
+| `atlas-dubai.webp` | 40954 |
+| `atlas-form-assembly.webp` | 35012 |
+| `atlas-guangzhou.webp` | 38656 |
+| `atlas-ho-chi-minh.webp` | 38144 |
+| `atlas-istanbul.webp` | 40010 |
+| `atlas-moradabad.webp` | 32580 |
+| `atlas-shenzhen.webp` | 36580 |
+| `atlas-sivakasi.webp` | 25246 |
+| `atlas-surat.webp` | 49210 |
+| `atlas-tiruppur.webp` | 42794 |
+| `atlas-yiwu.webp` | 41490 |

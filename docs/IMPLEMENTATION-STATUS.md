@@ -129,3 +129,7 @@ Start RFQ uses the selected design's specifications and the original order's mak
 ## Marketplace visual refresh
 
 Nearby, Global Atlas, Care, Connect and public Business use shared campaigns and original illustrative discovery media. See [placements and verification](MARKETPLACE-VISUAL-REFRESH.md), [campaign configuration](MARKETPLACE-CAMPAIGNS.md) and [asset manifest](MARKETPLACE-IMAGE-ASSETS.md).
+
+### Global Atlas city overview
+
+The city overview includes a sourcing directory campaign and labelled category illustrations for eleven cities and two sample manufacturers.

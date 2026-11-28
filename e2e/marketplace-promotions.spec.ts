@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const discovery = [
   ["/nearby", "Discover Shops Near You"],
+  ["/global", "Explore Regional Makers"],
   ["/sourcing", "Explore Regional Makers"],
   ["/care", "Repairs Made Easier"],
   ["/connect", "Need Something Made to Order?"],
@@ -79,6 +80,26 @@ test("Atlas promotion links use regional and existing industrial filters", async
   await page.locator(".sourcing-more summary").click();
   await page.getByLabel("Maximum MOQ").fill("20");
   await expect(page).toHaveURL(/maxMoq=20/);
+});
+
+test("Global Atlas navigation opens the illustrated city overview", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("banner").getByRole("link", { name: "Global Atlas", exact: true }).click();
+  await expect(page).toHaveURL(/#\/global$/);
+  const cards = page.locator(".listing-card");
+  await expect(cards).toHaveCount(13);
+  await expect(cards.locator(".card-illustrative")).toHaveCount(13);
+  const sources = new Set<string>();
+  for (const image of await cards.locator("img").all()) {
+    await image.scrollIntoViewIfNeeded();
+    sources.add(await image.evaluate(async (node: HTMLImageElement) => {
+      await node.decode();
+      return node.currentSrc;
+    }));
+  }
+  expect(sources.size).toBe(13);
+  await page.getByRole("link", { name: "Explore the Sourcing Directory" }).click();
+  await expect(page).toHaveURL(/#\/sourcing$/);
 });
 
 test("Connect keeps unsaved requirement input when a promotion is cancelled", async ({ page }) => {

@@ -1,6 +1,6 @@
 ﻿import type { HomeCampaign } from "./home-campaigns";
 
-export type CampaignPage = "nearby" | "global-atlas" | "care" | "connect" | "business";
+export type CampaignPage = "nearby" | "atlas-overview" | "global-atlas" | "care" | "connect" | "business";
 type Placement = "hero" | "collection" | "inline";
 export type MarketplaceCampaign = Omit<HomeCampaign, "layout" | "discountLabel"> & {
   page: CampaignPage;
@@ -24,6 +24,7 @@ function collection(page: CampaignPage, id: string, title: string, description: 
 export const marketplaceCampaigns: readonly MarketplaceCampaign[] = [
   hero("nearby", "nearby", "Discover Shops Near You", "Explore local stores, independent makers and pickup options around your chosen area.", "Explore Nearby Shops", "#nearby-discovery-results"),
   hero("global-atlas", "atlas", "Explore Regional Makers", "Discover traditional crafts, skilled workshops and manufacturing capabilities from local communities to global markets.", "Discover Regional Crafts", "/sourcing/regional"),
+  hero("atlas-overview", "atlas", "Explore Regional Makers", "Browse traditional crafts, independent makers and manufacturing suppliers in the Village-to-Global directory.", "Explore the Sourcing Directory", "/sourcing"),
   hero("care", "care", "Repairs Made Easier", "Explore repair, maintenance and technical service options for the products you use every day.", "Explore Repair Services", "#care-discovery-results"),
   hero("connect", "connect", "Need Something Made to Order?", "Share your product requirements and discover artisans, workshops and manufacturers who may be able to help.", "Start a Sourcing Request", "#connect-requirement", "/account/journey?new=1"),
   hero("business", "business", "Start Selling on LOCAIZ", "Bring your shop, craft studio or manufacturing business online and connect with buyers looking for what you make.", "Become a Seller", "/sourcing/onboarding", "/business/studio"),

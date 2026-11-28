@@ -17,6 +17,18 @@ const illustrations: Partial<Record<Listing["section"], Record<string, string>>>
   },
   global: {
     "weft-works": "atlas-hero-desktop",
+    "form-assembly": "atlas-form-assembly",
+    "tiruppur": "atlas-tiruppur",
+    "surat": "atlas-surat",
+    "sivakasi": "atlas-sivakasi",
+    "moradabad": "atlas-moradabad",
+    "yiwu": "atlas-yiwu",
+    "shenzhen": "atlas-shenzhen",
+    "guangzhou": "atlas-guangzhou",
+    "bangkok": "atlas-bangkok",
+    "dubai": "atlas-dubai",
+    "istanbul": "atlas-istanbul",
+    "ho-chi-minh": "atlas-ho-chi-minh",
   },
 };
 
