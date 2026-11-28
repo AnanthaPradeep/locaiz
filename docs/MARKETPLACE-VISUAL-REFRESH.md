@@ -1,9 +1,9 @@
-﻿# Marketplace visual refresh
+# Marketplace visual refresh
 
 | Page | Placement | Primary CTA |
 | --- | --- | --- |
 | Nearby | After filters and before map and shopping results | Focuses the active Nearby results without changing URL state |
-| Global Atlas | After sourcing shortcuts | Opens Regional Maker Discovery |
+| Global Atlas | After sourcing filters and locality navigation | Opens Regional Maker Discovery |
 | Care | After filters and before the service list | Focuses current Care results |
 | Connect | Outside and above the RFQ editor | Focuses the demo form or opens the connected buyer workspace |
 | Business | Public Business landing entry | Opens demo supplier onboarding or the connected Seller Studio |

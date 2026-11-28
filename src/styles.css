@@ -1380,7 +1380,7 @@ fieldset.journey-fields {
   grid-template-rows: auto auto 1fr auto;
   align-content: stretch;
 }
-.marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 16 / 10; }
+.marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 16 / 10; max-height: 360px; }
 .marketplace-campaigns .home-campaign--featured picture img { object-position: center; }
 .card-media:has(.card-illustrative) { position: relative; }
 .card-illustrative {
@@ -1394,7 +1394,7 @@ fieldset.journey-fields {
 }
 .discovery-target { scroll-margin-top: 8rem; }
 @media (max-width: 650px) {
-  .marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 5 / 4; }
+  .marketplace-campaigns .home-campaign--featured picture { aspect-ratio: 5 / 3; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card-media:has(.card-illustrative) img { transition: none; }

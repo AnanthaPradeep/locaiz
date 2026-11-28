@@ -251,7 +251,6 @@ function Explore() {
           Industrial sourcing
         </Link>
       </nav>
-      {results.length > 0 && <MarketplaceCampaignSection page="global-atlas" />}
       <div className="sourcing-controls">
         <div className="sourcing-filters">
           <label className="sourcing-search">
@@ -427,6 +426,7 @@ function Explore() {
           </nav>
         )}
       </div>
+      {results.length > 0 && <MarketplaceCampaignSection page="global-atlas" />}
       <div className="sourcing-results">
         <div>
           <h2>Supplier offers</h2>
